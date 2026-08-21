@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.rsuser
+
+# Test results
+TestResults/
+*.trx
+
+# Local tooling
+.dotnet/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+
+# EF generated artifacts
+Data/Migrations/*
+!Data/Migrations/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db

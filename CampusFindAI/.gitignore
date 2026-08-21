@@ -1,0 +1,32 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# .NET
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/*.suo
+**/TestResults/
+**/appsettings.Local.json
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/.vite/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.local
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# EF migrations are intentionally generated/committed later by the team.
+# Keep the directory placeholder but ignore generated migration files.
+backend/Data/Migrations/*
+!backend/Data/Migrations/.gitkeep
