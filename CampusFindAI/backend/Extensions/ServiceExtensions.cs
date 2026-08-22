@@ -19,6 +19,8 @@ public static class ServiceExtensions
 
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ILostItemRepository, LostItemRepository>();
+        services.AddScoped<ILostItemService, LostItemService>();
 
         return services;
     }
