@@ -1,0 +1,14 @@
+﻿namespace CampusFindAI.Api.DTOs;
+
+public class CreateFoundItemDto
+{
+    public string Title { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+
+    public DateTime? FoundAt { get; set; }
+
+    public Guid? CategoryId { get; set; }
+
+    public Guid? LocationId { get; set; }
+}
