@@ -10,7 +10,8 @@ namespace CampusFindAI.Api.Services;
 
 public class UserService(
     UserManager<ApplicationUser> userManager,
-    IConfiguration configuration) : IUserService
+    IConfiguration configuration,
+    IAuditLogService auditLogService) : IUserService
 {
     public async Task<AuthResponseDto> RegisterAsync(
         RegisterDto request,
@@ -56,6 +57,12 @@ public class UserService(
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "Login",
+            $"Successful login for {user.Email}.",
+            cancellationToken);
 
         return await CreateAuthResponseAsync(user);
     }

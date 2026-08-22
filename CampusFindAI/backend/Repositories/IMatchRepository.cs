@@ -1,0 +1,21 @@
+using CampusFindAI.Api.Models;
+
+namespace CampusFindAI.Api.Repositories;
+
+public interface IMatchRepository
+{
+    Task<IReadOnlyList<Match>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsAsync(
+        Guid lostItemId,
+        Guid foundItemId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(
+        Match match,
+        CancellationToken cancellationToken = default);
+
+    Task SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+}

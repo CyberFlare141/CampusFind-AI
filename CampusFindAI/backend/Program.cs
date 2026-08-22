@@ -1,7 +1,6 @@
 using CampusFindAI.Api.Extensions;
 using CampusFindAI.Api.Middleware;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -19,7 +19,12 @@ export function LoginPage() {
     try {
       const response = await authService.login({ email, password });
       setAuth(response);
-      navigate('/dashboard');
+
+      const isSecurityStaff =
+        response.user.role === 'SecurityOfficer' ||
+        response.user.role === 'Administrator';
+
+      navigate(isSecurityStaff ? '/security/login-confirmation' : '/dashboard');
     } catch {
       setError('Login failed. Check your email and password.');
     } finally {
