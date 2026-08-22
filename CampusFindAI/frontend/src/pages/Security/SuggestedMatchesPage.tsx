@@ -31,13 +31,12 @@ export function SuggestedMatchesPage() {
       <SecurityNav />
 
       <p>
-        Candidate lost/found pairs, ranked by confidence. Regenerating checks
-        for new open lost items and found items and adds any newly-discovered
-        matches.
+        Candidate lost/found pairs, ranked by confidence. Refresh this view to
+        see the latest suggestions currently available from the system.
       </p>
 
       <button type="button" onClick={loadMatches} disabled={loading}>
-        {loading ? 'Refreshing...' : 'Regenerate Suggestions'}
+        {loading ? 'Refreshing...' : 'Refresh suggestions'}
       </button>
 
       {message && <p role="alert">{message}</p>}

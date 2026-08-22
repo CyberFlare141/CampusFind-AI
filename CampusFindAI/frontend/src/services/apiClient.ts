@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const baseURL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5001/api';
+  import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:7001/api';
 
 export const apiClient = axios.create({
   baseURL,
@@ -19,3 +19,13 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new Event('campusfind:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
