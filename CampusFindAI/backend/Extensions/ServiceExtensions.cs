@@ -21,6 +21,8 @@ public static class ServiceExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ILostItemRepository, LostItemRepository>();
         services.AddScoped<ILostItemService, LostItemService>();
+        services.AddScoped<IFoundItemRepository, FoundItemRepository>();
+        services.AddScoped<IFoundItemService, FoundItemService>();
 
         return services;
     }
