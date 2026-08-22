@@ -5,9 +5,16 @@ type ProtectedRouteProps = {
   roles?: string[];
 };
 
-export function ProtectedRoute({ roles: _roles }: ProtectedRouteProps) {
-  const { token } = useAuth();
+export function ProtectedRoute({ roles }: ProtectedRouteProps) {
+  const { token, user } = useAuth();
 
-  // Role-based checks will be added here as authorization rules mature.
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (roles && roles.length > 0 && (!user || !roles.includes(user.role))) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
 }

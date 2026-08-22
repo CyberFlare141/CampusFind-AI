@@ -62,6 +62,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(x => x.ClaimantUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<Claim>()
+            .HasOne(x => x.FoundItem)
+            .WithMany()
+            .HasForeignKey(x => x.FoundItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Claim>()
+            .HasOne(x => x.ReviewedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.ReviewedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<Notification>()
             .HasOne(x => x.User)
             .WithMany()
