@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SecurityNav } from '../../components/SecurityNav';
-import { getLoginHistory } from '../../services/securityService';
+import { getLoginHistory, getLoginHistoryDetail } from '../../services/securityService';
 import type { LoginHistoryEntry } from '../../types/security';
 
 export function LoginHistoryPage() {
@@ -8,6 +8,15 @@ export function LoginHistoryPage() {
   const [selected, setSelected] = useState<LoginHistoryEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+
+  async function selectEntry(id: string) {
+    try {
+      setMessage('');
+      setSelected(await getLoginHistoryDetail(id));
+    } catch {
+      setMessage('Could not load this login event.');
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -70,7 +79,7 @@ export function LoginHistoryPage() {
                 <td>{new Date(entry.createdAt).toLocaleString()}</td>
                 <td>{entry.details || '—'}</td>
                 <td>
-                  <button type="button" onClick={() => setSelected(entry)}>
+                  <button type="button" onClick={() => selectEntry(entry.id)}>
                     View detail
                   </button>
                 </td>

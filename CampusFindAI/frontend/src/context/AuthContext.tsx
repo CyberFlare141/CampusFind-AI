@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AuthResponse, User } from '../types/auth';
 
 type AuthContextValue = {
@@ -14,13 +14,26 @@ const USER_KEY = 'campusfind_user';
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function readStoredUser(): User | null {
-  const value = localStorage.getItem(USER_KEY);
-  return value ? (JSON.parse(value) as User) : null;
+  try {
+    const value = localStorage.getItem(USER_KEY);
+    return value ? (JSON.parse(value) as User) : null;
+  } catch { return null; }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<User | null>(readStoredUser);
+
+  useEffect(() => {
+    const clearSession = () => {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener('campusfind:unauthorized', clearSession);
+    return () => window.removeEventListener('campusfind:unauthorized', clearSession);
+  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
