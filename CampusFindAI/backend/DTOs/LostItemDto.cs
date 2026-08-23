@@ -19,4 +19,6 @@ public class LostItemDto
     public string Status { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }
+
+    public IReadOnlyList<string> ImageUrls { get; set; } = [];
 }

@@ -13,8 +13,9 @@ public class FoundItemsController(
     IFoundItemService service) : ControllerBase
 {
     [HttpPost]
+    [RequestSizeLimit(26 * 1024 * 1024)]
     public async Task<ActionResult<FoundItemDto>> Create(
-        CreateFoundItemDto request,
+        [FromForm] CreateFoundItemDto request,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

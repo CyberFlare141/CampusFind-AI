@@ -5,10 +5,12 @@ const baseURL =
 
 export const apiClient = axios.create({
   baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
+
+export function publicAssetUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return new URL(path, new URL(baseURL).origin).toString();
+}
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('campusfind_token');

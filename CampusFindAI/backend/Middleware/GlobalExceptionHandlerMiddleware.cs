@@ -23,6 +23,10 @@ public class GlobalExceptionHandlerMiddleware(
             logger.LogWarning(ex, "Request failed due to an invalid operation.");
             await WriteErrorAsync(context, HttpStatusCode.BadRequest, ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            await WriteErrorAsync(context, HttpStatusCode.BadRequest, ex.Message);
+        }
         catch (SqlException ex)
         {
             logger.LogError(ex, "Database operation failed.");
