@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 
 namespace CampusFindAI.Api.Middleware;
 
@@ -21,6 +22,14 @@ public class GlobalExceptionHandlerMiddleware(
         {
             logger.LogWarning(ex, "Request failed due to an invalid operation.");
             await WriteErrorAsync(context, HttpStatusCode.BadRequest, ex.Message);
+        }
+        catch (SqlException ex)
+        {
+            logger.LogError(ex, "Database operation failed.");
+            await WriteErrorAsync(
+                context,
+                HttpStatusCode.ServiceUnavailable,
+                "The database is currently unavailable. Please try again.");
         }
         catch (Exception ex)
         {

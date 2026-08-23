@@ -13,7 +13,7 @@ public static class IdentityExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddIdentityCore<ApplicationUser>(options =>
+        services.Configure<IdentityOptions>(options =>
         {
             options.User.RequireUniqueEmail = true;
             options.Password.RequiredLength = 8;
@@ -21,11 +21,9 @@ public static class IdentityExtensions
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
             options.Password.RequireNonAlphanumeric = false;
-        })
-        .AddRoles<IdentityRole>()
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddSignInManager()
-        .AddDefaultTokenProviders();
+        });
+
+        services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
 
         var jwtKey = configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Jwt:Key is missing.");

@@ -1,7 +1,6 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Repositories;
 using CampusFindAI.Api.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace CampusFindAI.Api.Extensions;
 
@@ -14,10 +13,8 @@ public static class ServiceExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is missing.");
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString));
-
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IUserService, UserService>();
@@ -25,7 +22,6 @@ public static class ServiceExtensions
         services.AddScoped<ILostItemService, LostItemService>();
         services.AddScoped<IFoundItemRepository, FoundItemRepository>();
         services.AddScoped<IFoundItemService, FoundItemService>();
-
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IClaimService, ClaimService>();
         services.AddScoped<IMatchRepository, MatchRepository>();

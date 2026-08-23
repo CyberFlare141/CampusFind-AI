@@ -1,5 +1,6 @@
 using CampusFindAI.Api.Models;
-using Microsoft.AspNetCore.Identity;
+using CampusFindAI.Api.Repositories;
+using Microsoft.Data.SqlClient;
 
 namespace CampusFindAI.Api.Data;
 
@@ -7,18 +8,78 @@ public static class DbInitializer
 {
     public static async Task SeedAsync(IServiceProvider services)
     {
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var connectionFactory = services.GetRequiredService<ISqlConnectionFactory>();
+        await EnsureSchemaAsync(connectionFactory);
+
+        var userRepository = services.GetRequiredService<IUserRepository>();
         var roles = Enum.GetNames<UserRole>();
 
         foreach (var role in roles)
         {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                await roleManager.CreateAsync(new IdentityRole(role));
-            }
+            await userRepository.EnsureRoleExistsAsync(role);
         }
+    }
 
-        // Placeholder for domain seed data.
-        // Add categories, buildings, etc. here when the domain model stabilizes.
+    private static async Task EnsureSchemaAsync(ISqlConnectionFactory connectionFactory)
+    {
+        const string sql = """
+            IF COL_LENGTH('AuditLogs', 'Details') IS NULL
+            BEGIN
+                ALTER TABLE AuditLogs ADD Details nvarchar(max) NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'ClaimantNotes') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD ClaimantNotes nvarchar(max) NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'CreatedAt') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD CreatedAt datetime2 NOT NULL DEFAULT GETUTCDATE();
+            END;
+
+            IF COL_LENGTH('Claims', 'DecisionNotes') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD DecisionNotes nvarchar(max) NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'ReviewedAt') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD ReviewedAt datetime2 NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'ReviewedByUserId') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD ReviewedByUserId nvarchar(450) NULL;
+            END;
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM sys.indexes
+                WHERE name = 'IX_Claims_ReviewedByUserId'
+                  AND object_id = OBJECT_ID('Claims')
+            )
+            BEGIN
+                CREATE INDEX IX_Claims_ReviewedByUserId ON Claims(ReviewedByUserId);
+            END;
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM sys.foreign_keys
+                WHERE name = 'FK_Claims_AspNetUsers_ReviewedByUserId'
+            )
+            BEGIN
+                ALTER TABLE Claims
+                ADD CONSTRAINT FK_Claims_AspNetUsers_ReviewedByUserId
+                FOREIGN KEY (ReviewedByUserId)
+                REFERENCES AspNetUsers (Id);
+            END;
+            """;
+
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+
+        await using var command = new SqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
     }
 }

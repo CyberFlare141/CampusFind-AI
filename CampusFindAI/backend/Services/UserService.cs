@@ -1,46 +1,60 @@
 using System.IdentityModel.Tokens.Jwt;
-using SecurityClaim = System.Security.Claims.Claim;
 using System.Text;
+using SecurityClaim = System.Security.Claims.Claim;
 using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Models;
+using CampusFindAI.Api.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CampusFindAI.Api.Services;
 
 public class UserService(
-    UserManager<ApplicationUser> userManager,
+    IUserRepository userRepository,
+    IPasswordHasher<ApplicationUser> passwordHasher,
+    IOptions<IdentityOptions> identityOptions,
     IConfiguration configuration,
     IAuditLogService auditLogService) : IUserService
 {
+    private readonly PasswordOptions _passwordOptions = identityOptions.Value.Password;
+
     public async Task<AuthResponseDto> RegisterAsync(
         RegisterDto request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existingUser = await userManager.FindByEmailAsync(request.Email);
+        var email = request.Email.Trim();
+        var existingUser = await userRepository.GetByEmailAsync(email, cancellationToken);
         if (existingUser is not null)
         {
             throw new InvalidOperationException("A user with this email already exists.");
         }
 
+        ValidatePassword(request.Password);
+
         var user = new ApplicationUser
         {
-            UserName = request.Email,
-            Email = request.Email,
-            Role = UserRole.Student
+            Id = Guid.NewGuid().ToString(),
+            UserName = email,
+            NormalizedUserName = Normalize(email),
+            Email = email,
+            NormalizedEmail = Normalize(email),
+            Role = UserRole.Student,
+            EmailConfirmed = false,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            LockoutEnabled = false,
+            AccessFailedCount = 0
         };
 
-        var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
-        {
-            var errors = string.Join("; ", result.Errors.Select(error => error.Description));
-            throw new InvalidOperationException(errors);
-        }
+        user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
-        await userManager.AddToRoleAsync(user, UserRole.Student.ToString());
-        return await CreateAuthResponseAsync(user);
+        await userRepository.CreateAsync(user, cancellationToken);
+        await userRepository.AddToRoleAsync(user.Id, UserRole.Student.ToString(), cancellationToken);
+
+        return await CreateAuthResponseAsync(user, cancellationToken);
     }
 
     public async Task<AuthResponseDto> LoginAsync(
@@ -49,11 +63,15 @@ public class UserService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await userManager.FindByEmailAsync(request.Email)
+        var user = await userRepository.GetByEmailAsync(request.Email.Trim(), cancellationToken)
             ?? throw new UnauthorizedAccessException("Invalid email or password.");
 
-        var validPassword = await userManager.CheckPasswordAsync(user, request.Password);
-        if (!validPassword)
+        var verification = passwordHasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash ?? string.Empty,
+            request.Password);
+
+        if (verification == PasswordVerificationResult.Failed)
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
@@ -64,12 +82,14 @@ public class UserService(
             $"Successful login for {user.Email}.",
             cancellationToken);
 
-        return await CreateAuthResponseAsync(user);
+        return await CreateAuthResponseAsync(user, cancellationToken);
     }
 
-    private async Task<AuthResponseDto> CreateAuthResponseAsync(ApplicationUser user)
+    private async Task<AuthResponseDto> CreateAuthResponseAsync(
+        ApplicationUser user,
+        CancellationToken cancellationToken)
     {
-        var roles = await userManager.GetRolesAsync(user);
+        var roles = await userRepository.GetRolesAsync(user.Id, cancellationToken);
         var token = GenerateToken(user, roles);
 
         return new AuthResponseDto
@@ -95,16 +115,16 @@ public class UserService(
             ?? throw new InvalidOperationException("Jwt:Audience is missing.");
 
         var claims = new List<SecurityClaim>
-{
-    new(JwtRegisteredClaimNames.Sub, user.Id),
-    new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-    new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
-    new(System.Security.Claims.ClaimTypes.Role, user.Role.ToString())
-};
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+            new(System.Security.Claims.ClaimTypes.Role, user.Role.ToString())
+        };
 
-claims.AddRange(
-    roles.Select(role =>
-        new SecurityClaim(System.Security.Claims.ClaimTypes.Role, role)));
+        claims.AddRange(
+            roles.Select(role =>
+                new SecurityClaim(System.Security.Claims.ClaimTypes.Role, role)));
 
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
@@ -119,4 +139,41 @@ claims.AddRange(
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    private void ValidatePassword(string password)
+    {
+        var errors = new List<string>();
+
+        if (password.Length < _passwordOptions.RequiredLength)
+        {
+            errors.Add($"Passwords must be at least {_passwordOptions.RequiredLength} characters.");
+        }
+
+        if (_passwordOptions.RequireDigit && !password.Any(char.IsDigit))
+        {
+            errors.Add("Passwords must have at least one digit ('0'-'9').");
+        }
+
+        if (_passwordOptions.RequireUppercase && !password.Any(char.IsUpper))
+        {
+            errors.Add("Passwords must have at least one uppercase ('A'-'Z').");
+        }
+
+        if (_passwordOptions.RequireLowercase && !password.Any(char.IsLower))
+        {
+            errors.Add("Passwords must have at least one lowercase ('a'-'z').");
+        }
+
+        if (_passwordOptions.RequireNonAlphanumeric && password.All(char.IsLetterOrDigit))
+        {
+            errors.Add("Passwords must have at least one non alphanumeric character.");
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join("; ", errors));
+        }
+    }
+
+    private static string Normalize(string value) => value.Trim().ToUpperInvariant();
 }
