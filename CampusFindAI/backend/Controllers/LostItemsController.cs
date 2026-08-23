@@ -13,8 +13,9 @@ public class LostItemsController(
     ILostItemService service) : ControllerBase
 {
     [HttpPost]
+    [RequestSizeLimit(26 * 1024 * 1024)]
     public async Task<ActionResult<LostItemDto>> Create(
-        CreateLostItemDto request,
+        [FromForm] CreateLostItemDto request,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

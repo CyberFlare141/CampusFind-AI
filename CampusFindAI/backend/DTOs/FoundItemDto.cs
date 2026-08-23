@@ -15,4 +15,6 @@ public class FoundItemDto
     public Guid? CategoryId { get; set; }
 
     public Guid? LocationId { get; set; }
+
+    public IReadOnlyList<string> ImageUrls { get; set; } = [];
 }

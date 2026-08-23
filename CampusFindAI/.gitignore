@@ -13,6 +13,9 @@ Thumbs.db
 **/TestResults/
 **/appsettings.Local.json
 
+# Runtime report uploads (paths are stored in SQL Server; image files are local/runtime data)
+backend/wwwroot/uploads/
+
 # Node / Vite
 **/node_modules/
 **/dist/

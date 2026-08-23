@@ -102,6 +102,15 @@ input, textarea, select {
 }
 textarea { resize: vertical; }
 input:focus, textarea:focus, select:focus { border-color: var(--peach-deep); box-shadow: 0 0 0 3px rgba(247,154,92,.2); }
+.visually-hidden { height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; clip: rect(0, 0, 0, 0); }
+.image-picker { border: 0; display: grid; gap: .6rem; margin: 0; padding: 0; }
+.image-picker legend { font-size: .88rem; font-weight: 650; padding: 0; }
+.image-picker small { color: var(--ink-soft); font-size: .78rem; }
+.image-picker .button { justify-self: start; }
+.image-preview-grid, .report-images { display: flex; flex-wrap: wrap; gap: .5rem; }
+.image-preview { height: 84px; position: relative; width: 84px; }
+.image-preview img, .report-images img { border: 1px solid var(--line); border-radius: 8px; height: 100%; object-fit: cover; width: 100%; }
+.image-preview button { align-items: center; background: var(--ink); border: 0; border-radius: 50%; color: white; display: flex; font-size: 1.1rem; height: 22px; justify-content: center; line-height: 1; padding: 0; position: absolute; right: -6px; top: -6px; width: 22px; }
 
 .notice { border-radius: 10px; font-size: .88rem; font-weight: 550; line-height: 1.45; padding: .8rem .95rem; }
 .notice-error { background: var(--danger-bg); color: var(--danger); }
@@ -185,6 +194,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--peach-deep); box
 .report-card h4 { font-size: 1rem; margin-bottom: .35rem; font-family: var(--font-body); font-weight: 700; }
 .report-card p { color: var(--ink-soft); font-size: .9rem; line-height: 1.45; margin-bottom: .5rem; }
 .report-card small { color: var(--ink-soft); font-family: var(--font-mono); font-size: .75rem; }
+.report-images { flex: 0 0 128px; max-width: 128px; }
+.report-images img { height: 60px; width: 60px; }
 .empty-state, .loading { background: var(--white); border: 1px dashed var(--line); border-radius: 10px; color: var(--ink-soft); padding: 1.1rem; }
 
 .badge {
@@ -232,6 +243,7 @@ tbody tr:hover { background: rgba(255, 190, 145, .1); }
   .action-grid { grid-template-columns: repeat(2, 1fr); }
   .content-grid { grid-template-columns: 1fr; }
   .form-panel { position: static; }
+  .report-card { flex-wrap: wrap; }
   .stat-cards { grid-template-columns: 1fr 1fr; }
   table { display: block; overflow-x: auto; }
   .hero.ticket { flex-direction: column; }

@@ -1,6 +1,7 @@
 using CampusFindAI.Api.Extensions;
 using CampusFindAI.Api.Middleware;
 using Microsoft.OpenApi;
+using Microsoft.Extensions.FileProviders;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+var webRoot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "reports"));
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -38,6 +41,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRoot)
+});
 app.UseCors("Frontend");
 app.UseAuthentication();  //Look at the incoming request and figure out who the user is
 app.UseAuthorization();   // ''    ''    ''        ''          ''
