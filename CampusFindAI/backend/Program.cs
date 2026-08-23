@@ -6,7 +6,7 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationServices(builder.Configuration);
-builder.Services.AddIdentityAndJwt(builder.Configuration);
+builder.Services.AddIdentityAndJwt(builder.Configuration);   // This calls the extension method to add Identity and JWT authentication
 builder.Services.AddCorsPolicy();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -39,8 +39,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication();  //Look at the incoming request and figure out who the user is
+app.UseAuthorization();   // ''    ''    ''        ''          ''
 app.MapControllers();
 
 await app.SeedIdentityAsync();

@@ -1,7 +1,5 @@
 using CampusFindAI.Api.DTOs;
-using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
-using Microsoft.AspNetCore.Identity;
 
 namespace CampusFindAI.Api.Services;
 
@@ -9,7 +7,7 @@ public class SecurityDashboardService(
     IClaimRepository claimRepository,
     IMatchRepository matchRepository,
     IAuditLogRepository auditLogRepository,
-    UserManager<ApplicationUser> userManager) : ISecurityDashboardService
+    IUserRepository userRepository) : ISecurityDashboardService
 {
     public async Task<SecurityOverviewDto> GetOverviewAsync(
         CancellationToken cancellationToken = default)
@@ -28,12 +26,9 @@ public class SecurityDashboardService(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        var user = await userManager.FindByIdAsync(userId)
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
 
-        // The two most recent "Login" entries: index 0 is the session that's
-        // asking for confirmation right now, index 1 (if present) is the
-        // officer's previous login.
         var recentLogins = await auditLogRepository.GetByUserAndActionAsync(
             userId,
             "Login",
