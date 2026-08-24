@@ -54,7 +54,7 @@ public class MatchService(ILostItemRepository lostItemRepository, IFoundItemRepo
         if (lost.LocationId.HasValue && found.LocationId.HasValue) signals.Add((16m, lost.LocationId == found.LocationId ? 1m : 0m, "Same reported location"));
         if (lost.LostAt.HasValue && found.FoundAt.HasValue) signals.Add((12m, TimeCompatibility(lost.LostAt.Value, found.FoundAt.Value), "Compatible lost/found date and time"));
         var visualSimilarity = await imageSimilarityService.GetBestSimilarityAsync(lostImages, foundImages, cancellationToken);
-        if (visualSimilarity.HasValue) signals.Add((18m, visualSimilarity.Value, "High visual similarity between report images"));
+        if (visualSimilarity.HasValue) signals.Add((18m, visualSimilarity.Value, "Visual similarity between report images"));
 
         var score = signals.Sum(signal => signal.Weight) == 0 ? 0 : signals.Sum(signal => signal.Weight * signal.Value) / signals.Sum(signal => signal.Weight) * 100m;
         var matched = signals.Where(signal => signal.Value >= .55m).OrderByDescending(signal => signal.Weight * signal.Value).Select(signal => signal.Label).ToList();

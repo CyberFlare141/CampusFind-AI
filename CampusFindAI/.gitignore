@@ -29,6 +29,10 @@ backend/wwwroot/uploads/
 **/yarn-error.log*
 **/pnpm-debug.log*
 
+# User-submitted report files live in the configured storage directory, not source control.
+backend/wwwroot/uploads/reports/*
+!backend/wwwroot/uploads/reports/.gitkeep
+
 # EF migrations are intentionally generated/committed later by the team.
 # Keep the directory placeholder but ignore generated migration files.
 backend/Data/Migrations/*
