@@ -33,6 +33,8 @@ export interface SuggestedMatch {
   foundItemTitle: string;
   foundItemUserId: string;
   confidenceScore: number;
+  explanation: string;
+  matchedAttributes: string[];
 }
 
 export interface SecurityOverview {

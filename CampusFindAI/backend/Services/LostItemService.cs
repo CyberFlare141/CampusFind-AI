@@ -4,7 +4,7 @@ using CampusFindAI.Api.Repositories;
 
 namespace CampusFindAI.Api.Services;
 
-public class LostItemService(ILostItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage) : ILostItemService
+public class LostItemService(ILostItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage, IMatchService matchService) : ILostItemService
 {
     public async Task<LostItemDto> CreateAsync(string userId, CreateLostItemDto request, CancellationToken cancellationToken = default)
     {
@@ -14,6 +14,7 @@ public class LostItemService(ILostItemRepository repository, IImageRepository im
         await repository.AddAsync(item, cancellationToken);
         var images = await imageStorage.SaveAsync(item.Id, null, request.Images, cancellationToken);
         await imageRepository.AddRangeAsync(images, cancellationToken);
+        await matchService.RefreshForLostItemAsync(item.Id, cancellationToken);
         return MapToDto(item, images);
     }
     public async Task<IReadOnlyList<LostItemDto>> GetAllAsync(CancellationToken cancellationToken = default) => await MapManyAsync(await repository.GetAllAsync(cancellationToken), cancellationToken);

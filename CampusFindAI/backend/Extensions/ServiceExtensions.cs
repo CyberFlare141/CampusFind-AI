@@ -27,6 +27,7 @@ public static class ServiceExtensions
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IClaimService, ClaimService>();
         services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddSingleton<IImageSimilarityService, ImageSimilarityService>();
         services.AddScoped<IMatchService, MatchService>();
         services.AddScoped<ISecurityDashboardService, SecurityDashboardService>();
 
