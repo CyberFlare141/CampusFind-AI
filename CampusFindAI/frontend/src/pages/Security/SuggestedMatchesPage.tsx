@@ -31,8 +31,9 @@ export function SuggestedMatchesPage() {
       <SecurityNav />
 
       <p>
-        Candidate lost/found pairs, ranked by confidence. Refresh this view to
-        see the latest suggestions currently available from the system.
+        Potential lost/found pairs, ranked by confidence. These are AI-assisted
+        suggestions only: Security Officers must verify ownership before making
+        a decision.
       </p>
 
       <button type="button" onClick={loadMatches} disabled={loading}>
@@ -50,6 +51,7 @@ export function SuggestedMatchesPage() {
               <th>Lost Item</th>
               <th>Found Item</th>
               <th>Confidence</th>
+              <th>Why it was suggested</th>
             </tr>
           </thead>
           <tbody>
@@ -58,6 +60,14 @@ export function SuggestedMatchesPage() {
                 <td>{match.lostItemTitle}</td>
                 <td>{match.foundItemTitle}</td>
                 <td>{match.confidenceScore.toFixed(0)}%</td>
+                <td>
+                  <div>{match.explanation}</div>
+                  {match.matchedAttributes.length > 0 && (
+                    <ul className="match-attributes">
+                      {match.matchedAttributes.map((attribute) => <li key={attribute}>{attribute}</li>)}
+                    </ul>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

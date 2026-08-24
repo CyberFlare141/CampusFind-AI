@@ -5,11 +5,15 @@ namespace CampusFindAI.Api.Services;
 public interface IMatchService
 {
     /// <summary>
-    /// Computes candidate lost/found matches (title, category, location, and
-    /// date-proximity heuristics), persists newly discovered pairs, and
-    /// returns every known match ordered by confidence for the officer's
-    /// "Suggested Matches" queue.
+    /// Computes explainable candidate lost/found matches using text, category,
+    /// location, time and image similarity and returns them ranked for review.
     /// </summary>
     Task<IReadOnlyList<MatchDto>> GetSuggestedMatchesAsync(
         CancellationToken cancellationToken = default);
+
+    /// <summary>Refreshes matching suggestions after a report is submitted.</summary>
+    Task RefreshForLostItemAsync(Guid lostItemId, CancellationToken cancellationToken = default);
+
+    /// <summary>Refreshes matching suggestions after a report is submitted.</summary>
+    Task RefreshForFoundItemAsync(Guid foundItemId, CancellationToken cancellationToken = default);
 }

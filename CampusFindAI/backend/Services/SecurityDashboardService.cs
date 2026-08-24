@@ -5,7 +5,7 @@ namespace CampusFindAI.Api.Services;
 
 public class SecurityDashboardService(
     IClaimRepository claimRepository,
-    IMatchRepository matchRepository,
+    IMatchService matchService,
     IAuditLogRepository auditLogRepository,
     IUserRepository userRepository) : ISecurityDashboardService
 {
@@ -13,7 +13,7 @@ public class SecurityDashboardService(
         CancellationToken cancellationToken = default)
     {
         var pendingClaims = await claimRepository.GetByStatusAsync("Pending", cancellationToken);
-        var matches = await matchRepository.GetAllAsync(cancellationToken);
+        var matches = await matchService.GetSuggestedMatchesAsync(cancellationToken);
 
         return new SecurityOverviewDto
         {

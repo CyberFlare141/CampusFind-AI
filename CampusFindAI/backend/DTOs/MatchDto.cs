@@ -13,4 +13,10 @@ public class MatchDto
     public string FoundItemUserId { get; set; } = string.Empty;
 
     public decimal ConfidenceScore { get; set; }
+
+    /// <summary>Human-readable rationale for this potential match.</summary>
+    public string Explanation { get; set; } = string.Empty;
+
+    /// <summary>The report attributes that contributed to the confidence score.</summary>
+    public IReadOnlyList<string> MatchedAttributes { get; set; } = [];
 }
