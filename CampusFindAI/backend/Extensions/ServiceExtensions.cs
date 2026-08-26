@@ -15,6 +15,7 @@ public static class ServiceExtensions
 
         services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ISecurityOfficerAccessRequestRepository, SecurityOfficerAccessRequestRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IUserService, UserService>();
@@ -30,6 +31,7 @@ public static class ServiceExtensions
         services.AddSingleton<IImageSimilarityService, ImageSimilarityService>();
         services.AddScoped<IMatchService, MatchService>();
         services.AddScoped<ISecurityDashboardService, SecurityDashboardService>();
+        services.AddScoped<ISecurityOfficerAccessRequestService, SecurityOfficerAccessRequestService>();
 
         return services;
     }

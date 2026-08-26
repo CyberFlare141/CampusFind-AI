@@ -210,6 +210,40 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task<int> CountByRoleAsync(string roleName, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT COUNT(*) FROM AspNetUsers WHERE Role = @Role;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Role", roleName);
+        return (int)await command.ExecuteScalarAsync(cancellationToken);
+    }
+
+    public async Task SetRoleAsync(string userId, UserRole role, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SET XACT_ABORT ON;
+            BEGIN TRANSACTION;
+            UPDATE AspNetUsers SET Role = @Role WHERE Id = @Id;
+            DELETE ur
+            FROM AspNetUserRoles ur
+            INNER JOIN AspNetRoles r ON r.Id = ur.RoleId
+            WHERE ur.UserId = @Id AND r.Name <> @Role;
+            INSERT INTO AspNetUserRoles (UserId, RoleId)
+            SELECT @Id, r.Id FROM AspNetRoles r
+            WHERE r.Name = @Role AND NOT EXISTS (
+                SELECT 1 FROM AspNetUserRoles ur WHERE ur.UserId = @Id AND ur.RoleId = r.Id);
+            COMMIT TRANSACTION;
+            """;
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Role", role.ToString());
+        command.Parameters.AddWithValue("@Id", userId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public async Task EnsureRoleExistsAsync(
         string roleName,
         CancellationToken cancellationToken = default)

@@ -74,6 +74,48 @@ public static class DbInitializer
                 FOREIGN KEY (ReviewedByUserId)
                 REFERENCES AspNetUsers (Id);
             END;
+
+            IF OBJECT_ID('SecurityOfficerAccessRequests', 'U') IS NULL
+            BEGIN
+                CREATE TABLE SecurityOfficerAccessRequests (
+                    Id uniqueidentifier NOT NULL PRIMARY KEY,
+                    UserId nvarchar(450) NOT NULL,
+                    Email nvarchar(256) NOT NULL,
+                    FullName nvarchar(256) NULL,
+                    StaffId nvarchar(100) NULL,
+                    Department nvarchar(200) NULL,
+                    Reason nvarchar(max) NOT NULL,
+                    Status nvarchar(32) NOT NULL,
+                    ReviewedByUserId nvarchar(450) NULL,
+                    ReviewedAt datetime2 NULL,
+                    RejectionReason nvarchar(max) NULL,
+                    CreatedAt datetime2 NOT NULL,
+                    CONSTRAINT FK_SecurityOfficerAccessRequests_User FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id),
+                    CONSTRAINT FK_SecurityOfficerAccessRequests_Reviewer FOREIGN KEY (ReviewedByUserId) REFERENCES AspNetUsers(Id)
+                );
+            END;
+
+            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_SecurityOfficerAccessRequests_PendingUser')
+            BEGIN
+                CREATE UNIQUE INDEX UX_SecurityOfficerAccessRequests_PendingUser
+                ON SecurityOfficerAccessRequests(UserId) WHERE Status = 'Pending';
+            END;
+
+            IF OBJECT_ID('TR_AdminMaximumFour', 'TR') IS NULL
+            BEGIN
+                EXEC(N'
+                    CREATE TRIGGER TR_AdminMaximumFour ON AspNetUsers
+                    AFTER INSERT, UPDATE
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+                        IF (SELECT COUNT(*) FROM AspNetUsers WITH (TABLOCKX) WHERE Role = ''Administrator'') > 4
+                        BEGIN
+                            ROLLBACK TRANSACTION;
+                            THROW 51000, ''Maximum number of administrators reached.'', 1;
+                        END
+                    END');
+            END;
             """;
 
         await using var connection = connectionFactory.CreateConnection();

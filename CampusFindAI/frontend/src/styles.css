@@ -1,27 +1,26 @@
 /* ============================================================
    CampusFind AI — design tokens
-   Palette: warm cream/peach surfaces + sky-blue trust accent,
-   styled around a "claim ticket" motif (this is a lost & found app).
+  CampusFind AI — deep sea security platform design system.
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --cream: #FFFCE1;
+  --cream: #F5F8FA;
   --peach-light: #FFDDB0;
-  --peach: #FFBE91;
-  --peach-deep: #F79A5C;
+  --peach: #063B5C;
+  --peach-deep: #0A6F9E;
   --sky: #CFEBFF;
   --sky-line: #AFD8F2;
   --white: #FFFFFF;
-  --ink: #2B2013;
-  --ink-soft: #7C6E56;
-  --line: #ECDFC0;
-  --danger: #B23A3A;
-  --danger-bg: #FBE7E3;
-  --success: #2E7D53;
-  --success-bg: #E4F5EA;
-  --warn: #93650B;
-  --warn-bg: #FFF3D6;
+  --ink: #0B1117;
+  --ink-soft: #637582;
+  --line: #D9E2E8;
+  --danger: #C0392B;
+  --danger-bg: #FDECEA;
+  --success: #16805B;
+  --success-bg: #E7F5EF;
+  --warn: #9A6C00;
+  --warn-bg: #FFF5D9;
 
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
@@ -147,7 +146,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--peach-deep); box
 }
 .ticket-stub .eyebrow { color: rgba(43,32,19,.65); margin-bottom: 0; }
 .ticket-role {
-  font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--ink);
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--white);
   text-transform: capitalize;
 }
 .hero.ticket::before, .hero.ticket::after {
@@ -255,3 +254,64 @@ tbody tr:hover { background: rgba(255, 190, 145, .1); }
   .auth-card { padding: 1.6rem; }
   .stat-cards { grid-template-columns: 1fr; }
 }
+
+/* Current application shell */
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { background: #032A40; color: #DCEAF1; display: flex; flex: 0 0 246px; flex-direction: column; min-height: 100vh; padding: 1.35rem 1rem; }
+.sidebar .brand { color: #FFF; padding: .35rem .6rem 2.4rem; }
+.brand-mark { align-items: center; background: #0A6F9E; border-radius: 7px; display: flex; height: 32px; justify-content: center; width: 32px; }
+.sidebar .brand b { color: #63B6DA; }
+.nav-label, .topbar-kicker { color: #7190A0; font-family: var(--font-mono); font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.nav-label { margin: 0 .75rem .65rem; }
+.nav-label-spaced { margin-top: 1.8rem; }
+.sidebar .main-nav { display: flex; flex-direction: column; gap: .25rem; }
+.sidebar .main-nav a { align-items: center; border-left: 3px solid transparent; border-radius: 6px; color: #A9C0CC; display: flex; font-family: var(--font-body); font-size: .9rem; font-weight: 600; gap: .75rem; padding: .72rem .8rem; text-decoration: none; }
+.sidebar .main-nav a.active { background: rgba(10,111,158,.35); border-left-color: #63B6DA; color: #FFF; }
+.sidebar-footer { border-top: 1px solid rgba(255,255,255,.12); margin-top: auto; padding: 1rem .65rem .2rem; }
+.status-dot { align-items: center; color: #A9C0CC; display: flex; font-size: .76rem; gap: .5rem; margin-bottom: 1rem; }
+.status-dot span { background: #3BB982; border-radius: 50%; height: 7px; width: 7px; }
+.logout-button { align-items: center; background: transparent; border: 0; color: #A9C0CC; display: flex; font-size: .85rem; gap: .6rem; padding: .3rem 0; }
+.app-main { flex: 1; min-width: 0; }
+.topbar { align-items: center; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; min-height: 76px; padding: .9rem clamp(1rem,3vw,2.5rem); }
+.topbar-kicker { margin: 0 0 .2rem; }
+.topbar-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin: 0; }
+.topbar-actions, .profile { align-items: center; display: flex; }
+.topbar-actions { gap: .55rem; }
+.icon-button { align-items: center; background: transparent; border: 1px solid transparent; border-radius: 7px; color: var(--ink-soft); display: flex; height: 38px; justify-content: center; width: 38px; }
+.profile { border-left: 1px solid var(--line); gap: .65rem; margin-left: .5rem; padding-left: 1rem; }
+.avatar { align-items: center; background: #DBEAF1; border-radius: 50%; color: var(--peach); display: flex; font-family: var(--font-display); font-weight: 700; height: 34px; justify-content: center; width: 34px; }
+.profile-copy { display: flex; flex-direction: column; gap: .1rem; }
+.profile-copy strong { font-size: .78rem; }
+.profile-copy small { color: var(--ink-soft); font-size: .68rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-container { max-width: 1440px; padding: clamp(1.5rem,4vw,3rem) clamp(1rem,4vw,3rem) 5rem; }
+.button { background: var(--peach); border-color: var(--peach); border-radius: 7px; color: #FFF; min-height: 42px; }
+.button-secondary, .button-quiet { background: #FFF; border-color: var(--line); color: var(--peach); }
+.auth-page { background: linear-gradient(135deg, #EDF5F8 0%, #F8FBFC 55%, #E3EEF3 100%); }
+.auth-card { border-radius: 10px; box-shadow: 0 22px 55px rgba(3,42,64,.12); }
+.auth-card::before { background: var(--peach); }
+.hero.ticket { background: var(--peach); border-radius: 10px; box-shadow: 0 12px 32px rgba(3,42,64,.12); color: #FFF; max-width: 100%; }
+.ticket-stub { border-right-color: rgba(255,255,255,.16); }
+.ticket-stub .eyebrow, .ticket-main .eyebrow { color: #7FB9D2; }
+.ticket-main h1 { color: #FFF; }
+.ticket-main p.muted { color: #BED1DA; }
+.action-card, .form-panel, .stat-card, .detail-card, .report-card { border-color: var(--line); border-radius: 8px; box-shadow: 0 5px 15px rgba(3,42,64,.035); }
+.action-card::before { background: var(--peach-deep); }
+.security-nav { border-bottom: 1px solid var(--line); padding-bottom: .65rem; }
+table { border-color: var(--line); border-radius: 8px; }
+th { background: #EDF4F7; color: var(--peach); }
+
+@media (max-width: 900px) { .sidebar { flex-basis: 210px; } .action-grid { grid-template-columns: repeat(2,1fr); } .content-grid { grid-template-columns: 1fr; } .form-panel { position: static; } }
+@media (max-width: 640px) { .app-shell { display: block; } .sidebar { min-height: auto; padding: .65rem .75rem 0; } .sidebar .brand { padding: .25rem .35rem .65rem; } .sidebar .nav-label, .sidebar-footer { display: none; } .sidebar .main-nav { flex-direction: row; gap: .15rem; overflow-x: auto; padding-bottom: .65rem; } .sidebar .main-nav a { border-left: 0; border-bottom: 3px solid transparent; flex: 0 0 auto; font-size: .76rem; gap: .4rem; padding: .5rem .55rem; } .sidebar .main-nav a.active { border-bottom-color: #63B6DA; } .profile-copy { display: none; } .profile { padding-left: .5rem; } .hero.ticket { flex-direction: column; } .ticket-stub { border-bottom: 1px solid rgba(255,255,255,.16); border-right: 0; flex-basis: auto; padding: 1.1rem 1.4rem; } .ticket-main { padding: 1.5rem; } .action-grid { grid-template-columns: 1fr; } .stat-cards { grid-template-columns: 1fr 1fr; } table { display: block; overflow-x: auto; } }
+@media (max-width: 420px) { .stat-cards { grid-template-columns: 1fr; } .profile { border-left: 0; } }
+
+.page-intro { margin-bottom: 2rem; max-width: 680px; }
+.page-intro h1 { margin-bottom: .8rem; }
+.access-grid { grid-template-columns: minmax(300px,.8fr) minmax(0,1.2fr); }
+.access-request-page .form-panel { top: 1.5rem; }
+.request-rejection { color: var(--danger) !important; font-weight: 600; margin-top: .7rem; }
+.admin-request-list { display: grid; gap: .85rem; }
+.admin-request-card { align-items: center; background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--peach-deep); border-radius: 8px; display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.2rem 1.3rem; }
+.admin-request-card h3 { margin: .65rem 0 .25rem; }
+.admin-request-card p { margin-bottom: .45rem; }
+.admin-request-card small { color: var(--ink-soft); font-family: var(--font-mono); font-size: .68rem; }
+@media (max-width: 640px) { .access-grid { grid-template-columns: 1fr; } .admin-request-card { align-items: flex-start; flex-direction: column; gap: .7rem; } }

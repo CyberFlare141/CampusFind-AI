@@ -24,6 +24,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ChatHistory> ChatHistories => Set<ChatHistory>();
     public DbSet<AIRequest> AIRequests => Set<AIRequest>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
+    public DbSet<SecurityOfficerAccessRequest> SecurityOfficerAccessRequests => Set<SecurityOfficerAccessRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -31,6 +32,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Role>().ToTable("Roles");
         builder.Entity<ApplicationUser>().Property(x => x.Role).HasConversion<string>();
+
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.Status).HasConversion<string>();
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.UserId).HasMaxLength(450);
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.ReviewedByUserId).HasMaxLength(450);
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.Email).HasMaxLength(256);
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.FullName).HasMaxLength(256);
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.StaffId).HasMaxLength(100);
+        builder.Entity<SecurityOfficerAccessRequest>().Property(x => x.Department).HasMaxLength(200);
+        builder.Entity<SecurityOfficerAccessRequest>().HasIndex(x => x.UserId).HasFilter("[Status] = 'Pending'").IsUnique().HasDatabaseName("UX_SecurityOfficerAccessRequests_PendingUser");
+        builder.Entity<SecurityOfficerAccessRequest>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SecurityOfficerAccessRequest>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ReviewedByUserId).OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<UserProfile>()
             .HasOne(x => x.User)

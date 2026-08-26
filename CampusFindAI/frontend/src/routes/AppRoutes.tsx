@@ -12,6 +12,8 @@ import { ClaimReviewPage } from '../pages/Security/ClaimReviewPage';
 import { SuggestedMatchesPage } from '../pages/Security/SuggestedMatchesPage';
 import { LoginConfirmationPage } from '../pages/Security/LoginConfirmationPage';
 import { LoginHistoryPage } from '../pages/Security/LoginHistoryPage';
+import { AccessRequestPage } from '../pages/AccessRequest/AccessRequestPage';
+import { SecurityOfficerRequestsPage } from '../pages/Admin/SecurityOfficerRequestsPage';
 import { AppLayout } from '../components/AppLayout';
 
 const SECURITY_ROLES = ['SecurityOfficer', 'Administrator'];
@@ -29,6 +31,13 @@ export function AppRoutes() {
           <Route path="/lost-items" element={<LostItemsPage />} />
           <Route path="/found-items" element={<FoundItemsPage />} />
           <Route path="/claims" element={<ClaimsPage />} />
+          <Route path="/security-officer-access" element={<AccessRequestPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute roles={['Administrator']} />}>
+          <Route element={<AppLayout />}>
+            <Route path="/admin/security-officer-requests" element={<SecurityOfficerRequestsPage />} />
           </Route>
         </Route>
 

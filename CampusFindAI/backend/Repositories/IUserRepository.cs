@@ -25,6 +25,10 @@ public interface IUserRepository
         string roleName,
         CancellationToken cancellationToken = default);
 
+    Task<int> CountByRoleAsync(string roleName, CancellationToken cancellationToken = default);
+
+    Task SetRoleAsync(string userId, UserRole role, CancellationToken cancellationToken = default);
+
     Task EnsureRoleExistsAsync(
         string roleName,
         CancellationToken cancellationToken = default);
