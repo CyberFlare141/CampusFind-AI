@@ -7,6 +7,7 @@ namespace CampusFindAI.Api.Services;
 public class ClaimService(
     IClaimRepository claimRepository,
     IFoundItemRepository foundItemRepository,
+    IImageRepository imageRepository,
     IAuditLogService auditLogService) : IClaimService
 {
     private const string StatusPending = "Pending";
@@ -74,6 +75,24 @@ public class ClaimService(
         return claim is null ? null : MapToDto(claim);
     }
 
+    public async Task<ClaimReviewDto?> GetReviewAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var claim = await claimRepository.GetReviewByIdAsync(id, cancellationToken);
+        if (claim is null) return null;
+        var images = await imageRepository.GetByFoundItemIdsAsync([claim.FoundItemId], cancellationToken);
+        return new ClaimReviewDto
+        {
+            Id = claim.Id, FoundItemId = claim.FoundItemId, FoundItemTitle = claim.FoundItem?.Title ?? string.Empty,
+            FoundItemDescription = claim.FoundItem?.Description, ClaimantUserId = claim.ClaimantUserId,
+            ClaimantEmail = claim.ClaimantUser?.Email ?? string.Empty, ClaimantNotes = claim.ClaimantNotes,
+            Status = claim.Status, CreatedAt = claim.CreatedAt, ReviewedByUserId = claim.ReviewedByUserId,
+            ReviewedByEmail = claim.ReviewedByUser?.Email, ReviewedAt = claim.ReviewedAt, DecisionNotes = claim.DecisionNotes,
+            FoundAt = claim.FoundItem?.FoundAt,
+            ImageUrls = images.Select(image => image.Url).ToList(),
+            Claimant = MapPerson(claim.ClaimantUser), Reporter = MapPerson(claim.FoundItem?.User)
+        };
+    }
+
     public async Task<ClaimDto> DecideAsync(
         Guid claimId,
         string officerUserId,
@@ -126,4 +145,12 @@ public class ClaimService(
             DecisionNotes = claim.DecisionNotes
         };
     }
+
+    private static ClaimPersonDto MapPerson(ApplicationUser? user) => new()
+    {
+        UserId = user?.Id ?? string.Empty, Email = user?.Email ?? string.Empty,
+        FullName = user?.UserProfile?.FullName, Department = user?.UserProfile?.Department,
+        JobTitle = user?.UserProfile?.JobTitle, Semester = user?.UserProfile?.Semester,
+        StudentId = user?.UserProfile?.StudentId, Phone = user?.UserProfile?.Phone
+    };
 }

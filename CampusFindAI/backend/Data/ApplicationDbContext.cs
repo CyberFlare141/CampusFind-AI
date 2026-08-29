@@ -38,6 +38,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey<UserProfile>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<UserProfile>().Property(x => x.Department).HasMaxLength(120);
+        builder.Entity<UserProfile>().Property(x => x.JobTitle).HasMaxLength(120);
+        builder.Entity<UserProfile>().Property(x => x.Semester).HasMaxLength(40);
+        builder.Entity<UserProfile>().Property(x => x.StudentId).HasMaxLength(50);
+
         builder.Entity<Reputation>()
             .HasOne(x => x.User)
             .WithOne(x => x.Reputation)
@@ -79,6 +84,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Notification>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         
         builder.Entity<Match>()
             .Property(m => m.ConfidenceScore)

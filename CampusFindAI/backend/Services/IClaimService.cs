@@ -24,6 +24,10 @@ public interface IClaimService
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<ClaimReviewDto?> GetReviewAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Records the officer's approve/reject verification decision.</summary>
     Task<ClaimDto> DecideAsync(
         Guid claimId,

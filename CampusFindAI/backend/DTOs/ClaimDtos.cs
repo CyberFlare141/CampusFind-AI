@@ -36,3 +36,23 @@ public class ClaimDecisionDto
 
     public string? DecisionNotes { get; set; }
 }
+
+public class ClaimReviewDto : ClaimDto
+{
+    public ClaimPersonDto Claimant { get; set; } = new();
+    public ClaimPersonDto Reporter { get; set; } = new();
+    public DateTime? FoundAt { get; set; }
+    public IReadOnlyList<string> ImageUrls { get; set; } = [];
+}
+
+public class ClaimPersonDto
+{
+    public string UserId { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? FullName { get; set; }
+    public string? Department { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Semester { get; set; }
+    public string? StudentId { get; set; }
+    public string? Phone { get; set; }
+}

@@ -83,6 +83,14 @@ public class ClaimsController(IClaimService service) : ControllerBase
         return Ok(claim);
     }
 
+    [HttpGet("{id:guid}/review")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<ClaimReviewDto>> GetReview(Guid id, CancellationToken cancellationToken)
+    {
+        var claim = await service.GetReviewAsync(id, cancellationToken);
+        return claim is null ? NotFound() : Ok(claim);
+    }
+
     /// <summary>Security officer's claim-verification decision (approve/reject).</summary>
     [HttpPost("{id:guid}/decision")]
     [Authorize(Roles = "SecurityOfficer,Administrator")]

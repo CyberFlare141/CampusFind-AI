@@ -238,6 +238,18 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task UpdatePasswordHashAsync(string userId, string passwordHash, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE AspNetUsers SET PasswordHash = @PasswordHash, SecurityStamp = @SecurityStamp WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", userId);
+        command.Parameters.AddWithValue("@PasswordHash", passwordHash);
+        command.Parameters.AddWithValue("@SecurityStamp", Guid.NewGuid().ToString());
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private static ApplicationUser MapUser(SqlDataReader reader)
     {
         return new ApplicationUser

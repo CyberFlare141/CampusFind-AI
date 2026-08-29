@@ -28,4 +28,9 @@ public interface IUserRepository
     Task EnsureRoleExistsAsync(
         string roleName,
         CancellationToken cancellationToken = default);
+
+    Task UpdatePasswordHashAsync(
+        string userId,
+        string passwordHash,
+        CancellationToken cancellationToken = default);
 }
