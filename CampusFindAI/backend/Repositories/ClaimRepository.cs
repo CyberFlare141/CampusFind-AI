@@ -69,6 +69,16 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         return claims.SingleOrDefault();
     }
 
+    public async Task<Claim?> GetReviewByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var sql = ReviewSelect + """
+
+            WHERE c.Id = @Id;
+            """;
+        var claims = await QueryReviewAsync(sql, command => command.Parameters.AddWithValue("@Id", id), cancellationToken);
+        return claims.SingleOrDefault();
+    }
+
     public Task<IReadOnlyList<Claim>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
@@ -166,6 +176,18 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         return claims;
     }
 
+    private async Task<IReadOnlyList<Claim>> QueryReviewAsync(string sql, Action<SqlCommand>? configure, CancellationToken cancellationToken)
+    {
+        var claims = new List<Claim>();
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        configure?.Invoke(command);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken)) claims.Add(MapReview(reader));
+        return claims;
+    }
+
     private static Claim Map(SqlDataReader reader)
     {
         return new Claim
@@ -200,6 +222,45 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         };
     }
 
+    private static Claim MapReview(SqlDataReader reader)
+    {
+        var claim = Map(reader);
+        claim.ClaimantUser!.UserProfile = new UserProfile
+        {
+            UserId = claim.ClaimantUserId,
+            FullName = reader.GetNullableString("ClaimantFullName"),
+            Department = reader.GetNullableString("ClaimantDepartment"),
+            JobTitle = reader.GetNullableString("ClaimantJobTitle"),
+            Semester = reader.GetNullableString("ClaimantSemester"),
+            StudentId = reader.GetNullableString("ClaimantStudentId"),
+            Phone = reader.GetNullableString("ClaimantPhone")
+        };
+        claim.FoundItem = new FoundItem
+        {
+            Id = claim.FoundItemId,
+            UserId = reader.GetRequiredString("ReporterUserId"),
+            Title = reader.GetRequiredString("FoundItemTitle"),
+            Description = reader.GetNullableString("FoundItemDescription"),
+            FoundAt = reader.GetNullableDateTime("FoundAt"),
+            User = new ApplicationUser
+            {
+                Id = reader.GetRequiredString("ReporterUserId"),
+                Email = reader.GetNullableString("ReporterEmail"),
+                UserProfile = new UserProfile
+                {
+                    UserId = reader.GetRequiredString("ReporterUserId"),
+                    FullName = reader.GetNullableString("ReporterFullName"),
+                    Department = reader.GetNullableString("ReporterDepartment"),
+                    JobTitle = reader.GetNullableString("ReporterJobTitle"),
+                    Semester = reader.GetNullableString("ReporterSemester"),
+                    StudentId = reader.GetNullableString("ReporterStudentId"),
+                    Phone = reader.GetNullableString("ReporterPhone")
+                }
+            }
+        };
+        return claim;
+    }
+
     private const string BaseSelect = """
         SELECT
             c.Id AS ClaimId,
@@ -219,5 +280,25 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         INNER JOIN FoundItems fi ON fi.Id = c.FoundItemId
         INNER JOIN AspNetUsers cu ON cu.Id = c.ClaimantUserId
         LEFT JOIN AspNetUsers ru ON ru.Id = c.ReviewedByUserId
+        """;
+
+    private const string ReviewSelect = """
+        SELECT
+            c.Id AS ClaimId, c.FoundItemId, c.ClaimantUserId, c.ClaimantNotes, c.Status, c.CreatedAt,
+            c.ReviewedByUserId, c.ReviewedAt, c.DecisionNotes,
+            fi.Title AS FoundItemTitle, fi.Description AS FoundItemDescription, fi.UserId AS ReporterUserId, fi.FoundAt,
+            cu.Email AS ClaimantEmail, ru.Email AS ReviewedByEmail,
+            cup.FullName AS ClaimantFullName, cup.Department AS ClaimantDepartment, cup.JobTitle AS ClaimantJobTitle,
+            cup.Semester AS ClaimantSemester, cup.StudentId AS ClaimantStudentId, cup.Phone AS ClaimantPhone,
+            fu.Email AS ReporterEmail, fup.FullName AS ReporterFullName, fup.Department AS ReporterDepartment,
+            fup.JobTitle AS ReporterJobTitle, fup.Semester AS ReporterSemester, fup.StudentId AS ReporterStudentId,
+            fup.Phone AS ReporterPhone
+        FROM Claims c
+        INNER JOIN FoundItems fi ON fi.Id = c.FoundItemId
+        INNER JOIN AspNetUsers cu ON cu.Id = c.ClaimantUserId
+        INNER JOIN AspNetUsers fu ON fu.Id = fi.UserId
+        LEFT JOIN AspNetUsers ru ON ru.Id = c.ReviewedByUserId
+        LEFT JOIN UserProfiles cup ON cup.UserId = c.ClaimantUserId
+        LEFT JOIN UserProfiles fup ON fup.UserId = fi.UserId
         """;
 }

@@ -3,9 +3,11 @@ using System.Text;
 using SecurityClaim = System.Security.Claims.Claim;
 using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Models;
+using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CampusFindAI.Api.Services;
@@ -15,7 +17,8 @@ public class UserService(
     IPasswordHasher<ApplicationUser> passwordHasher,
     IOptions<IdentityOptions> identityOptions,
     IConfiguration configuration,
-    IAuditLogService auditLogService) : IUserService
+    IAuditLogService auditLogService,
+    ApplicationDbContext dbContext) : IUserService
 {
     private readonly PasswordOptions _passwordOptions = identityOptions.Value.Password;
 
@@ -83,6 +86,41 @@ public class UserService(
             cancellationToken);
 
         return await CreateAuthResponseAsync(user, cancellationToken);
+    }
+
+    public async Task<ProfileDto> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await RequireUserAsync(userId, cancellationToken);
+        var profile = await dbContext.UserProfiles.SingleOrDefaultAsync(value => value.UserId == userId, cancellationToken);
+        return ToProfileDto(user, profile);
+    }
+
+    public async Task<ProfileDto> UpdateProfileAsync(string userId, UpdateProfileDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await RequireUserAsync(userId, cancellationToken);
+        var profile = await dbContext.UserProfiles.SingleOrDefaultAsync(value => value.UserId == userId, cancellationToken);
+        if (profile is null)
+        {
+            profile = new UserProfile { Id = Guid.NewGuid(), UserId = userId };
+            dbContext.UserProfiles.Add(profile);
+        }
+        profile.FullName = Clean(request.FullName);
+        profile.Department = Clean(request.Department);
+        profile.JobTitle = Clean(request.JobTitle);
+        profile.Semester = Clean(request.Semester);
+        profile.StudentId = Clean(request.StudentId);
+        profile.Phone = Clean(request.Phone);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return ToProfileDto(user, profile);
+    }
+
+    public async Task ChangePasswordAsync(string userId, ChangePasswordDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await RequireUserAsync(userId, cancellationToken);
+        if (passwordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.CurrentPassword) == PasswordVerificationResult.Failed)
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+        ValidatePassword(request.NewPassword);
+        await userRepository.UpdatePasswordHashAsync(userId, passwordHasher.HashPassword(user, request.NewPassword), cancellationToken);
     }
 
     private async Task<AuthResponseDto> CreateAuthResponseAsync(
@@ -176,4 +214,16 @@ public class UserService(
     }
 
     private static string Normalize(string value) => value.Trim().ToUpperInvariant();
+
+    private async Task<ApplicationUser> RequireUserAsync(string userId, CancellationToken cancellationToken) =>
+        await userRepository.GetByIdAsync(userId, cancellationToken) ?? throw new UnauthorizedAccessException("Your account could not be found.");
+
+    private static ProfileDto ToProfileDto(ApplicationUser user, UserProfile? profile) => new()
+    {
+        Email = user.Email ?? string.Empty, Role = user.Role.ToString(), FullName = profile?.FullName,
+        Department = profile?.Department, JobTitle = profile?.JobTitle, Semester = profile?.Semester,
+        StudentId = profile?.StudentId, Phone = profile?.Phone
+    };
+
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

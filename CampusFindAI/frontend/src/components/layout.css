@@ -1,0 +1,35 @@
+.navbar { width: 100%; min-height: 88px; padding: 0 42px; background: #fff; border-top: 3px solid #582c2c; border-bottom: 1px solid #edf0f2; display: flex; align-items: center; gap: 44px; position: sticky; top: 0; z-index: 30; box-shadow: 0 1px 10px rgba(16, 24, 38, .035); }
+.navbar::after { content: ''; position: absolute; top: -3px; right: 0; bottom: 0; width: 5px; background: #e5ae36; }
+.navbar-brand { display: flex; align-items: center; gap: 11px; color: #101010; text-decoration: none; flex-shrink: 0; }
+.navbar-brand:hover { color: #101010; text-decoration: none; }
+.brand-mark { width: 32px; height: 32px; display: grid; place-items: center; font-size: 36px; line-height: .6; color: #111; font-family: Georgia, serif; transform: rotate(-16deg); }
+.brand-name, .brand-tag { display: block; }
+.brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; letter-spacing: -.025em; line-height: 1.1; }
+.brand-tag { margin-top: 3px; font-size: 12px; color: #7a8088; font-weight: 400; letter-spacing: .01em; }
+.navbar-nav { flex: 1; display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 22px; }
+.navbar-links, .navbar-account { display: flex; align-items: center; gap: 24px; }
+.navbar-links { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.navbar-links::-webkit-scrollbar { display: none; }
+.navbar-account { gap: 12px; flex-shrink: 0; }
+.nav-section-label { font-size: 10px; color: #7a8088; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; padding-left: 18px; border-left: 1px solid #e5e7eb; }
+.nav-link { position: relative; display: inline-flex; align-items: center; padding: 8px 0; color: #25282c; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.nav-link:hover { color: #155d9b; text-decoration: none; }
+.nav-link-active { color: #111; font-weight: 700; padding-left: 15px; }
+.nav-link-active::before { content: ''; position: absolute; left: 0; width: 7px; height: 7px; border-radius: 50%; background: #1976c4; }
+.user-chip { display: flex; align-items: center; gap: 9px; color: #1e2227; text-decoration: none; }
+.user-chip:hover { color: #155d9b; text-decoration: none; }
+.user-chip-info { min-width: 0; max-width: 112px; }
+.user-email, .user-role { display: block; }
+.user-email { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.user-role { margin-top: 2px; font-size: 10px; color: #80868d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #cbd2d8; color: #222; background: #fff; display: grid; place-items: center; padding: 7px; flex-shrink: 0; }
+.avatar svg { width: 100%; height: 100%; }
+.navbar-account .btn { border-left: 1px solid #dde1e5; border-radius: 0; padding-left: 20px; color: #202327; }
+.navbar-account .btn:hover { background: transparent; color: #155d9b; }
+.menu-toggle { display: none; width: 39px; height: 39px; border-radius: 50%; border: 1px solid #d9dfe4; background: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+.menu-toggle span { width: 17px; height: 2px; background: #222; border-radius: 2px; }
+.navbar-backdrop { display: none; }
+.app-content { flex: 1; }
+@media (max-width: 1180px) { .navbar { padding: 0 24px; gap: 25px; } .navbar-links { gap: 16px; } .user-chip-info { display: none; } }
+@media (max-width: 850px) { .navbar { min-height: 68px; padding: 0 18px; justify-content: space-between; } .menu-toggle { display: flex; order: 3; } .navbar-nav { display: none; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; padding: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: var(--shadow-lg); } .navbar-nav-open { display: block; } .navbar-links { display: flex; flex-direction: column; align-items: stretch; gap: 3px; overflow: visible; } .nav-link { padding: 11px 8px; border-radius: 7px; } .nav-link:hover { background: #f3f8fc; } .nav-section-label { margin: 9px 0 2px; padding: 9px 0 0; border-left: none; border-top: 1px solid #e5e7eb; } .navbar-account { border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px; justify-content: space-between; } .user-chip-info { display: block; } .navbar-backdrop { display: block; position: fixed; inset: 68px 0 0; background: rgba(16, 24, 38, .14); border: none; z-index: 20; } }
+@media (max-width: 480px) { .navbar { padding: 0 14px; } .brand-mark { font-size: 30px; width: 27px; } .brand-name { font-size: 15px; } }

@@ -12,6 +12,10 @@ public interface IClaimRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<Claim?> GetReviewByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Claim>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
