@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getFoundItemById } from '../../api/foundItems';
 import { createClaim, getMyClaims } from '../../api/claims';
 import { useAuth } from '../../context/AuthContext';
-import { Alert, ButtonSpinner, PageLoading, StatusBadge, SuccessCheck, formatDate } from '../../components/Ui';
+import { Alert, ButtonSpinner, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
 export default function FoundItemDetailPage() {
@@ -61,9 +61,9 @@ export default function FoundItemDetailPage() {
     }
   }
 
-  if (loading) return <div className="page-container"><PageLoading label="Loading item…" /></div>;
+  if (loading) return <div className="page-container-detail"><PageLoading label="Loading item details…" /></div>;
   if (error) return (
-    <div className="page-container page-container-narrow">
+    <div className="page-container-detail">
       <Alert type="error">{error}</Alert>
       <Link to="/found-items" className="btn btn-secondary">← Back to Found Items</Link>
     </div>
@@ -75,33 +75,65 @@ export default function FoundItemDetailPage() {
   const images = item.imageUrls ?? [];
 
   return (
-    <div className="page-container page-container-narrow">
-      <Link to="/found-items" className="back-link">← Back to Found Items</Link>
+    <div className="page-container-detail">
+      <Link to="/found-items" className="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Found Items
+      </Link>
 
       {location.state?.justCreated && (
-        <Alert type="success">Thanks — your found item report was submitted.</Alert>
+        <Alert type="success">Thank you — your found item report has been logged in the campus directory.</Alert>
       )}
       {claimSuccess && (
-        <Alert type="success">Your claim was submitted. The Security Office will review it and follow up.</Alert>
+        <Alert type="success">Your ownership claim has been submitted. Campus Security will verify the details and notify you.</Alert>
       )}
 
-      <motion.div className="card card-pad" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-        {/* Image gallery */}
+      <motion.div
+        className="card card-pad-lg"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {/* ── Photo Gallery ─────────────────────────────────────── */}
         {images.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <motion.img
-              key={selectedImage}
-              src={publicAssetUrl(images[selectedImage])}
-              alt={`${item.title} — photo ${selectedImage + 1}`}
-              style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
-            />
+          <div style={{ marginBottom: 28 }}>
+            <div style={{
+              width: '100%',
+              height: 340,
+              borderRadius: 'var(--radius-xl)',
+              overflow: 'hidden',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-sm)',
+            }}>
+              <motion.img
+                key={selectedImage}
+                src={publicAssetUrl(images[selectedImage])}
+                alt={`${item.title} — photo ${selectedImage + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
             {images.length > 1 && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 {images.map((img, i) => (
-                  <button key={img} type="button" onClick={() => setSelectedImage(i)}
-                    style={{ width: 60, height: 60, padding: 0, borderRadius: 8, border: `2px solid ${i === selectedImage ? 'var(--primary)' : 'var(--border)'}`, overflow: 'hidden', cursor: 'pointer', background: 'none', transition: 'border-color var(--transition-fast)', flexShrink: 0 }}
-                    aria-label={`View photo ${i + 1}`}>
+                  <button
+                    key={img}
+                    type="button"
+                    onClick={() => setSelectedImage(i)}
+                    style={{
+                      width: 68, height: 68, padding: 0, borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${i === selectedImage ? 'var(--primary)' : 'var(--border)'}`,
+                      overflow: 'hidden', cursor: 'pointer', background: 'none',
+                      transition: 'border-color var(--transition-fast), transform var(--transition-fast)',
+                      flexShrink: 0,
+                    }}
+                    aria-label={`View photo ${i + 1}`}
+                  >
                     <img src={publicAssetUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </button>
                 ))}
@@ -110,76 +142,130 @@ export default function FoundItemDetailPage() {
           </div>
         )}
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: 6 }}>{item.title}</h1>
+            <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 8 }}>{item.title}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <StatusBadge status={item.status} />
-              <span className="badge badge-success"><span className="badge-dot" />FOUND</span>
+              <span className="badge badge-success">
+                <span className="badge-dot" />FOUND
+              </span>
               {isMine && <span className="badge badge-primary">Your report</span>}
             </div>
           </div>
         </div>
 
-        <dl className="detail-list" style={{ marginBottom: 24 }}>
-          <div><dt>Description</dt><dd>{item.description || <span className="text-muted">No description provided.</span>}</dd></div>
-          <div><dt>Found at</dt><dd>{formatDate(item.foundAt)}</dd></div>
+        {/* ── Details ────────────────────────────────────────────── */}
+        <dl className="detail-list" style={{ marginBottom: 28 }}>
+          <div>
+            <dt>Description</dt>
+            <dd style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
+              {item.description || <span className="text-muted">No additional description provided.</span>}
+            </dd>
+          </div>
+          {item.location && (
+            <div>
+              <dt>Found Location</dt>
+              <dd style={{ fontWeight: 600 }}>{item.location}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Date Found</dt>
+            <dd>{formatDate(item.foundAt)}</dd>
+          </div>
+          <div>
+            <dt>Logged On</dt>
+            <dd>{formatDate(item.createdAt)}</dd>
+          </div>
         </dl>
 
-        {/* Claim section */}
+        {/* ── Claim Section ───────────────────────────────────────── */}
         {!isMine && canClaimItems && (
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-            <h3 style={{ marginBottom: 6, fontSize: '1.1rem' }}>Is this yours?</h3>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 28 }}>
+            <h3 style={{ marginBottom: 8, fontSize: '1.15rem' }}>Is this item yours?</h3>
 
             {existingClaim ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '14px 16px', background: 'rgba(199,234,187,0.35)', borderRadius: 'var(--radius-md)' }}>
-                <span className="text-sm text-muted">You already filed a claim on this item —</span>
-                <StatusBadge status={existingClaim.status} />
-                <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--primary-deep)' }}>View my claims →</Link>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                padding: '16px 20px',
+                background: 'var(--surface-card-alt)',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid var(--border)',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="text-sm font-semibold text-secondary">Your claim status:</span>
+                  <StatusBadge status={existingClaim.status} />
+                </div>
+                <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--primary-deep)' }}>
+                  View claim progress →
+                </Link>
               </div>
             ) : showClaimForm ? (
               <motion.form
                 onSubmit={handleClaimSubmit}
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                style={{ display: 'grid', gap: 16 }}
+                transition={{ duration: 0.35 }}
+                style={{ display: 'grid', gap: 18 }}
               >
                 <Alert type="error">{claimError}</Alert>
-                <div style={{ padding: '12px 16px', background: 'rgba(29,78,216,0.06)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--info)' }}>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--info)', fontWeight: 500 }}>
-                    ✦ Provide details that only the true owner would know. The Security Office will use this to verify your claim.
+                <div style={{
+                  padding: '14px 18px',
+                  background: 'rgba(143, 162, 138, 0.14)',
+                  borderRadius: 'var(--radius-md)',
+                  borderLeft: '4px solid var(--primary)',
+                }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--primary-deep)', fontWeight: 600 }}>
+                    ✦ Provide specific distinguishing details (e.g. serial numbers, stickers, contents) so Campus Security can verify your ownership.
                   </p>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="claimantNotes">Proof of ownership</label>
+                  <label htmlFor="claimantNotes">Proof of Ownership / Distinguishing Details</label>
                   <textarea
                     id="claimantNotes"
-                    placeholder="Describe identifying details only the true owner would know (contents, serial number, distinguishing marks, etc.)"
+                    placeholder="Describe specific details only the rightful owner would know (e.g. exact contents, lock screen picture, engraved initials, receipts, etc.)"
                     value={claimNotes}
                     onChange={(e) => setClaimNotes(e.target.value)}
                     rows={4}
                   />
-                  <span className="hint">Optional, but strong details help the Security Office verify your claim faster.</span>
+                  <span className="hint">Clear details expedite Security verification and return.</span>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <motion.button type="submit" className="btn btn-primary" disabled={claimSubmitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                  <motion.button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
+                    disabled={claimSubmitting}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
                     {claimSubmitting && <ButtonSpinner />}
-                    {claimSubmitting ? 'Submitting…' : 'Submit Claim'}
+                    {claimSubmitting ? 'Submitting…' : 'Submit Ownership Claim'}
                   </motion.button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowClaimForm(false)} disabled={claimSubmitting}>Cancel</button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setShowClaimForm(false)}
+                    disabled={claimSubmitting}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </motion.form>
             ) : (
               <div>
-                <p className="text-muted text-sm" style={{ marginBottom: 14 }}>
-                  If you believe this is your lost item, file a claim and the Security Office will verify it with you.
+                <p className="text-secondary text-sm" style={{ marginBottom: 16, maxWidth: 580 }}>
+                  If you lost this item on campus, submit an ownership claim with identifying proof. Campus Security will verify your claim.
                 </p>
                 <motion.button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-lg"
                   onClick={() => setShowClaimForm(true)}
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                 >
                   ⚖️ Claim This Item
@@ -190,9 +276,16 @@ export default function FoundItemDetailPage() {
         )}
       </motion.div>
 
+      {/* ── Administrator: Reporter Contact Card ─────────────────── */}
       {user?.role === 'Administrator' && (
-        <motion.div className="card card-pad" style={{ marginTop: 16 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h3 style={{ fontSize: '0.9rem', marginBottom: 16 }}>Reporter details</h3>
+        <motion.div
+          className="card card-pad"
+          style={{ marginTop: 20 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 style={{ fontSize: '1rem', marginBottom: 16 }}>Finder Details</h3>
           <dl className="detail-list">
             <div><dt>Name</dt><dd>{item.reporterName || 'Not provided'}</dd></div>
             <div><dt>Email</dt><dd>{item.reporterEmail || 'Not available'}</dd></div>

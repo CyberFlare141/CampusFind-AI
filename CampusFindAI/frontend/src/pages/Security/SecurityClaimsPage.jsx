@@ -34,38 +34,48 @@ export default function SecurityClaimsPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container-wide">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div className="page-header" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
         <div>
-          <span className="eyebrow">🛡️ Security Office</span>
-          <h1>Claims Review</h1>
-          <p className="text-secondary">Approve or reject ownership claims filed against found items.</p>
+          <span className="eyebrow">Security Desk Operations</span>
+          <h1>Claims Review Queue</h1>
+          <p className="text-secondary">Review claimant ownership evidence, cross-reference item records, and approve or decline handovers.</p>
         </div>
       </motion.div>
 
+      {/* ── Tabs ───────────────────────────────────────────────── */}
       <div className="tabs">
-        <button type="button" className={`tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>⏳ Pending Queue</button>
-        <button type="button" className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>📋 Full History</button>
+        <button type="button" className={`tab-btn ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>
+          Pending Review ({tab === 'pending' ? claims.length : '…'})
+        </button>
+        <button type="button" className={`tab-btn ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+          Decision History ({tab === 'all' ? claims.length : '…'})
+        </button>
       </div>
 
       <Alert type="error">{error}</Alert>
 
       {loading ? (
-        <PageLoading />
+        <PageLoading label="Loading claims queue…" />
       ) : claims.length === 0 ? (
         <EmptyState
-          icon={tab === 'pending' ? '✅' : '⚖️'}
-          title={tab === 'pending' ? 'No pending claims' : 'No claims yet'}
-          message={tab === 'pending' ? "You're all caught up — no claims awaiting review." : 'Claims will show up here once students file them.'}
+          svgIcon={(
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32 }}>
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          )}
+          title={tab === 'pending' ? 'All claims reviewed' : 'No claims on record'}
+          message={tab === 'pending' ? "The pending review queue is completely clear. No action needed right now." : 'Claims will populate here once filed by campus members.'}
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {claims.map((claim, i) => (
             <motion.div
               key={claim.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.35 }}
+              transition={{ delay: i * 0.04, duration: 0.35 }}
             >
               <ClaimReviewRow
                 claim={claim}
@@ -123,56 +133,76 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
   }
 
   return (
-    <div className="card card-pad">
-      {/* ── Claim header ────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+    <div className="card card-pad-lg">
+      {/* ── Claim Header ─────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{claim.foundItemTitle}</h3>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{claim.foundItemTitle}</h3>
           <p className="text-sm text-muted">
-            Claimed by <strong>{claim.claimantEmail}</strong> · Filed {formatDate(claim.createdAt)}
+            Claimant: <strong>{claim.claimantEmail}</strong> · Filed on {formatDate(claim.createdAt)}
           </p>
         </div>
         <StatusBadge status={claim.status} />
       </div>
 
       {claim.claimantNotes && (
-        <div style={{ padding: '10px 14px', background: 'var(--surface-hover)', borderRadius: 'var(--radius-md)', marginBottom: 12, fontSize: '0.875rem', lineHeight: 1.6 }}>
-          <strong style={{ display: 'block', marginBottom: 2, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>Proof of ownership</strong>
+        <div style={{ padding: '12px 16px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', marginBottom: 14, fontSize: '0.9rem', lineHeight: 1.6, border: '1px solid var(--border)' }}>
+          <strong style={{ display: 'block', marginBottom: 3, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            Claimant Proof of Ownership:
+          </strong>
           {claim.claimantNotes}
         </div>
       )}
+
       {claim.decisionNotes && (
-        <div style={{ padding: '10px 14px', background: claim.status === 'Approved' ? 'var(--success-bg)' : 'var(--danger-bg)', borderRadius: 'var(--radius-md)', marginBottom: 12, fontSize: '0.875rem', color: claim.status === 'Approved' ? 'var(--success)' : 'var(--danger)', lineHeight: 1.6 }}>
-          <strong>Decision notes:</strong> {claim.decisionNotes}
+        <div style={{
+          padding: '12px 16px',
+          background: claim.status === 'Approved' ? 'var(--success-bg)' : 'var(--danger-bg)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: 14,
+          fontSize: '0.9rem',
+          color: claim.status === 'Approved' ? 'var(--success)' : 'var(--danger)',
+          lineHeight: 1.6,
+        }}>
+          <strong>Officer Decision Notes:</strong> {claim.decisionNotes}
         </div>
       )}
+
       {claim.reviewedByEmail && (
-        <p className="text-xs text-muted" style={{ marginBottom: 12 }}>Reviewed by {claim.reviewedByEmail} on {formatDate(claim.reviewedAt)}</p>
+        <p className="text-xs text-muted" style={{ marginBottom: 12 }}>
+          Reviewed by {claim.reviewedByEmail} on {formatDate(claim.reviewedAt)}
+        </p>
       )}
 
       <Alert type="error">{rowError}</Alert>
 
-      {/* ── Review details ───────────────────────────────────── */}
+      {/* ── Evidence Drawer ──────────────────────────────────── */}
       {reviewOpen && review && <ClaimEvidence review={review} />}
 
-      {/* ── Decision form ────────────────────────────────────── */}
+      {/* ── Decision Form ────────────────────────────────────── */}
       {showForm && (
         <motion.form
           onSubmit={submitDecision}
           className="decision-form"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
+          style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'grid', gap: 14 }}
         >
-          <div style={{ padding: '12px 16px', background: pendingAction === 'approve' ? 'var(--success-bg)' : 'var(--danger-bg)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${pendingAction === 'approve' ? 'var(--success)' : 'var(--danger)'}` }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: pendingAction === 'approve' ? 'var(--success)' : 'var(--danger)' }}>
-              {pendingAction === 'approve' ? '✓ You are about to approve this claim.' : '✗ You are about to reject this claim.'}
+          <div style={{
+            padding: '12px 16px',
+            background: pendingAction === 'approve' ? 'var(--success-bg)' : 'var(--danger-bg)',
+            borderRadius: 'var(--radius-md)',
+            borderLeft: `4px solid ${pendingAction === 'approve' ? 'var(--success)' : 'var(--danger)'}`,
+          }}>
+            <p style={{ fontSize: '0.9rem', fontWeight: 700, color: pendingAction === 'approve' ? 'var(--success)' : 'var(--danger)' }}>
+              {pendingAction === 'approve' ? '✓ You are approving this ownership claim for item return.' : '✗ You are declining this ownership claim.'}
             </p>
           </div>
           <div className="form-field">
             <label htmlFor={`notes-${claim.id}`}>
-              {pendingAction === 'approve' ? 'Approval notes (optional)' : 'Reason for rejection (optional)'}
+              {pendingAction === 'approve' ? 'Approval notes / pickup instructions (optional)' : 'Reason for rejection (optional)'}
             </label>
-            <textarea id={`notes-${claim.id}`} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any notes for the record…" />
+            <textarea id={`notes-${claim.id}`} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any notes for the audit log…" />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <motion.button type="submit" className={`btn btn-sm ${pendingAction === 'approve' ? 'btn-primary' : 'btn-danger'}`} disabled={submitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
@@ -183,15 +213,19 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
         </motion.form>
       )}
 
-      {/* ── Action buttons ───────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+      {/* ── Action Buttons ───────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <button type="button" className="btn btn-secondary btn-sm" onClick={openReview} disabled={reviewLoading}>
-          {reviewLoading ? 'Loading…' : reviewOpen ? 'Hide details' : 'View full review'}
+          {reviewLoading ? 'Loading…' : reviewOpen ? 'Hide full evidence' : 'View full evidence'}
         </button>
         {reviewable && !showForm && (
           <>
-            <motion.button type="button" className="btn btn-primary btn-sm" onClick={() => startDecision('approve')} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>✓ Approve</motion.button>
-            <motion.button type="button" className="btn btn-danger btn-sm" onClick={() => startDecision('reject')} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>✗ Reject</motion.button>
+            <motion.button type="button" className="btn btn-primary btn-sm" onClick={() => startDecision('approve')} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              ✓ Approve Claim
+            </motion.button>
+            <motion.button type="button" className="btn btn-danger btn-sm" onClick={() => startDecision('reject')} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              ✗ Reject Claim
+            </motion.button>
           </>
         )}
       </div>
@@ -207,30 +241,44 @@ function ClaimEvidence({ review }) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       transition={{ duration: 0.3 }}
+      style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}
     >
-      <div className="claim-evidence-heading">
-        <div><span className="eyebrow">Review evidence</span><h3 style={{ margin: 0, fontSize: '1rem' }}>Item and people details</h3></div>
+      <div className="claim-evidence-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <span className="eyebrow">Verified Evidence</span>
+          <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Item &amp; People Comparison</h3>
+        </div>
         <StatusBadge status={review.status} />
       </div>
-      <div className="claim-evidence-grid">
-        <EvidencePerson title="Claimant" person={review.claimant} />
-        <EvidencePerson title="Reporter" person={review.reporter} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <EvidencePerson title="Claimant Profile" person={review.claimant} />
+        <EvidencePerson title="Finder Profile" person={review.reporter} />
       </div>
-      <div className="claim-item-evidence">
-        <h4 style={{ fontSize: '0.85rem', marginBottom: 8 }}>Found item report</h4>
-        <p><strong>{review.foundItemTitle}</strong></p>
-        <p className="text-muted text-sm">{review.foundItemDescription || 'No public description was provided.'}</p>
-        <p className="text-sm"><strong>Reported found:</strong> {formatDate(review.foundAt)}</p>
-        <p className="text-sm"><strong>Claimant's ownership proof:</strong> {review.claimantNotes || 'No proof notes were supplied.'}</p>
-        {review.imageUrls?.length > 0 ? (
-          <div className="review-image-grid">
+
+      <div style={{ padding: '16px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+        <h4 style={{ fontSize: '0.9rem', marginBottom: 6 }}>Found Item Reference</h4>
+        <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{review.foundItemTitle}</p>
+        <p className="text-secondary text-sm" style={{ marginBottom: 8 }}>{review.foundItemDescription || 'No description recorded.'}</p>
+        <p className="text-xs text-muted" style={{ marginBottom: 4 }}>
+          <strong>Found date:</strong> {formatDate(review.foundAt)}
+        </p>
+        <p className="text-xs text-muted">
+          <strong>Claimant proof notes:</strong> {review.claimantNotes || 'None'}
+        </p>
+        {review.imageUrls?.length > 0 && (
+          <div className="review-image-grid" style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             {review.imageUrls.map((url, i) => (
               <a key={url} href={publicAssetUrl(url)} target="_blank" rel="noreferrer">
-                <img src={publicAssetUrl(url)} alt={`${review.foundItemTitle} evidence photo ${i + 1}`} />
+                <img
+                  src={publicAssetUrl(url)}
+                  alt={`${review.foundItemTitle} evidence ${i + 1}`}
+                  style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                />
               </a>
             ))}
           </div>
-        ) : <p className="text-muted text-sm">No photos were attached to this report.</p>}
+        )}
       </div>
     </motion.section>
   );
@@ -241,19 +289,22 @@ function EvidencePerson({ title, person }) {
     ['Name', person?.fullName], ['Email', person?.email], ['Department', person?.department],
     ['Title', person?.jobTitle], ['Semester', person?.semester], ['Student ID', person?.studentId], ['Phone', person?.phone],
   ].filter(([, value]) => value);
+
   return (
-    <section className="claim-person-card">
-      <h4>{title}</h4>
+    <section style={{ padding: 14, background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+      <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: 8, fontFamily: 'var(--font-display)' }}>
+        {title}
+      </h4>
       {fields.length ? (
         <dl style={{ display: 'grid', gap: 6, margin: 0 }}>
           {fields.map(([label, value]) => (
             <div key={label}>
               <dt style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 1 }}>{label}</dt>
-              <dd style={{ margin: 0, fontSize: '0.875rem' }}>{value}</dd>
+              <dd style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{value}</dd>
             </div>
           ))}
         </dl>
-      ) : <p className="text-muted text-sm">No profile information available.</p>}
+      ) : <p className="text-muted text-sm">No profile data available.</p>}
     </section>
   );
 }

@@ -27,7 +27,8 @@ export default function SecurityLoginHistoryPage() {
   }, []);
 
   return (
-    <div className="page-container">
+    <div className="page-container-wide">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
         initial={{ opacity: 0, y: 10 }}
@@ -35,18 +36,26 @@ export default function SecurityLoginHistoryPage() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div>
-          <span className="eyebrow">🛡️ Security Office</span>
-          <h1>Login History</h1>
-          <p className="text-secondary">Your most recent sign-in activity, for audit purposes.</p>
+          <span className="eyebrow">Security Desk Audit</span>
+          <h1>Officer Login History</h1>
+          <p className="text-secondary">Audit log of your recent sign-in sessions and security actions.</p>
         </div>
       </motion.div>
 
       <Alert type="error">{error}</Alert>
 
       {loading ? (
-        <PageLoading />
+        <PageLoading label="Loading login records…" />
       ) : history.length === 0 ? (
-        <EmptyState icon="🕑" title="No login history yet" />
+        <EmptyState
+          svgIcon={(
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32 }}>
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          )}
+          title="No login records found"
+          message="Authentication audit records will appear here as sessions are recorded."
+        />
       ) : (
         <div className="table-wrap">
           <table>
@@ -54,7 +63,7 @@ export default function SecurityLoginHistoryPage() {
               <tr>
                 <th>Action</th>
                 <th>Details</th>
-                <th>When</th>
+                <th>Timestamp</th>
               </tr>
             </thead>
             <tbody>
@@ -63,11 +72,20 @@ export default function SecurityLoginHistoryPage() {
                   key={entry.id}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={{ delay: i * 0.02 }}
                 >
-                  <td><span className="badge badge-info">{entry.action}</span></td>
-                  <td>{entry.details || <span className="text-muted">—</span>}</td>
-                  <td className="text-sm text-muted">{formatDate(entry.createdAt)}</td>
+                  <td>
+                    <span className="badge badge-primary">
+                      <span className="badge-dot" />
+                      {entry.action}
+                    </span>
+                  </td>
+                  <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {entry.details || <span className="text-muted">—</span>}
+                  </td>
+                  <td className="text-sm text-muted font-medium">
+                    {formatDate(entry.createdAt)}
+                  </td>
                 </motion.tr>
               ))}
             </tbody>

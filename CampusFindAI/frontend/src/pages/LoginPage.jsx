@@ -43,12 +43,11 @@ export default function LoginPage() {
 
   return (
     <div className="auth-shell">
-      {/* ── Left panel — brand hero ─────────────────────────── */}
+      {/* ── Left Hero Panel ─────────────────────────────────── */}
       <div className="auth-panel">
-        {/* Floating decoration blobs */}
         <motion.div
           style={{
-            position: 'absolute', width: 200, height: 200, borderRadius: '50%',
+            position: 'absolute', width: 220, height: 220, borderRadius: '50%',
             background: 'rgba(255,255,255,0.08)', bottom: 80, left: 40, zIndex: 0,
           }}
           animate={{ y: [0, -16, 0] }}
@@ -56,8 +55,8 @@ export default function LoginPage() {
         />
         <motion.div
           style={{
-            position: 'absolute', width: 120, height: 120, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)', top: 120, right: 30, zIndex: 0,
+            position: 'absolute', width: 140, height: 140, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)', top: 120, right: 40, zIndex: 0,
           }}
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
@@ -70,34 +69,38 @@ export default function LoginPage() {
           style={{ position: 'relative', zIndex: 1 }}
         >
           <div className="auth-brand">
-            <span className="brand-mark">🔍</span>
+            <span className="brand-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><path d="M11 8v3l2 2"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+              </svg>
+            </span>
             <span className="brand-name">CampusFind AI</span>
           </div>
 
           <h1 className="auth-hero-title">
-            Reuniting your campus<br />with what it's lost.
+            Reuniting your campus<br />with what was lost.
           </h1>
           <p className="auth-hero-copy">
-            Report lost belongings, browse found items, and let AI match you with your lost property — all in one place.
+            Report lost belongings, browse found items, and let AI cross-reference records across all campus buildings in real time.
           </p>
 
-          {/* Feature pills */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 32 }}>
-            {['✦ AI Smart Matching', '📍 Campus-wide search', '🔒 Secure claims'].map((f, i) => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 36 }}>
+            {['✦ AI Smart Matching', '📍 Campus Wide Index', '🔒 Verified Claim Handover'].map((f, i) => (
               <motion.span
                 key={f}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.1 }}
+                transition={{ delay: 0.35 + i * 0.1 }}
                 style={{
-                  background: 'rgba(255,255,255,0.15)',
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  padding: '0.35rem 0.75rem',
+                  background: 'rgba(255,255,255,0.18)',
+                  color: 'rgba(255,255,255,0.95)',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  padding: '0.4rem 0.85rem',
                   borderRadius: 999,
                   backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.20)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  fontFamily: 'var(--font-display)',
                 }}
               >
                 {f}
@@ -107,25 +110,25 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* ── Right panel — login form ────────────────────────── */}
+      {/* ── Right Panel: Sign In Form ───────────────────────── */}
       <div className="auth-card-wrap">
         <motion.div
           className="auth-card"
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
         >
-          <span className="eyebrow">Welcome back</span>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 4 }}>Sign in</h1>
-          <p className="text-muted text-sm" style={{ marginBottom: 24 }}>
-            Sign in with your campus email to continue.
+          <span className="eyebrow">Welcome Back</span>
+          <h1 style={{ fontSize: '1.8rem', marginBottom: 6 }}>Sign in</h1>
+          <p className="text-muted text-sm" style={{ marginBottom: 26 }}>
+            Sign in with your campus email credentials to continue.
           </p>
 
           <Alert type="error">{formError}</Alert>
 
-          <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 16 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">
-              <label htmlFor="email">Email address</label>
+              <label htmlFor="email">Email Address</label>
               <input
                 id="email"
                 type="email"
@@ -135,6 +138,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className={fieldErrors.email ? 'input-error' : ''}
                 aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                autoFocus
               />
               {fieldErrors.email && (
                 <span id="email-error" className="field-error">{fieldErrors.email}</span>
@@ -152,7 +156,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={fieldErrors.password ? 'input-error' : ''}
-                  style={{ paddingRight: '2.8rem' }}
+                  style={{ paddingRight: '3rem' }}
                   aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                 />
                 <button
@@ -160,12 +164,16 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(s => !s)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   style={{
-                    position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                    position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-muted)', fontSize: '0.85rem', padding: 4,
+                    color: 'var(--text-muted)', display: 'grid', placeItems: 'center',
                   }}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
                 </button>
               </div>
               {fieldErrors.password && (
@@ -179,17 +187,17 @@ export default function LoginPage() {
               disabled={submitting}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              style={{ marginTop: 4 }}
+              style={{ marginTop: 6 }}
             >
               {submitting && <ButtonSpinner />}
               {submitting ? 'Signing in…' : 'Sign in'}
             </motion.button>
           </form>
 
-          <p className="text-sm text-muted" style={{ marginTop: 20, textAlign: 'center' }}>
+          <p className="text-sm text-muted" style={{ marginTop: 24, textAlign: 'center' }}>
             Don&apos;t have an account?{' '}
-            <Link to="/register" style={{ color: 'var(--primary-deep)', fontWeight: 600 }}>
-              Create one
+            <Link to="/register" style={{ color: 'var(--primary-deep)', fontWeight: 700 }}>
+              Create an account
             </Link>
           </p>
         </motion.div>
