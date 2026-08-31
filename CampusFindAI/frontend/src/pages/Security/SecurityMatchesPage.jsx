@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getSuggestedMatches } from '../../api/security';
-import { Alert, EmptyState, PageLoading } from '../../components/Ui';
+import { Alert, AIBadge, ConfidenceBar, EmptyState, PageLoading } from '../../components/Ui';
 
 export default function SecurityMatchesPage() {
   const [matches, setMatches] = useState([]);
@@ -22,64 +24,80 @@ export default function SecurityMatchesPage() {
       }
     }
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div>
-          <span className="eyebrow">Security Office</span>
-          <h1>Suggested Matches</h1>
-          <p>AI-suggested pairings between lost and found item reports, ranked by confidence.</p>
+          <span className="eyebrow">🛡️ Security Office</span>
+          <h1>AI Suggested Matches</h1>
+          <p className="text-secondary">AI-generated pairings between lost and found reports, ranked by confidence score.</p>
         </div>
-      </div>
+        <AIBadge label="AI Powered" />
+      </motion.div>
 
       <Alert type="error">{error}</Alert>
 
       {loading ? (
         <PageLoading />
       ) : matches.length === 0 ? (
-        <EmptyState icon="\u{1F517}" title="No suggested matches" message="Check back once more lost and found items have been reported." />
+        <EmptyState
+          icon="🔗"
+          title="No suggested matches"
+          message="Check back once more lost and found items have been reported."
+        />
       ) : (
-        <div className="card data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Lost Item</th>
-                <th>Found Item</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {matches.map((match) => (
-                <tr key={match.id}>
-                  <td>{match.lostItemTitle}</td>
-                  <td>{match.foundItemTitle}</td>
-                  <td>
-                    <ConfidenceBar value={match.confidenceScore} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {matches.map((match, i) => {
+            const pct = Math.max(0, Math.min(100, Math.round(
+              Number(match.confidenceScore) <= 1 ? Number(match.confidenceScore) * 100 : Number(match.confidenceScore)
+            )));
+            return (
+              <motion.div
+                key={match.id}
+                className="card card-pad"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.35 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <span className="ai-badge"><span className="ai-spark">✦</span> {pct}% match</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                  {/* Lost item */}
+                  <div style={{ padding: '12px 16px', background: 'var(--warning-bg)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--warning)' }}>
+                    <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--warning)', marginBottom: 4 }}>Lost Item</p>
+                    <Link to={`/lost-items/${match.lostItemId}`} className="font-semibold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+                      {match.lostItemTitle}
+                    </Link>
+                  </div>
+
+                  {/* Arrow */}
+                  <div style={{ textAlign: 'center', fontSize: '1.2rem', color: 'var(--primary)' }}>⟷</div>
+
+                  {/* Found item */}
+                  <div style={{ padding: '12px 16px', background: 'var(--success-bg)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--success)' }}>
+                    <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--success)', marginBottom: 4 }}>Found Item</p>
+                    <Link to={`/found-items/${match.foundItemId}`} className="font-semibold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+                      {match.foundItemTitle}
+                    </Link>
+                  </div>
+                </div>
+
+                <ConfidenceBar score={pct} />
+              </motion.div>
+            );
+          })}
         </div>
       )}
-    </div>
-  );
-}
-
-function ConfidenceBar({ value }) {
-  const pct = Math.max(0, Math.min(100, Math.round(Number(value) <= 1 ? Number(value) * 100 : Number(value))));
-  const tone = pct >= 75 ? 'var(--color-success-600)' : pct >= 45 ? 'var(--color-warning-600)' : 'var(--color-danger-600)';
-  return (
-    <div className="confidence-bar">
-      <div className="confidence-track">
-        <div className="confidence-fill" style={{ width: `${pct}%`, background: tone }} />
-      </div>
-      <span className="text-sm" style={{ color: tone, fontWeight: 700 }}>{pct}%</span>
     </div>
   );
 }
