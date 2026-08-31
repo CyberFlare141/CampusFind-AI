@@ -1480,6 +1480,150 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
   margin-bottom: var(--space-3);
 }
 
+/* ── Profile Identity Hero & Surfaces ───────────────────────── */
+.profile-hero {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8) var(--space-8);
+  margin-bottom: var(--space-8);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+.profile-avatar-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  display: grid;
+  place-items: center;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-inverse);
+  font-family: var(--font-display);
+  box-shadow: var(--shadow-elevated);
+  overflow: hidden;
+  border: 3px solid var(--surface-card);
+  transition: transform var(--dur-interaction) var(--ease-smooth);
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(37, 44, 34, 0.55);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  color: white;
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-smooth);
+}
+.profile-avatar-wrap:hover .profile-avatar-overlay {
+  opacity: 1;
+}
+.profile-avatar-wrap:hover .profile-avatar {
+  transform: scale(1.03);
+}
+.profile-completeness-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: var(--space-8);
+}
+.profile-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+}
+@media (max-width: 768px) {
+  .profile-info-grid { grid-template-columns: 1fr; }
+  .profile-hero { padding: var(--space-6) var(--space-5); }
+}
+.profile-info-item {
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-card-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  transition: border-color var(--dur-interaction) var(--ease-smooth),
+              box-shadow var(--dur-interaction) var(--ease-smooth);
+}
+.profile-info-item:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-soft);
+}
+.profile-info-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--primary-subtle);
+  color: var(--primary-deep);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border-medium);
+  transition: var(--dur-interaction);
+  border-radius: 24px;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: var(--dur-interaction);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+input:checked + .toggle-slider {
+  background-color: var(--primary);
+}
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
 /* ── Tooltips (Tactile Micro-Feedback) ───────────────────────── */
 .tooltip-wrap {
   position: relative;

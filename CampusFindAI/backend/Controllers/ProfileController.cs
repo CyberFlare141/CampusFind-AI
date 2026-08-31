@@ -19,6 +19,7 @@ public class ProfileController(IUserService userService) : ControllerBase
     }
 
     [HttpPut]
+    [HttpPatch]
     public async Task<ActionResult<ProfileDto>> Update(UpdateProfileDto request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
