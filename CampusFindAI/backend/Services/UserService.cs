@@ -104,12 +104,20 @@ public class UserService(
             profile = new UserProfile { Id = Guid.NewGuid(), UserId = userId };
             dbContext.UserProfiles.Add(profile);
         }
+
+        var phone = Clean(request.Phone);
+        ValidatePhone(phone);
+
         profile.FullName = Clean(request.FullName);
+        profile.University = Clean(request.University);
         profile.Department = Clean(request.Department);
         profile.JobTitle = Clean(request.JobTitle);
         profile.Semester = Clean(request.Semester);
         profile.StudentId = Clean(request.StudentId);
-        profile.Phone = Clean(request.Phone);
+        profile.Phone = phone;
+        profile.Bio = Clean(request.Bio);
+        profile.AvatarUrl = Clean(request.AvatarUrl);
+
         await dbContext.SaveChangesAsync(cancellationToken);
         return ToProfileDto(user, profile);
     }
@@ -220,10 +228,28 @@ public class UserService(
 
     private static ProfileDto ToProfileDto(ApplicationUser user, UserProfile? profile) => new()
     {
-        Email = user.Email ?? string.Empty, Role = user.Role.ToString(), FullName = profile?.FullName,
-        Department = profile?.Department, JobTitle = profile?.JobTitle, Semester = profile?.Semester,
-        StudentId = profile?.StudentId, Phone = profile?.Phone
+        Email = user.Email ?? string.Empty,
+        Role = user.Role.ToString(),
+        FullName = profile?.FullName,
+        University = profile?.University,
+        Department = profile?.Department,
+        JobTitle = profile?.JobTitle,
+        Semester = profile?.Semester,
+        StudentId = profile?.StudentId,
+        Phone = profile?.Phone,
+        Bio = profile?.Bio,
+        AvatarUrl = profile?.AvatarUrl,
     };
+
+    private static void ValidatePhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return;
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.Length < 7 || digits.Length > 15)
+        {
+            throw new InvalidOperationException("Please enter a valid phone number (e.g. +880 17XXXXXXXX or 017XXXXXXXX).");
+        }
+    }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

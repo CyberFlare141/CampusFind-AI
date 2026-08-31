@@ -38,10 +38,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey<UserProfile>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<UserProfile>().Property(x => x.FullName).HasMaxLength(120);
+        builder.Entity<UserProfile>().Property(x => x.University).HasMaxLength(150);
         builder.Entity<UserProfile>().Property(x => x.Department).HasMaxLength(120);
         builder.Entity<UserProfile>().Property(x => x.JobTitle).HasMaxLength(120);
         builder.Entity<UserProfile>().Property(x => x.Semester).HasMaxLength(40);
         builder.Entity<UserProfile>().Property(x => x.StudentId).HasMaxLength(50);
+        builder.Entity<UserProfile>().Property(x => x.Phone).HasMaxLength(30);
+        builder.Entity<UserProfile>().Property(x => x.Bio).HasMaxLength(500);
+        builder.Entity<UserProfile>().Property(x => x.AvatarUrl).HasMaxLength(500);
 
         builder.Entity<Reputation>()
             .HasOne(x => x.User)

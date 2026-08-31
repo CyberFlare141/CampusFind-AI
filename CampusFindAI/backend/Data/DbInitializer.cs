@@ -23,6 +23,36 @@ public static class DbInitializer
     private static async Task EnsureSchemaAsync(ISqlConnectionFactory connectionFactory)
     {
         const string sql = """
+            IF OBJECT_ID('UserProfiles', 'U') IS NULL
+            BEGIN
+                CREATE TABLE UserProfiles (
+                    Id uniqueidentifier NOT NULL PRIMARY KEY,
+                    UserId nvarchar(450) NOT NULL UNIQUE,
+                    FullName nvarchar(120) NULL,
+                    University nvarchar(150) NULL,
+                    Department nvarchar(120) NULL,
+                    JobTitle nvarchar(120) NULL,
+                    Semester nvarchar(40) NULL,
+                    StudentId nvarchar(50) NULL,
+                    Phone nvarchar(30) NULL,
+                    Bio nvarchar(500) NULL,
+                    AvatarUrl nvarchar(500) NULL,
+                    CONSTRAINT FK_UserProfiles_AspNetUsers_UserId FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
+                );
+            END
+            ELSE
+            BEGIN
+                IF COL_LENGTH('UserProfiles', 'FullName') IS NULL ALTER TABLE UserProfiles ADD FullName nvarchar(120) NULL;
+                IF COL_LENGTH('UserProfiles', 'University') IS NULL ALTER TABLE UserProfiles ADD University nvarchar(150) NULL;
+                IF COL_LENGTH('UserProfiles', 'Department') IS NULL ALTER TABLE UserProfiles ADD Department nvarchar(120) NULL;
+                IF COL_LENGTH('UserProfiles', 'JobTitle') IS NULL ALTER TABLE UserProfiles ADD JobTitle nvarchar(120) NULL;
+                IF COL_LENGTH('UserProfiles', 'Semester') IS NULL ALTER TABLE UserProfiles ADD Semester nvarchar(40) NULL;
+                IF COL_LENGTH('UserProfiles', 'StudentId') IS NULL ALTER TABLE UserProfiles ADD StudentId nvarchar(50) NULL;
+                IF COL_LENGTH('UserProfiles', 'Phone') IS NULL ALTER TABLE UserProfiles ADD Phone nvarchar(30) NULL;
+                IF COL_LENGTH('UserProfiles', 'Bio') IS NULL ALTER TABLE UserProfiles ADD Bio nvarchar(500) NULL;
+                IF COL_LENGTH('UserProfiles', 'AvatarUrl') IS NULL ALTER TABLE UserProfiles ADD AvatarUrl nvarchar(500) NULL;
+            END;
+
             IF COL_LENGTH('AuditLogs', 'Details') IS NULL
             BEGIN
                 ALTER TABLE AuditLogs ADD Details nvarchar(max) NULL;
