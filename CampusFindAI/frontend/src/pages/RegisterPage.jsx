@@ -52,10 +52,10 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-shell">
-      {/* ── Left panel ────────────────────────────────────────── */}
+      {/* ── Left Hero Panel ─────────────────────────────────── */}
       <div className="auth-panel">
         <motion.div
-          style={{ position: 'absolute', width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', bottom: 40, right: -60, zIndex: 0 }}
+          style={{ position: 'absolute', width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', bottom: 40, right: -60, zIndex: 0 }}
           animate={{ y: [0, -14, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -72,53 +72,59 @@ export default function RegisterPage() {
           style={{ position: 'relative', zIndex: 1 }}
         >
           <div className="auth-brand">
-            <span className="brand-mark">🔍</span>
+            <span className="brand-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><path d="M11 8v3l2 2"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+              </svg>
+            </span>
             <span className="brand-name">CampusFind AI</span>
           </div>
-          <h1 className="auth-hero-title">Never lose track of<br />what matters.</h1>
+          <h1 className="auth-hero-title">
+            Never lose track of<br />what matters.
+          </h1>
           <p className="auth-hero-copy">
-            Create an account to report a lost item, log something you found, or track the status of your claim.
+            Create an account to report missing items, log found objects, and let intelligent matching connect the dots automatically.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 32 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 36 }}>
             {[
-              { icon: '🔍', text: 'AI automatically matches lost & found reports' },
-              { icon: '🔒', text: 'Secure ownership verification before handover' },
-              { icon: '🏅', text: 'Earn trust points for returning items' },
+              { icon: '✦', text: 'AI cross-references reports with multi-attribute analysis' },
+              { icon: '🔒', text: 'Secured ownership proof verification before handover' },
+              { icon: '🏅', text: 'Earn community trust points for returning found property' },
             ].map((f, i) => (
               <motion.div
-                key={f.icon}
+                key={f.text}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + i * 0.12 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12 }}
               >
-                <span style={{ fontSize: '1.1rem' }}>{f.icon}</span>
-                <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '0.88rem' }}>{f.text}</span>
+                <span style={{ fontSize: '1rem', color: 'var(--accent)', fontWeight: 800 }}>{f.icon}</span>
+                <span style={{ color: 'rgba(255,255,255,0.88)', fontSize: '0.92rem' }}>{f.text}</span>
               </motion.div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      {/* ── Right panel — register form ─────────────────────── */}
+      {/* ── Right Panel: Register Form ──────────────────────── */}
       <div className="auth-card-wrap">
         <motion.div
           className="auth-card"
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
         >
-          <span className="eyebrow">Get started</span>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 4 }}>Create your account</h1>
-          <p className="text-muted text-sm" style={{ marginBottom: 24 }}>
-            New accounts are registered as students by default.
+          <span className="eyebrow">Get Started</span>
+          <h1 style={{ fontSize: '1.8rem', marginBottom: 6 }}>Create an account</h1>
+          <p className="text-muted text-sm" style={{ marginBottom: 26 }}>
+            Register with your university email to join the CampusFind AI network.
           </p>
 
           <Alert type="error">{formError}</Alert>
 
-          <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 16 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">
-              <label htmlFor="reg-email">Email address</label>
+              <label htmlFor="reg-email">Email Address</label>
               <input
                 id="reg-email"
                 type="email"
@@ -128,6 +134,7 @@ export default function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className={fieldErrors.email ? 'input-error' : ''}
                 aria-describedby={fieldErrors.email ? 'reg-email-error' : undefined}
+                autoFocus
               />
               {fieldErrors.email && <span id="reg-email-error" className="field-error">{fieldErrors.email}</span>}
             </div>
@@ -146,12 +153,12 @@ export default function RegisterPage() {
               {fieldErrors.password ? (
                 <span className="field-error">{fieldErrors.password}</span>
               ) : (
-                <span className="hint">At least 8 characters, with uppercase, lowercase, and a digit.</span>
+                <span className="hint">At least 8 characters with uppercase, lowercase, and a digit.</span>
               )}
             </div>
 
             <div className="form-field">
-              <label htmlFor="reg-confirmPassword">Confirm password</label>
+              <label htmlFor="reg-confirmPassword">Confirm Password</label>
               <input
                 id="reg-confirmPassword"
                 type="password"
@@ -170,16 +177,18 @@ export default function RegisterPage() {
               disabled={submitting}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
-              style={{ marginTop: 4 }}
+              style={{ marginTop: 6 }}
             >
               {submitting && <ButtonSpinner />}
-              {submitting ? 'Creating account…' : 'Create account'}
+              {submitting ? 'Creating Account…' : 'Create Account'}
             </motion.button>
           </form>
 
-          <p className="text-sm text-muted" style={{ marginTop: 20, textAlign: 'center' }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--primary-deep)', fontWeight: 600 }}>Sign in</Link>
+          <p className="text-sm text-muted" style={{ marginTop: 24, textAlign: 'center' }}>
+            Already registered?{' '}
+            <Link to="/login" style={{ color: 'var(--primary-deep)', fontWeight: 700 }}>
+              Sign in
+            </Link>
           </p>
         </motion.div>
       </div>

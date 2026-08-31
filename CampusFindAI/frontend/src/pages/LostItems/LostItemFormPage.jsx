@@ -12,16 +12,16 @@ function toDateTimeLocal(date) {
 
 const STEPS = ['Item Info', 'Where & When', 'Photos', 'Review'];
 
-/* ── Step indicator ──────────────────────────────────────────── */
+/* ── Step Indicator ──────────────────────────────────────────── */
 function StepIndicator({ current, total, labels }) {
   return (
-    <div className="step-indicator" style={{ marginBottom: 40 }}>
+    <div className="step-indicator" style={{ marginBottom: 36 }}>
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} className="step-item" style={{ flexDirection: 'column', alignItems: 'center', flex: i < total - 1 ? '1' : '0' }}>
           <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <motion.div
               className={`step-dot ${i < current ? 'done' : i === current ? 'active' : ''}`}
-              animate={{ scale: i === current ? 1.1 : 1 }}
+              animate={{ scale: i === current ? 1.08 : 1 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
               {i < current ? '✓' : i + 1}
@@ -30,8 +30,10 @@ function StepIndicator({ current, total, labels }) {
               <div className={`step-line ${i < current ? 'done' : ''}`} />
             )}
           </div>
-          <span className={`step-label ${i <= current ? (i < current ? 'done' : 'active') : ''}`}
-            style={{ marginTop: 6 }}>
+          <span
+            className={`step-label ${i <= current ? (i < current ? 'done' : 'active') : ''}`}
+            style={{ marginTop: 8 }}
+          >
             {labels[i]}
           </span>
         </div>
@@ -64,7 +66,7 @@ export default function LostItemFormPage() {
 
   function validateStep0() {
     const errors = {};
-    if (!title.trim()) errors.title = 'Give your item a short, descriptive title.';
+    if (!title.trim()) errors.title = 'Give your item a descriptive title.';
     else if (title.trim().length > 150) errors.title = 'Title must be under 150 characters.';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -72,7 +74,7 @@ export default function LostItemFormPage() {
 
   function validateStep1() {
     const errors = {};
-    if (lostAt && new Date(lostAt) > new Date()) errors.lostAt = "The date lost can't be in the future.";
+    if (lostAt && new Date(lostAt) > new Date()) errors.lostAt = "The date lost cannot be in the future.";
     else if (lostAt && new Date(lostAt) < earliest) errors.lostAt = 'Items can only be reported for the last six months.';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -118,55 +120,55 @@ export default function LostItemFormPage() {
 
   if (user?.role === 'Administrator') return <Navigate to="/lost-items" replace />;
 
-  /* ── Success state ──────────────────────────────────────────── */
+  /* ── Success State ─────────────────────────────────────────── */
   if (submitted) {
     return (
-      <div className="page-container page-container-narrow">
+      <div className="page-container-form">
         <motion.div
-          className="card card-pad"
-          initial={{ opacity: 0, scale: 0.95 }}
+          className="card card-pad-lg"
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           style={{ textAlign: 'center', padding: '48px 32px' }}
         >
           <SuccessCheck size={72} />
           <h2 style={{ marginTop: 20, marginBottom: 8 }}>Report Submitted!</h2>
-          <p className="text-secondary" style={{ marginBottom: 32 }}>
-            We're now scanning for potential matches using AI.
-            You'll be notified as soon as we find something.
+          <p className="text-secondary" style={{ marginBottom: 28, maxWidth: 440, margin: '0 auto 28px' }}>
+            CampusFind AI has indexed your report and is now scanning campus found records for potential matches.
           </p>
 
-          {/* AI matching progress */}
+          {/* AI Matching Progress Banner */}
           <div style={{
             background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)',
-            borderRadius: 'var(--radius-lg)',
-            padding: 20,
+            borderRadius: 'var(--radius-xl)',
+            padding: 24,
             color: 'white',
             textAlign: 'left',
             marginBottom: 28,
+            boxShadow: 'var(--shadow-elevated)',
           }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginBottom: 12 }}>
-              ✦ AI Matching Active
+            <p style={{ fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginBottom: 10 }}>
+              ✦ AI Matching In Progress
             </p>
-            <div style={{ height: 6, background: 'rgba(255,255,255,0.25)', borderRadius: 999, overflow: 'hidden', marginBottom: 8 }}>
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.25)', borderRadius: 999, overflow: 'hidden', marginBottom: 10 }}>
               <motion.div
-                style={{ height: '100%', background: 'rgba(255,255,255,0.85)', borderRadius: 999 }}
+                style={{ height: '100%', background: 'rgba(255,255,255,0.92)', borderRadius: 999 }}
                 initial={{ width: 0 }}
-                animate={{ width: '72%' }}
-                transition={{ delay: 0.5, duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+                animate={{ width: '78%' }}
+                transition={{ delay: 0.4, duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>
-              Scanning campus database for matches…
+            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)' }}>
+              Cross-referencing color, description, and time parameters…
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => navigate(`/lost-items/${createdId}`)}>
-              View my report
+            <button className="btn btn-primary btn-lg" onClick={() => navigate(`/lost-items/${createdId}`)}>
+              View My Report →
             </button>
-            <button className="btn btn-secondary" onClick={() => navigate('/lost-items')}>
-              Browse all items
+            <button className="btn btn-secondary btn-lg" onClick={() => navigate('/lost-items')}>
+              Browse All Lost Items
             </button>
           </div>
         </motion.div>
@@ -175,44 +177,44 @@ export default function LostItemFormPage() {
   }
 
   return (
-    <div className="page-container page-container-narrow">
+    <div className="page-container-form">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
-        <span className="eyebrow">Lost Items</span>
+        <span className="eyebrow">Lost Item Filing</span>
         <h1 style={{ marginBottom: 6 }}>Report a Lost Item</h1>
-        <p className="text-secondary" style={{ marginBottom: 32 }}>
-          Give as much detail as you can — it helps our AI find a match.
+        <p className="text-secondary" style={{ marginBottom: 28 }}>
+          Provide clear details to help CampusFind AI identify matches across campus found logs.
         </p>
 
         <StepIndicator current={step} total={STEPS.length} labels={STEPS} />
 
         <Alert type="error">{formError}</Alert>
 
-        <div className="card card-pad">
+        <div className="card card-pad-lg">
           <AnimatePresence mode="wait">
             {/* ── Step 0: Item Info ─────────────────────────────── */}
             {step === 0 && (
               <motion.div
                 key="step0"
-                initial={{ opacity: 0, x: 24 }}
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 style={{ display: 'grid', gap: 20 }}
               >
                 <div>
                   <h3 style={{ marginBottom: 4 }}>What did you lose?</h3>
-                  <p className="text-sm text-muted">Be descriptive — color, brand, size, contents</p>
+                  <p className="text-sm text-muted">Include distinguishing attributes — color, brand, model, stickers</p>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="title">Item title *</label>
+                  <label htmlFor="title">Item Title *</label>
                   <input
                     id="title"
                     type="text"
-                    placeholder="e.g. Black North Face backpack"
+                    placeholder="e.g. Black North Face Vault Backpack"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className={fieldErrors.title ? 'input-error' : ''}
@@ -222,15 +224,15 @@ export default function LostItemFormPage() {
                   {fieldErrors.title && <span className="field-error">{fieldErrors.title}</span>}
                 </div>
                 <div className="form-field">
-                  <label htmlFor="description">Description</label>
+                  <label htmlFor="description">Detailed Description</label>
                   <textarea
                     id="description"
-                    placeholder="Color, brand, distinguishing marks, what was inside, serial numbers, etc."
+                    placeholder="Color, brand, distinguishing marks, inside contents, serial numbers, keychain charms, etc."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
                   />
-                  <span className="hint">More detail significantly improves your chance of an AI match.</span>
+                  <span className="hint">Specific details allow AI to score matches with higher confidence.</span>
                 </div>
               </motion.div>
             )}
@@ -239,18 +241,18 @@ export default function LostItemFormPage() {
             {step === 1 && (
               <motion.div
                 key="step1"
-                initial={{ opacity: 0, x: 24 }}
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 style={{ display: 'grid', gap: 20 }}
               >
                 <div>
-                  <h3 style={{ marginBottom: 4 }}>Where &amp; when did you lose it?</h3>
-                  <p className="text-sm text-muted">Narrowing down the time and location helps AI matching</p>
+                  <h3 style={{ marginBottom: 4 }}>When did you lose it?</h3>
+                  <p className="text-sm text-muted">Approximate timeframes help AI filter relevant logs</p>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="lostAt">When did you lose it?</label>
+                  <label htmlFor="lostAt">Date and Time Lost</label>
                   <input
                     id="lostAt"
                     type="datetime-local"
@@ -262,11 +264,11 @@ export default function LostItemFormPage() {
                   />
                   {fieldErrors.lostAt
                     ? <span className="field-error">{fieldErrors.lostAt}</span>
-                    : <span className="hint">Optional. Choose a date and time within the last six months.</span>
+                    : <span className="hint">Choose a date within the last 6 months.</span>
                   }
                 </div>
-                <div className="form-note">
-                  📍 Location tagging will be available once campus location data is integrated.
+                <div style={{ padding: '14px 18px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  📍 Campus building location tags will be integrated with university map markers.
                 </div>
               </motion.div>
             )}
@@ -275,15 +277,15 @@ export default function LostItemFormPage() {
             {step === 2 && (
               <motion.div
                 key="step2"
-                initial={{ opacity: 0, x: 24 }}
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 style={{ display: 'grid', gap: 20 }}
               >
                 <div>
-                  <h3 style={{ marginBottom: 4 }}>Add photos</h3>
-                  <p className="text-sm text-muted">Clear photos significantly improve AI image-matching accuracy</p>
+                  <h3 style={{ marginBottom: 4 }}>Attach Reference Photos</h3>
+                  <p className="text-sm text-muted">Photos allow visual verification against found catalog items</p>
                 </div>
 
                 <div
@@ -297,9 +299,11 @@ export default function LostItemFormPage() {
                   onKeyDown={(e) => e.key === 'Enter' && fileRef.current?.click()}
                   aria-label="Upload photos"
                 >
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>📷</div>
-                  <p className="font-semibold text-secondary">Click to upload or drag and drop</p>
-                  <p className="text-sm text-muted">PNG, JPG up to 10MB · Max 4 photos</p>
+                  <div style={{ fontSize: '2.2rem', marginBottom: 8 }}>📷</div>
+                  <p className="font-semibold text-secondary" style={{ marginBottom: 4 }}>
+                    Click to select photos or drag &amp; drop
+                  </p>
+                  <p className="text-xs text-muted">PNG, JPG, WebP · Max 4 photos</p>
                   <input
                     ref={fileRef}
                     type="file"
@@ -313,8 +317,8 @@ export default function LostItemFormPage() {
 
                 {previews.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold" style={{ marginBottom: 8 }}>
-                      {previews.length} photo{previews.length > 1 ? 's' : ''} selected
+                    <p className="text-sm font-semibold" style={{ marginBottom: 10 }}>
+                      {previews.length} photo{previews.length > 1 ? 's' : ''} attached
                     </p>
                     <div className="image-preview-grid">
                       {previews.map((src, i) => (
@@ -345,60 +349,50 @@ export default function LostItemFormPage() {
             {step === 3 && (
               <motion.div
                 key="step3"
-                initial={{ opacity: 0, x: 24 }}
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 style={{ display: 'grid', gap: 20 }}
               >
                 <div>
-                  <h3 style={{ marginBottom: 4 }}>Review your report</h3>
-                  <p className="text-sm text-muted">Check your details before submitting</p>
+                  <h3 style={{ marginBottom: 4 }}>Review Report Summary</h3>
+                  <p className="text-sm text-muted">Verify details before broadcasting to campus AI matching</p>
                 </div>
 
                 <div style={{ display: 'grid', gap: 12 }}>
                   {[
-                    { icon: '✓', label: 'Item', value: title || '—' },
-                    { icon: '✓', label: 'Description', value: description || 'Not provided' },
-                    { icon: '✓', label: 'Date lost', value: lostAt ? new Date(lostAt).toLocaleString() : 'Not specified' },
-                    { icon: '✓', label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },
-                  ].map(({ icon, label, value }) => (
+                    { label: 'Item Title', value: title || '—' },
+                    { label: 'Description', value: description || 'Not provided' },
+                    { label: 'Date Lost', value: lostAt ? new Date(lostAt).toLocaleString() : 'Not specified' },
+                    { label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },
+                  ].map(({ label, value }) => (
                     <div key={label} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 12,
-                      padding: '12px 16px', background: 'rgba(199,234,187,0.35)',
+                      display: 'flex', alignItems: 'flex-start', gap: 14,
+                      padding: '14px 18px', background: 'var(--surface-card-alt)',
                       borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
                     }}>
-                      <span style={{ color: 'var(--success)', fontWeight: 700, flexShrink: 0 }}>{icon}</span>
+                      <span style={{ color: 'var(--primary-deep)', fontWeight: 800, flexShrink: 0 }}>✓</span>
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-secondary)', marginBottom: 2 }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 2 }}>
                           {label}
                         </p>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{value}</p>
+                        <p style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600 }}>{value}</p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {previews.length > 0 && (
-                  <div className="image-preview-grid">
-                    {previews.map((src, i) => (
-                      <div key={i} className="image-preview">
-                        <img src={src} alt={`Preview ${i + 1}`} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ padding: '14px 16px', background: 'rgba(29,78,216,0.06)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--info)' }}>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--info)', fontWeight: 500 }}>
-                    ✦ AI matching will automatically start scanning for potential matches after submission.
+                <div style={{ padding: '14px 18px', background: 'rgba(143, 162, 138, 0.14)', borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--primary)' }}>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--primary-deep)', fontWeight: 600 }}>
+                    ✦ AI matching engine will cross-reference this report immediately after submission.
                   </p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ── Navigation buttons ───────────────────────────────── */}
+          {/* ── Action Buttons ───────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 12, marginTop: 32, justifyContent: 'space-between' }}>
             <button
               type="button"
@@ -428,7 +422,7 @@ export default function LostItemFormPage() {
                 whileTap={{ scale: 0.97 }}
               >
                 {submitting && <ButtonSpinner />}
-                {submitting ? 'Submitting…' : '🔍 Submit Report'}
+                {submitting ? 'Submitting…' : 'Submit Lost Report'}
               </motion.button>
             )}
           </div>

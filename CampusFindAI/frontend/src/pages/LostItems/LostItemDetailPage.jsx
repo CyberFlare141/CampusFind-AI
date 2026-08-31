@@ -34,10 +34,10 @@ export default function LostItemDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  if (loading) return <div className="page-container"><PageLoading label="Loading item…" /></div>;
+  if (loading) return <div className="page-container-detail"><PageLoading label="Loading item details…" /></div>;
 
   if (error) return (
-    <div className="page-container page-container-narrow">
+    <div className="page-container-detail">
       <Alert type="error">{error}</Alert>
       <Link to="/lost-items" className="btn btn-secondary">← Back to Lost Items</Link>
     </div>
@@ -50,43 +50,58 @@ export default function LostItemDetailPage() {
   const images = item.imageUrls ?? [];
 
   return (
-    <div className="page-container page-container-narrow">
-      <Link to="/lost-items" className="back-link">← Back to Lost Items</Link>
+    <div className="page-container-detail">
+      <Link to="/lost-items" className="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Lost Items
+      </Link>
 
       {location.state?.justCreated && (
-        <Alert type="success">Your lost item report was submitted successfully.</Alert>
+        <Alert type="success">Your lost item report has been submitted. CampusFind AI is now scanning for matches.</Alert>
       )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="card card-pad"
+        className="card card-pad-lg"
       >
-        {/* ── Image gallery ─────────────────────────────────────── */}
+        {/* ── Photo Gallery ─────────────────────────────────────── */}
         {images.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <motion.img
-              key={selectedImage}
-              src={publicAssetUrl(images[selectedImage])}
-              alt={`${item.title} — photo ${selectedImage + 1}`}
-              style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            />
+          <div style={{ marginBottom: 28 }}>
+            <div style={{
+              width: '100%',
+              height: 340,
+              borderRadius: 'var(--radius-xl)',
+              overflow: 'hidden',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-sm)',
+            }}>
+              <motion.img
+                key={selectedImage}
+                src={publicAssetUrl(images[selectedImage])}
+                alt={`${item.title} — photo ${selectedImage + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
             {images.length > 1 && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 {images.map((img, i) => (
                   <button
                     key={img}
                     type="button"
                     onClick={() => setSelectedImage(i)}
                     style={{
-                      width: 60, height: 60, padding: 0, borderRadius: 8,
+                      width: 68, height: 68, padding: 0, borderRadius: 'var(--radius-md)',
                       border: `2px solid ${i === selectedImage ? 'var(--primary)' : 'var(--border)'}`,
                       overflow: 'hidden', cursor: 'pointer', background: 'none',
-                      transition: 'border-color var(--transition-fast)',
+                      transition: 'border-color var(--transition-fast), transform var(--transition-fast)',
                       flexShrink: 0,
                     }}
                     aria-label={`View photo ${i + 1}`}
@@ -100,59 +115,75 @@ export default function LostItemDetailPage() {
         )}
 
         {/* ── Header ─────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: 6 }}>{item.title}</h1>
+            <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 8 }}>{item.title}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <StatusBadge status={item.status} />
-              <span className="badge badge-warning"><span className="badge-dot" />LOST</span>
+              <span className="badge badge-warning">
+                <span className="badge-dot" />LOST
+              </span>
               {isMine && <span className="badge badge-primary">Your report</span>}
             </div>
           </div>
         </div>
 
-        {/* ── Detail list ─────────────────────────────────────────── */}
-        <dl className="detail-list" style={{ marginBottom: 24 }}>
+        {/* ── Detail List ─────────────────────────────────────────── */}
+        <dl className="detail-list" style={{ marginBottom: 28 }}>
           <div>
             <dt>Description</dt>
-            <dd>{item.description || <span className="text-muted">No description provided.</span>}</dd>
+            <dd style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
+              {item.description || <span className="text-muted">No additional description provided.</span>}
+            </dd>
           </div>
+          {item.location && (
+            <div>
+              <dt>Last Seen Location</dt>
+              <dd style={{ fontWeight: 600 }}>{item.location}</dd>
+            </div>
+          )}
           <div>
-            <dt>Lost at</dt>
+            <dt>Date Lost</dt>
             <dd>{formatDate(item.lostAt)}</dd>
           </div>
           <div>
-            <dt>Reported on</dt>
+            <dt>Reported On</dt>
             <dd>{formatDate(item.createdAt)}</dd>
           </div>
         </dl>
 
-        {/* ── CTA ─────────────────────────────────────────────────── */}
+        {/* ── Call to Action ───────────────────────────────────────── */}
         {canReportItems && !isMine && (
-          <div style={{ padding: '20px', background: 'rgba(199,234,187,0.35)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-            <h3 style={{ marginBottom: 6, fontSize: '1rem' }}>Think you found this?</h3>
-            <p className="text-sm text-muted" style={{ marginBottom: 14 }}>
-              If you've found an item that might match this report, log it as a found item and the Security Office will help connect the two.
+          <div style={{
+            padding: '24px',
+            background: 'var(--surface-card-alt)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border)',
+            marginTop: 8,
+          }}>
+            <h3 style={{ marginBottom: 6, fontSize: '1.1rem' }}>Found something matching this?</h3>
+            <p className="text-sm text-secondary" style={{ marginBottom: 16, maxWidth: 580 }}>
+              If you found an item that might correspond to this report, please log it in the campus found database. Campus Security will help verify and facilitate the return.
             </p>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-block' }}>
-              <Link to="/found-items/new" className="btn btn-primary btn-sm">
-                📦 Report a Found Item
+            <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-block' }}>
+              <Link to="/found-items/new" className="btn btn-primary">
+                📦 Report Found Item
               </Link>
             </motion.div>
           </div>
         )}
       </motion.div>
 
-      {/* ── Admin: reporter details ─────────────────────────────── */}
+      {/* ── Administrator: Reporter Contact Card ─────────────────── */}
       {user?.role === 'Administrator' && (
         <motion.div
           className="card card-pad"
-          style={{ marginTop: 16 }}
+          style={{ marginTop: 20 }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 style={{ fontSize: '0.9rem', marginBottom: 16 }}>Reporter details</h3>
+          <h3 style={{ fontSize: '1rem', marginBottom: 16 }}>Reporter Details</h3>
           <dl className="detail-list">
             <div><dt>Name</dt><dd>{item.reporterName || 'Not provided'}</dd></div>
             <div><dt>Email</dt><dd>{item.reporterEmail || 'Not available'}</dd></div>

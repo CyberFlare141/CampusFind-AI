@@ -28,7 +28,8 @@ export default function SecurityMatchesPage() {
   }, []);
 
   return (
-    <div className="page-container">
+    <div className="page-container-wide">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
         initial={{ opacity: 0, y: 10 }}
@@ -36,25 +37,31 @@ export default function SecurityMatchesPage() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div>
-          <span className="eyebrow">🛡️ Security Office</span>
-          <h1>AI Suggested Matches</h1>
-          <p className="text-secondary">AI-generated pairings between lost and found reports, ranked by confidence score.</p>
+          <span className="eyebrow">AI Matching Engine</span>
+          <h1>Suggested Item Pairings</h1>
+          <p className="text-secondary">
+            AI cross-references lost and found reports using keyword semantics, category tagging, and time proximity.
+          </p>
         </div>
-        <AIBadge label="AI Powered" />
+        <AIBadge label="AI Ranked" />
       </motion.div>
 
       <Alert type="error">{error}</Alert>
 
       {loading ? (
-        <PageLoading />
+        <PageLoading label="Analyzing matches…" />
       ) : matches.length === 0 ? (
         <EmptyState
-          icon="🔗"
-          title="No suggested matches"
-          message="Check back once more lost and found items have been reported."
+          svgIcon={(
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32 }}>
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          )}
+          title="No suggested pairings yet"
+          message="As new lost and found reports are submitted on campus, AI will automatically detect correlations and list them here."
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {matches.map((match, i) => {
             const pct = Math.max(0, Math.min(100, Math.round(
               Number(match.confidenceScore) <= 1 ? Number(match.confidenceScore) * 100 : Number(match.confidenceScore)
@@ -62,32 +69,62 @@ export default function SecurityMatchesPage() {
             return (
               <motion.div
                 key={match.id}
-                className="card card-pad"
+                className="card card-pad-lg"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.35 }}
+                transition={{ delay: Math.min(i * 0.05, 0.28), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-                  <span className="ai-badge"><span className="ai-spark">✦</span> {pct}% match</span>
+                  <span className="ai-badge">
+                    <span className="ai-spark">✦</span> {pct}% AI Match Confidence
+                  </span>
+                  <span className="text-xs text-muted font-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Paired Record #{match.id?.slice(0, 8) || i + 1}
+                  </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'center', marginBottom: 18 }}>
                   {/* Lost item */}
-                  <div style={{ padding: '12px 16px', background: 'var(--warning-bg)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--warning)' }}>
-                    <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--warning)', marginBottom: 4 }}>Lost Item</p>
-                    <Link to={`/lost-items/${match.lostItemId}`} className="font-semibold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
-                      {match.lostItemTitle}
+                  <div style={{
+                    padding: '16px 20px',
+                    background: 'var(--warning-bg)',
+                    borderRadius: 'var(--radius-md)',
+                    borderLeft: '4px solid var(--warning)',
+                  }}>
+                    <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--warning)', marginBottom: 4 }}>
+                      Lost Item Report
+                    </p>
+                    <Link to={`/lost-items/${match.lostItemId}`} className="font-bold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '1rem', display: 'inline-block' }}>
+                      {match.lostItemTitle} →
                     </Link>
                   </div>
 
-                  {/* Arrow */}
-                  <div style={{ textAlign: 'center', fontSize: '1.2rem', color: 'var(--primary)' }}>⟷</div>
+                  {/* Direction Arrow */}
+                  <div style={{
+                    width: 38, height: 38,
+                    borderRadius: '50%',
+                    background: 'var(--surface)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: 'var(--primary-deep)',
+                    fontWeight: 800,
+                    boxShadow: 'var(--shadow-sm)',
+                  }}>
+                    ⟷
+                  </div>
 
                   {/* Found item */}
-                  <div style={{ padding: '12px 16px', background: 'var(--success-bg)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--success)' }}>
-                    <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--success)', marginBottom: 4 }}>Found Item</p>
-                    <Link to={`/found-items/${match.foundItemId}`} className="font-semibold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
-                      {match.foundItemTitle}
+                  <div style={{
+                    padding: '16px 20px',
+                    background: 'var(--success-bg)',
+                    borderRadius: 'var(--radius-md)',
+                    borderLeft: '4px solid var(--success)',
+                  }}>
+                    <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--success)', marginBottom: 4 }}>
+                      Found Item Log
+                    </p>
+                    <Link to={`/found-items/${match.foundItemId}`} className="font-bold" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '1rem', display: 'inline-block' }}>
+                      {match.foundItemTitle} →
                     </Link>
                   </div>
                 </div>

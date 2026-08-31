@@ -6,36 +6,38 @@ import { getMyLostItems } from '../api/lostItems';
 import { getMyFoundItems } from '../api/foundItems';
 import { getMyClaims } from '../api/claims';
 import { getSecurityOverview } from '../api/security';
+import { publicAssetUrl } from '../api/client';
 import {
   PageLoading, Alert, StatusBadge, formatDate,
-  SkeletonGrid, EmptyState, AIBadge, ConfidenceBar, SectionHeader, StaggerList
+  AIBadge, SectionHeader, StaggerList, AnimatedNumber,
+  CampusDiscoveryRadar
 } from '../components/Ui';
 
-/* ── SVG Icon set ────────────────────────────────────────────── */
+/* ── Stat SVG Icons ──────────────────────────────────────────── */
 const StatIcon = ({ name }) => {
   const icons = {
     lost: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
     ),
     found: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="20 6 9 17 4 12"/>
       </svg>
     ),
     claims: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
       </svg>
     ),
     pending: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
     ),
     matches: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
     ),
@@ -43,7 +45,7 @@ const StatIcon = ({ name }) => {
   return icons[name] || null;
 };
 
-/* ── Greeting helper ─────────────────────────────────────────── */
+/* ── Greeting Helper ─────────────────────────────────────────── */
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -98,77 +100,79 @@ export default function DashboardPage() {
   const displayName     = user?.email?.split('@')[0] ?? 'there';
 
   return (
-    <div className="page-container">
+    <div className="page-container-dashboard">
       <Alert type="error">{error}</Alert>
 
-      {/* ── Hero greeting ──────────────────────────────────────── */}
+      {/* ── 1. Welcome / Hero Banner (Asymmetric Discovery Layout) ─ */}
       <motion.div
         className="dashboard-hero"
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Floating decorative circle */}
-        <motion.div
-          style={{
-            position: 'absolute', width: 280, height: 280, borderRadius: '50%',
-            background: 'rgba(143,162,138,0.10)', top: -100, right: -50, pointerEvents: 'none',
-          }}
-          animate={{ y: [0, -10, 0], scale: [1, 1.04, 1] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          style={{
-            position: 'absolute', width: 140, height: 140, borderRadius: '50%',
-            background: 'rgba(200,169,107,0.07)', bottom: -40, right: 120, pointerEvents: 'none',
-          }}
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <p className="dashboard-hero-eyebrow">{getTimeEmoji()} Dashboard</p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 12px', background: 'var(--primary-subtle)', borderRadius: 'var(--radius-full)', marginBottom: 8 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }} />
+            <span className="eyebrow" style={{ color: 'var(--primary-deep)', margin: 0, fontSize: '0.72rem' }}>
+              Real-Time Campus Discovery
+            </span>
+          </div>
+
           <h1 className="dashboard-hero-greeting">
             {getGreeting()}, {displayName} 👋
           </h1>
           <p className="dashboard-hero-sub">
             {isOfficer
-              ? 'Security Desk — review claims, verify found items, and manage AI matches.'
-              : "Here's what's happening with your items and matches."}
+              ? 'Security Desk Command — review pending ownership claims, manage AI match suggestions, and audit campus activity.'
+              : 'CampusFind AI continuously indexes lost belongings with campus find logs using multi-attribute semantics and verified return handovers.'}
           </p>
 
           {canReportItems && (
             <div className="dashboard-ctas">
-              <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}>
+              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/lost-items/new" className="btn btn-primary btn-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Report Lost Item
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  Report Lost Item <span className="btn-arrow">→</span>
                 </Link>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}>
+              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/found-items/new" className="btn btn-secondary btn-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/></svg>
-                  Report Found Item
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/>
+                  </svg>
+                  Report Found Item <span className="btn-arrow">→</span>
                 </Link>
               </motion.div>
             </div>
           )}
+
           {isOfficer && (
             <div className="dashboard-ctas">
-              <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}>
+              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/security/claims" className="btn btn-primary btn-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                  Review Claims
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                  </svg>
+                  Review Claims Queue <span className="btn-arrow">→</span>
                 </Link>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}>
+              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/security/matches" className="btn btn-secondary btn-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  AI Matches
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  AI Match Suggestions <span className="btn-arrow">→</span>
                 </Link>
               </motion.div>
             </div>
           )}
+        </div>
+
+        {/* Right Asymmetric Motif Artwork */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '10px 0' }}>
+          <CampusDiscoveryRadar count={myLostItems.length + myFoundItems.length} />
         </div>
       </motion.div>
 
@@ -176,9 +180,9 @@ export default function DashboardPage() {
         <PageLoading label="Loading your dashboard…" />
       ) : (
         <>
-          {/* ── Stats grid ─────────────────────────────────────── */}
-          <div className={`${isOfficer && overview ? 'stat-grid-5' : 'stat-grid'}`} style={{ marginBottom: 32 }}>
-            <StaggerList stagger={0.07}>
+          {/* ── 2. Key Metrics ───────────────────────────────────── */}
+          <div className={`${isOfficer && overview ? 'stat-grid-5' : 'stat-grid'}`} style={{ marginBottom: 36 }}>
+            <StaggerList stagger={0.06}>
               <DashStatCard
                 iconName="lost"
                 label="Lost Reports"
@@ -190,14 +194,14 @@ export default function DashboardPage() {
                 iconName="found"
                 label="Found Reports"
                 value={myFoundItems.length}
-                sub={myFoundItems.length === 0 ? 'None reported' : `${myFoundItems.length} total`}
+                sub={myFoundItems.length === 0 ? 'No items reported' : `${myFoundItems.length} logged`}
                 to="/found-items"
               />
               <DashStatCard
                 iconName="claims"
                 label="My Claims"
                 value={myClaims.length}
-                sub={pendingClaims > 0 ? `${pendingClaims} pending review` : 'All settled'}
+                sub={pendingClaims > 0 ? `${pendingClaims} awaiting verification` : 'All claims settled'}
                 to="/my-claims"
               />
               {isOfficer && overview && (
@@ -206,6 +210,7 @@ export default function DashboardPage() {
                   label="Pending Claims"
                   value={overview.pendingClaimsCount}
                   accent
+                  sub={overview.pendingClaimsCount > 0 ? 'Requires decision' : 'Queue clear'}
                   to="/security/claims"
                 />
               )}
@@ -215,154 +220,242 @@ export default function DashboardPage() {
                   label="AI Matches"
                   value={overview.suggestedMatchesCount}
                   accent
+                  sub="High-confidence pairs"
                   to="/security/matches"
                 />
               )}
             </StaggerList>
           </div>
 
-          {/* ── AI Match spotlight (student only) ─────────────── */}
+          {/* ── 3. AI Smart Matching Spotlight (Student View) ──── */}
           {!isOfficer && myLostItems.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              style={{ marginBottom: 32 }}
+              transition={{ delay: 0.25, duration: 0.45 }}
+              style={{ marginBottom: 36 }}
             >
-              <SectionHeader title="AI Smart Matching">
-                <AIBadge label="Active" />
-              </SectionHeader>
               <div className="ai-match-card">
-                <div className="ai-match-title">
-                  <span>✦</span> AI Smart Matching
-                </div>
-                <>
-                  <p className="ai-match-label" style={{ marginBottom: 8 }}>
-                    Our AI is actively scanning found items for your {myLostItems.length} lost report{myLostItems.length > 1 ? 's' : ''}.
-                    We'll notify you the moment we find a match.
-                  </p>
-                  <div className="ai-match-bar">
-                    <motion.div
-                      className="ai-match-bar-fill"
-                      initial={{ width: 0 }}
-                      animate={{ width: '75%' }}
-                      transition={{ delay: 0.6, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-                    />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <div className="ai-match-title">
+                    <span>✦</span> AI Smart Match Radar
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.65)', marginBottom: 16 }}>
-                    Scanning database… matching in progress
-                  </p>
+                  <span style={{
+                    background: 'rgba(255,255,255,0.22)',
+                    color: 'white',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    backdropFilter: 'blur(8px)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    fontFamily: 'var(--font-display)',
+                  }}>
+                    Active Monitoring
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'rgba(255,255,255,0.95)', marginBottom: 8, maxWidth: 620 }}>
+                  CampusFind AI is actively cross-referencing your {myLostItems.length} lost item report{myLostItems.length > 1 ? 's' : ''} against incoming campus found logs.
+                </p>
+                <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginBottom: 20, maxWidth: 580 }}>
+                  Matches are ranked by multi-modal similarity including title keywords, time correlation, location proximity, and visual cues.
+                </p>
+
+                <div className="ai-match-bar">
+                  <motion.div
+                    className="ai-match-bar-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: '82%' }}
+                    transition={{ delay: 0.5, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.70)' }}>
+                    Continuous campus matching active
+                  </span>
                   <Link to="/lost-items" className="btn" style={{
                     background: 'rgba(255,255,255,0.20)',
                     color: 'white',
-                    border: '1px solid rgba(255,255,255,0.30)',
-                    fontSize: '0.875rem',
+                    border: '1px solid rgba(255,255,255,0.35)',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
                     backdropFilter: 'blur(8px)',
-                    width: 'fit-content',
                   }}>
-                    View my reports
+                    View My Lost Reports →
                   </Link>
-                </>
+                </div>
               </div>
             </motion.div>
           )}
 
-          {/* ── Security officer priority queue ────────────────── */}
-          {isOfficer && overview && (
+          {/* ── 4. Recent Reports (Asymmetric Composition) ───────── */}
+          <div className="dashboard-columns" style={{ marginBottom: 36 }}>
+            {/* Column 1: Recent Lost Reports (Detail List oriented) */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              className="card card-pad"
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              style={{ marginBottom: 32 }}
+              transition={{ duration: 0.4 }}
             >
-              <SectionHeader title="Priority Queue" linkTo="/security/claims" linkLabel="View all claims" />
-              <div style={{ display: 'grid', gap: 12 }}>
-                {overview.pendingClaimsCount === 0 ? (
-                  <div className="card card-pad" style={{ textAlign: 'center', padding: '32px 24px' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--success-bg)', display: 'grid', placeItems: 'center', margin: '0 auto 12px' }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                    <p className="font-semibold" style={{ marginBottom: 4 }}>All caught up!</p>
-                    <p className="text-sm text-muted">No pending claims to review right now.</p>
-                  </div>
-                ) : (
-                  <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                    <div>
-                      <p className="font-semibold" style={{ marginBottom: 4 }}>
-                        {overview.pendingClaimsCount} pending claim{overview.pendingClaimsCount > 1 ? 's' : ''} awaiting review.
-                      </p>
-                      <p className="text-sm text-muted">Review and approve or reject each claim.</p>
-                    </div>
-                    <Link to="/security/claims" className="btn btn-primary" style={{ flexShrink: 0 }}>Review →</Link>
-                  </div>
-                )}
-              </div>
+              <SectionHeader title="Recent Lost" linkTo="/lost-items" linkLabel="All lost" />
+              {myLostItems.length === 0 ? (
+                <ColumnEmptyState
+                  iconName="lost"
+                  title="No lost reports"
+                  message="Report a missing item and AI will start cross-referencing."
+                  actionTo={canReportItems ? "/lost-items/new" : null}
+                  actionLabel="Report Lost"
+                />
+              ) : (
+                <ul className="recent-list">
+                  {myLostItems.slice(0, 4).map(item => (
+                    <li key={item.id}>
+                      <Link to={`/lost-items/${item.id}`}>{item.title}</Link>
+                      <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
+                        <span className="text-xs text-muted">{formatDate(item.lostAt ?? item.createdAt)}</span>
+                        <StatusBadge status={item.status} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </motion.div>
-          )}
 
-          {/* ── Recent sections ─────────────────────────────────── */}
-          <div className="dashboard-columns">
-            <RecentSection
-              title="Recent Lost Reports"
-              viewAllTo="/lost-items"
-              viewAllLabel="View all"
-              emptyTitle="No lost reports yet"
-              emptyMessage="Lost something? File a report and CampusFind AI will start matching immediately."
-              emptyIconName="lost"
-              emptyActionTo={canReportItems ? "/lost-items/new" : null}
-              emptyActionLabel="Report Lost Item"
-              items={myLostItems.slice(0, 5)}
-              renderItem={(item) => (
-                <li key={item.id}>
-                  <Link to={`/lost-items/${item.id}`}>{item.title}</Link>
-                  <div className="flex items-center gap-2" style={{ marginTop: 4 }}>
-                    <span className="text-xs text-muted">{formatDate(item.createdAt)}</span>
-                    <StatusBadge status={item.status} />
-                  </div>
-                </li>
+            {/* Column 2: Recent Found Reports (Visual Card / Image Preview oriented) */}
+            <motion.div
+              className="card card-pad"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08, duration: 0.4 }}
+            >
+              <SectionHeader title="Recent Found" linkTo="/found-items" linkLabel="All found" />
+              {myFoundItems.length === 0 ? (
+                <ColumnEmptyState
+                  iconName="found"
+                  title="No found reports"
+                  message="Found someone's property on campus? Log it here."
+                  actionTo={canReportItems ? "/found-items/new" : null}
+                  actionLabel="Report Found"
+                />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {myFoundItems.slice(0, 3).map(item => (
+                    <Link
+                      key={item.id}
+                      to={`/found-items/${item.id}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: 10,
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--surface-card)',
+                        border: '1px solid var(--border)',
+                        transition: 'background var(--transition-fast)',
+                        textDecoration: 'none',
+                      }}
+                      className="card-hover"
+                    >
+                      <div style={{
+                        width: 48, height: 48,
+                        borderRadius: 'var(--radius-sm)',
+                        overflow: 'hidden',
+                        background: 'var(--surface)',
+                        flexShrink: 0,
+                        display: 'grid',
+                        placeItems: 'center',
+                      }}>
+                        {item.imageUrls?.[0] ? (
+                          <img src={publicAssetUrl(item.imageUrls[0])} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>📦</span>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.title}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          {formatDate(item.foundAt ?? item.createdAt)}
+                        </div>
+                      </div>
+                      <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>Found</span>
+                    </Link>
+                  ))}
+                </div>
               )}
-            />
+            </motion.div>
 
-            <RecentSection
-              title="Recent Found Reports"
-              viewAllTo="/found-items"
-              viewAllLabel="View all"
-              emptyTitle="No found reports yet"
-              emptyMessage="Found something on campus? Log it here so the owner can claim it."
-              emptyIconName="found"
-              emptyActionTo={canReportItems ? "/found-items/new" : null}
-              emptyActionLabel="Report Found Item"
-              items={myFoundItems.slice(0, 5)}
-              renderItem={(item) => (
-                <li key={item.id}>
-                  <Link to={`/found-items/${item.id}`}>{item.title}</Link>
-                  <div style={{ marginTop: 4 }}>
-                    <span className="text-xs text-muted">{formatDate(item.foundAt)}</span>
-                  </div>
-                </li>
+            {/* Column 3: My Claims (Status & Timeline oriented) */}
+            <motion.div
+              className="card card-pad"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.16, duration: 0.4 }}
+            >
+              <SectionHeader title="My Claims" linkTo="/my-claims" linkLabel="All claims" />
+              {myClaims.length === 0 ? (
+                <ColumnEmptyState
+                  iconName="claims"
+                  title="No active claims"
+                  message="Browse found items and claim property that belongs to you."
+                  actionTo="/found-items"
+                  actionLabel="Browse Found"
+                />
+              ) : (
+                <ul className="recent-list">
+                  {myClaims.slice(0, 4).map(claim => (
+                    <li key={claim.id}>
+                      <Link to={`/found-items/${claim.foundItemId}`}>{claim.foundItemTitle}</Link>
+                      <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
+                        <span className="text-xs text-muted">{formatDate(claim.createdAt)}</span>
+                        <StatusBadge status={claim.status} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            />
+            </motion.div>
+          </div>
 
-            <RecentSection
-              title="My Claims"
-              viewAllTo="/my-claims"
-              viewAllLabel="View all"
-              emptyTitle="No claims filed"
-              emptyMessage="Found your lost item? File a claim and we'll connect you with the finder."
-              emptyIconName="claims"
-              emptyActionTo="/found-items"
-              emptyActionLabel="Browse Found Items"
-              items={myClaims.slice(0, 5)}
-              renderItem={(claim) => (
-                <li key={claim.id}>
-                  <Link to={`/found-items/${claim.foundItemId}`}>{claim.foundItemTitle}</Link>
-                  <div className="flex items-center gap-2" style={{ marginTop: 4 }}>
-                    <span className="text-xs text-muted">{formatDate(claim.createdAt)}</span>
-                    <StatusBadge status={claim.status} />
-                  </div>
-                </li>
-              )}
-            />
+          {/* ── 5. Campus Lost & Found Explanatory Guide ─────────── */}
+          <div className="guide-card">
+            <h3 style={{ fontSize: '1.15rem', marginBottom: 6 }}>How CampusFind AI Works</h3>
+            <p className="text-sm text-secondary" style={{ marginBottom: 24, maxWidth: 640 }}>
+              CampusFind AI makes lost &amp; found transparent, quick, and verified across all departments.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
+              <div className="guide-step">
+                <div className="guide-step-num">1</div>
+                <div>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: 4 }}>Report in Seconds</h4>
+                  <p className="text-sm text-muted">
+                    Submit title, location, and photos. AI parses attributes automatically.
+                  </p>
+                </div>
+              </div>
+              <div className="guide-step">
+                <div className="guide-step-num">2</div>
+                <div>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: 4 }}>AI Smart Matching</h4>
+                  <p className="text-sm text-muted">
+                    Instant comparison between lost and found logs across campus buildings.
+                  </p>
+                </div>
+              </div>
+              <div className="guide-step">
+                <div className="guide-step-num">3</div>
+                <div>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: 4 }}>Verified Handover</h4>
+                  <p className="text-sm text-muted">
+                    Submit ownership proof and pick up your item safely through the Security Desk.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -370,30 +463,32 @@ export default function DashboardPage() {
   );
 }
 
-/* ── Stat card ───────────────────────────────────────────────── */
+/* ── Metric Stat Card Component ──────────────────────────────── */
 function DashStatCard({ iconName, label, value, sub, accent, to }) {
   return (
     <motion.div
       className={`stat-card ${accent ? 'accent' : ''}`}
-      whileHover={{ y: -3, boxShadow: 'var(--shadow-elevated)' }}
-      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
     >
       <div style={{
-        width: 40, height: 40,
+        width: 44, height: 44,
         borderRadius: 'var(--radius-md)',
-        background: accent ? 'var(--accent-bg)' : 'rgba(143,162,138,0.14)',
+        background: accent ? 'var(--accent-bg)' : 'rgba(143,162,138,0.16)',
         display: 'grid',
         placeItems: 'center',
         marginBottom: 8,
-        color: accent ? 'var(--accent)' : 'var(--primary-deep)',
-        border: accent ? '1px solid var(--accent-border)' : '1px solid rgba(143,162,138,0.22)',
+        color: accent ? 'var(--accent-deep)' : 'var(--primary-deep)',
+        border: accent ? '1px solid var(--accent-border)' : '1px solid rgba(143,162,138,0.25)',
       }}>
-        <div style={{ width: 20, height: 20 }}>
+        <div style={{ width: 22, height: 22 }}>
           <StatIcon name={iconName} />
         </div>
       </div>
       <div className="label">{label}</div>
-      <div className="value">{value ?? 0}</div>
+      <div className="value">
+        <AnimatedNumber value={value ?? 0} />
+      </div>
       {sub && <div className="sub">{sub}</div>}
       {to && (
         <Link to={to} className="stat-link">View all →</Link>
@@ -402,32 +497,41 @@ function DashStatCard({ iconName, label, value, sub, accent, to }) {
   );
 }
 
-/* ── Empty state for recent section ─────────────────────────── */
-function SectionEmptyState({ iconName, title, message, actionTo, actionLabel }) {
+/* ── Column Empty State Helper ───────────────────────────────── */
+function ColumnEmptyState({ iconName, title, message, actionTo, actionLabel }) {
   const icons = {
-    lost:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-    found:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
-    claims: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+    lost: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    ),
+    found: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    ),
+    claims: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+      </svg>
+    ),
   };
   return (
-    <div style={{
-      textAlign: 'center',
-      padding: '28px 16px',
-    }}>
+    <div style={{ textAlign: 'center', padding: '24px 12px' }}>
       <div style={{
-        width: 48, height: 48,
+        width: 44, height: 44,
         borderRadius: 'var(--radius-lg)',
-        background: 'rgba(143,162,138,0.10)',
+        background: 'rgba(143,162,138,0.12)',
         display: 'grid',
         placeItems: 'center',
-        margin: '0 auto 12px',
-        color: 'var(--text-muted)',
-        border: '1px dashed rgba(143,162,138,0.30)',
+        margin: '0 auto 10px',
+        color: 'var(--primary-deep)',
+        border: '1px dashed rgba(143,162,138,0.35)',
       }}>
-        <div style={{ width: 22, height: 22 }}>{icons[iconName]}</div>
+        {icons[iconName]}
       </div>
-      <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 4 }}>{title}</p>
-      <p className="text-xs text-muted" style={{ lineHeight: 1.5, marginBottom: actionTo ? 14 : 0, maxWidth: 200, margin: '0 auto' }}>
+      <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>{title}</p>
+      <p className="text-xs text-muted" style={{ lineHeight: 1.5, marginBottom: actionTo ? 14 : 0, maxWidth: 220, margin: '0 auto' }}>
         {message}
       </p>
       {actionTo && (
@@ -438,30 +542,5 @@ function SectionEmptyState({ iconName, title, message, actionTo, actionLabel }) 
         </div>
       )}
     </div>
-  );
-}
-
-/* ── Recent section card ─────────────────────────────────────── */
-function RecentSection({ title, viewAllTo, viewAllLabel, emptyTitle, emptyMessage, emptyIconName, emptyActionTo, emptyActionLabel, items, renderItem }) {
-  return (
-    <motion.div
-      className="card card-pad"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <SectionHeader title={title} linkTo={viewAllTo} linkLabel={viewAllLabel} />
-      {items.length === 0 ? (
-        <SectionEmptyState
-          iconName={emptyIconName}
-          title={emptyTitle}
-          message={emptyMessage}
-          actionTo={emptyActionTo}
-          actionLabel={emptyActionLabel}
-        />
-      ) : (
-        <ul className="recent-list">{items.map(renderItem)}</ul>
-      )}
-    </motion.div>
   );
 }

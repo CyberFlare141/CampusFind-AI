@@ -3,20 +3,28 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAllLostItems, getMyLostItems } from '../../api/lostItems';
 import { useAuth } from '../../context/AuthContext';
-import { Alert, EmptyState, SkeletonGrid, ItemCard, formatDate, StatusBadge } from '../../components/Ui';
-import { publicAssetUrl } from '../../api/client';
+import { Alert, EmptyState, SkeletonGrid, ItemCard } from '../../components/Ui';
 
 export default function LostItemsListPage() {
   const { user } = useAuth();
   const canReportItems = user?.role !== 'Administrator';
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') === 'mine' ? 'mine' : 'all';
+  const initialSearch = searchParams.get('search') || '';
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Keep query in sync with URL search query param if set from top bar
+  useEffect(() => {
+    const urlQuery = searchParams.get('search');
+    if (urlQuery != null) {
+      setQuery(urlQuery);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +59,8 @@ export default function LostItemsListPage() {
   });
 
   return (
-    <div className="page-container">
-      {/* ── Header ─────────────────────────────────────────────── */}
+    <div className="page-container-wide">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
         initial={{ opacity: 0, y: 10 }}
@@ -60,13 +68,18 @@ export default function LostItemsListPage() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div>
-          <span className="eyebrow">Lost Items</span>
+          <span className="eyebrow">Campus Catalog</span>
           <h1>Lost Item Reports</h1>
-          <p className="text-secondary">Browse items reported lost across campus, or file a new report.</p>
+          <p className="text-secondary">
+            Browse all items reported lost on campus, or submit a new report for AI auto-matching.
+          </p>
         </div>
         {canReportItems && (
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Link to="/lost-items/new" className="btn btn-primary">
+          <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
+            <Link to="/lost-items/new" className="btn btn-primary btn-lg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
               + Report Lost Item
             </Link>
           </motion.div>
@@ -78,30 +91,32 @@ export default function LostItemsListPage() {
         <button
           type="button"
           className={`tab-btn ${tab === 'all' ? 'active' : ''}`}
-          onClick={() => setSearchParams({ tab: 'all' })}
+          onClick={() => setSearchParams({ tab: 'all', ...(query ? { search: query } : {}) })}
         >
-          All Items
+          All Lost Reports ({tab === 'all' ? items.length : '…'})
         </button>
         <button
           type="button"
           className={`tab-btn ${tab === 'mine' ? 'active' : ''}`}
-          onClick={() => setSearchParams({ tab: 'mine' })}
+          onClick={() => setSearchParams({ tab: 'mine', ...(query ? { search: query } : {}) })}
         >
-          My Reports
+          My Reports ({tab === 'mine' ? items.length : '…'})
         </button>
       </div>
 
-      {/* ── Search & filter bar ────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', fontSize: '0.9rem', pointerEvents: 'none' }}>✦</span>
+      {/* ── Search & Filter Controls ────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+          <span style={{ position: 'absolute', left: '1.1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary-deep)', fontSize: '1rem', pointerEvents: 'none' }}>
+            ✦
+          </span>
           <input
             type="search"
-            placeholder="Search by title or description…"
+            placeholder="Search by keywords, title, or description…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search lost items"
-            style={{ paddingLeft: '2.5rem', borderRadius: 'var(--radius-full)' }}
+            style={{ paddingLeft: '2.8rem', borderRadius: 'var(--radius-full)' }}
           />
         </div>
         {statuses.length > 0 && (
@@ -109,39 +124,77 @@ export default function LostItemsListPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            style={{ width: 'auto', minWidth: 160, borderRadius: 'var(--radius-full)', paddingRight: '2rem' }}
+            style={{ width: 'auto', minWidth: 170, borderRadius: 'var(--radius-full)', paddingRight: '2.2rem' }}
           >
-            <option value="all">All statuses</option>
+            <option value="all">All Statuses</option>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
       </div>
 
+      {/* ── Discovery Quick Chips ──────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        <span className="text-xs text-muted font-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 4 }}>
+          Quick filters:
+        </span>
+        {['Wallets', 'AirPods / Audio', 'Backpacks', 'Keys', 'Water Bottles'].map(tag => (
+          <button
+            key={tag}
+            type="button"
+            className="ai-suggestion-chip"
+            onClick={() => setQuery(query === tag ? '' : tag)}
+            style={{
+              background: query === tag ? 'var(--primary)' : undefined,
+              color: query === tag ? 'white' : undefined,
+              borderColor: query === tag ? 'var(--primary)' : undefined,
+            }}
+          >
+            <span>{tag}</span>
+          </button>
+        ))}
+        {query && (
+          <button
+            type="button"
+            className="text-xs text-muted font-bold"
+            onClick={() => setQuery('')}
+            style={{ textDecoration: 'underline', cursor: 'pointer', padding: '4px 8px' }}
+          >
+            Clear search
+          </button>
+        )}
+      </div>
+
       <Alert type="error">{error}</Alert>
 
-      {/* ── Results count ─────────────────────────────────────── */}
+      {/* ── Results Count ─────────────────────────────────────── */}
       {!loading && filtered.length > 0 && (
-        <p className="text-sm text-muted" style={{ marginBottom: 16 }}>
-          {filtered.length} item{filtered.length !== 1 ? 's' : ''} found
+        <p className="text-sm text-muted font-medium" style={{ marginBottom: 20 }}>
+          Showing {filtered.length} report{filtered.length !== 1 ? 's' : ''}
         </p>
       )}
 
-      {/* ── Content ─────────────────────────────────────────────── */}
+      {/* ── Item Grid ─────────────────────────────────────────── */}
       {loading ? (
-        <SkeletonGrid count={6} />
+        <SkeletonGrid count={8} />
       ) : filtered.length === 0 ? (
         <EmptyState
-          svgIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
-          title={tab === 'mine' ? "No lost reports yet" : 'No items match your search'}
+          svgIcon={(
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32 }}>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          )}
+          title={tab === 'mine' ? "No lost item reports filed yet" : "No reports match your search"}
           message={
             tab === 'mine'
-              ? 'Lost something on campus? Let others know so they can help.'
-              : 'Try a different search term or check back later.'
+              ? "Lost something on campus? File a report and our AI will continuously scan for matches."
+              : "Try adjusting your search keywords or clear the status filter."
           }
           action={
-            canReportItems
-              ? <Link to="/lost-items/new" className="btn btn-primary btn-sm">Report a Lost Item</Link>
-              : null
+            canReportItems ? (
+              <Link to="/lost-items/new" className="btn btn-primary">
+                + Report a Lost Item
+              </Link>
+            ) : null
           }
         />
       ) : (
@@ -151,57 +204,13 @@ export default function LostItemsListPage() {
               key={item.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: Math.min(i * 0.04, 0.28), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              <LostItemCard item={item} isMine={item.userId === user?.id} />
+              <ItemCard item={item} type="lost" isMine={item.userId === user?.id} />
             </motion.div>
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function LostItemCard({ item, isMine }) {
-  const image = item?.imageUrls?.[0];
-  return (
-    <Link to={`/lost-items/${item.id}`} className="item-card">
-      <div className="item-card-image">
-        {image ? (
-          <img src={publicAssetUrl(image)} alt={item.title} loading="lazy" />
-        ) : (
-          <div className="item-card-image-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, color: 'var(--text-muted)' }}>
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </div>
-        )}
-        <span className="badge badge-warning item-card-status">
-          <span className="badge-dot" />LOST
-        </span>
-        {isMine && (
-          <span className="item-card-score" style={{ background: 'rgba(132,177,121,0.85)' }}>
-            Yours
-          </span>
-        )}
-      </div>
-      <div className="item-card-body">
-        <div className="item-card-title">{item.title}</div>
-        <div className="item-card-meta">
-          {item.description && (
-            <p className="text-xs text-muted" style={{ lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              {item.description}
-            </p>
-          )}
-          <div className="item-card-meta-row">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>{formatDate(item.lostAt ?? item.createdAt)}</span>
-          </div>
-        </div>
-      </div>
-      <div className="item-card-footer">
-        <StatusBadge status={item.status} />
-      </div>
-    </Link>
   );
 }

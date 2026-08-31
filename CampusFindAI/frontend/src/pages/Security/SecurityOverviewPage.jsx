@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getSecurityOverview, getLoginConfirmation } from '../../api/security';
-import { Alert, PageLoading, formatDate } from '../../components/Ui';
+import { Alert, PageLoading, formatDate, AnimatedNumber } from '../../components/Ui';
 
 export default function SecurityOverviewPage() {
   const [overview, setOverview] = useState(null);
@@ -34,20 +34,20 @@ export default function SecurityOverviewPage() {
   }, []);
 
   return (
-    <div className="page-container">
-      {/* Header */}
+    <div className="page-container-wide">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         style={{ marginBottom: 32 }}
       >
-        <span className="eyebrow">Security Office</span>
+        <span className="eyebrow">Security Office Command</span>
         <h1>Security Desk</h1>
         {confirmation && (
-          <p className="text-secondary">
+          <p className="text-secondary" style={{ marginTop: 4 }}>
             Signed in as <strong>{confirmation.email}</strong>{' '}
-            {confirmation.lastLoginAt ? `— last sign-in ${formatDate(confirmation.lastLoginAt)}` : '— first recorded sign-in'}
+            {confirmation.lastLoginAt ? `· Last recorded sign-in ${formatDate(confirmation.lastLoginAt)}` : '· Initial officer session'}
           </p>
         )}
       </motion.div>
@@ -55,21 +55,37 @@ export default function SecurityOverviewPage() {
       <Alert type="error">{error}</Alert>
 
       {loading ? (
-        <PageLoading />
+        <PageLoading label="Loading security metrics…" />
       ) : (
         <>
-          {/* ── KPI cards ──────────────────────────────────────── */}
+          {/* ── KPI Metric Cards ─────────────────────────────────── */}
           <div className="stat-grid" style={{ marginBottom: 32 }}>
             {[
               {
-                iconSvg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
-                label: 'Pending Claims', value: overview?.pendingClaimsCount ?? 0,
-                to: '/security/claims', toLabel: 'Review queue →', accent: (overview?.pendingClaimsCount ?? 0) > 0,
+                iconSvg: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+                    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                  </svg>
+                ),
+                label: 'Pending Claims',
+                value: overview?.pendingClaimsCount ?? 0,
+                to: '/security/claims',
+                toLabel: 'Review queue →',
+                accent: (overview?.pendingClaimsCount ?? 0) > 0,
+                sub: (overview?.pendingClaimsCount ?? 0) > 0 ? 'Awaiting officer decision' : 'All claims reviewed',
               },
               {
-                iconSvg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-                label: 'AI Suggestions', value: overview?.suggestedMatchesCount ?? 0,
-                to: '/security/matches', toLabel: 'Review matches →',
+                iconSvg: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                ),
+                label: 'AI Match Suggestions',
+                value: overview?.suggestedMatchesCount ?? 0,
+                to: '/security/matches',
+                toLabel: 'Examine matches →',
+                accent: false,
+                sub: 'High confidence cross-references',
               },
             ].map((card, i) => (
               <motion.div
@@ -81,66 +97,73 @@ export default function SecurityOverviewPage() {
                 whileHover={{ y: -3, boxShadow: 'var(--shadow-elevated)' }}
               >
                 <div style={{
-                  width: 40, height: 40,
+                  width: 44, height: 44,
                   borderRadius: 'var(--radius-md)',
-                  background: card.accent ? 'var(--accent-bg)' : 'rgba(143,162,138,0.14)',
+                  background: card.accent ? 'var(--accent-bg)' : 'rgba(143,162,138,0.16)',
                   display: 'grid', placeItems: 'center',
                   marginBottom: 8,
-                  color: card.accent ? 'var(--accent)' : 'var(--primary-deep)',
-                  border: card.accent ? '1px solid var(--accent-border)' : '1px solid rgba(143,162,138,0.22)',
+                  color: card.accent ? 'var(--accent-deep)' : 'var(--primary-deep)',
+                  border: card.accent ? '1px solid var(--accent-border)' : '1px solid rgba(143,162,138,0.25)',
                 }}>
-                  <div style={{ width: 20, height: 20 }}>{card.iconSvg}</div>
+                  {card.iconSvg}
                 </div>
                 <div className="label">{card.label}</div>
-                <div className="value">{card.value}</div>
+                <div className="value">
+                  <AnimatedNumber value={card.value} />
+                </div>
+                <div className="sub">{card.sub}</div>
                 <Link to={card.to} className="stat-link">{card.toLabel}</Link>
               </motion.div>
             ))}
           </div>
 
-          {/* ── Priority queue notice ─────────────────────────── */}
+          {/* ── Priority Queue Notice ───────────────────────────── */}
           {(overview?.pendingClaimsCount ?? 0) > 0 && (
             <motion.div
-              className="card card-pad"
+              className="card card-pad-lg"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{
-                borderLeft: '4px solid var(--warning)',
-                marginBottom: 24,
+                borderLeft: '5px solid var(--warning)',
+                marginBottom: 28,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 16,
+                gap: 20,
                 flexWrap: 'wrap',
               }}
             >
               <div>
-                <p className="font-bold" style={{ marginBottom: 4 }}>
-                  {overview.pendingClaimsCount} claim{overview.pendingClaimsCount > 1 ? 's' : ''} awaiting your review
+                <p className="font-bold" style={{ fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                  {overview.pendingClaimsCount} claim{overview.pendingClaimsCount > 1 ? 's' : ''} awaiting verification decision
                 </p>
-                <p className="text-sm text-muted">Students are waiting for your decision on their ownership claims.</p>
+                <p className="text-sm text-secondary">
+                  Claimants have submitted ownership details. Review proof notes to approve or reject.
+                </p>
               </div>
-              <Link to="/security/claims" className="btn btn-primary">Review Claims →</Link>
+              <Link to="/security/claims" className="btn btn-primary btn-lg">
+                Review Claims Queue →
+              </Link>
             </motion.div>
           )}
 
-          {/* ── Quick links ───────────────────────────────────── */}
+          {/* ── Quick Tools ─────────────────────────────────────── */}
           <motion.div
-            className="card card-pad"
+            className="card card-pad-lg"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 style={{ marginBottom: 16, fontSize: '1rem' }}>Quick links</h3>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <h3 style={{ marginBottom: 16, fontSize: '1.15rem' }}>Security Operations</h3>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               {[
-                { to: '/security/claims', label: 'Pending Claims' },
-                { to: '/security/matches', label: 'AI Matches' },
-                { to: '/security/login-history', label: 'Login History' },
+                { to: '/security/claims', label: 'Pending Claims Queue' },
+                { to: '/security/matches', label: 'AI Suggested Matches' },
+                { to: '/security/login-history', label: 'Security Login Audit' },
               ].map(link => (
-                <motion.div key={link.to} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Link to={link.to} className="btn btn-secondary btn-sm">{link.label}</Link>
+                <motion.div key={link.to} whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
+                  <Link to={link.to} className="btn btn-secondary">{link.label}</Link>
                 </motion.div>
               ))}
             </div>
