@@ -32,6 +32,8 @@ public static class ServiceExtensions
         services.AddSingleton<IImageSimilarityService, ImageSimilarityService>();
         services.AddScoped<IMatchService, MatchService>();
         services.AddScoped<ISecurityDashboardService, SecurityDashboardService>();
+        services.AddHttpClient("Gemini");
+        services.AddScoped<ISemanticSearchService, SemanticSearchService>();
 
         return services;
     }
