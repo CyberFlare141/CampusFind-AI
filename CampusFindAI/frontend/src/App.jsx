@@ -19,6 +19,8 @@ import FoundItemFormPage from './pages/FoundItems/FoundItemFormPage';
 import FoundItemDetailPage from './pages/FoundItems/FoundItemDetailPage';
 
 import MyClaimsPage from './pages/Claims/MyClaimsPage';
+import SemanticSearchPage from './pages/Search/SemanticSearchPage';
+
 
 import SecurityOverviewPage from './pages/Security/SecurityOverviewPage';
 import SecurityClaimsPage from './pages/Security/SecurityClaimsPage';
@@ -68,6 +70,7 @@ export default function App() {
             <Route path="/found-items/:id" element={<FoundItemDetailPage />} />
 
             <Route path="/my-claims" element={<MyClaimsPage />} />
+            <Route path="/search" element={<SemanticSearchPage />} />
           </Route>
 
           {/* Security Office (role-protected) */}

@@ -108,6 +108,7 @@ const LogoMark = () => (
 /* ── Nav Links ───────────────────────────────────────────────── */
 const STUDENT_LINKS = [
   { to: '/',            label: 'Dashboard',    icon: 'home',   end: true },
+  { to: '/search',      label: '✦ AI Search',  icon: 'search' },
   { to: '/lost-items',  label: 'Lost Items',   icon: 'lost' },
   { to: '/found-items', label: 'Found Items',  icon: 'found' },
   { to: '/my-claims',   label: 'My Claims',    icon: 'claims' },
@@ -122,6 +123,7 @@ const OFFICER_LINKS = [
 
 const BOTTOM_NAV_LINKS = [
   { to: '/',            label: 'Home',    icon: 'home',   end: true },
+  { to: '/search',      label: 'Search',  icon: 'search' },
   { to: '/lost-items',  label: 'Lost',    icon: 'lost' },
   { to: '/found-items', label: 'Found',   icon: 'found' },
   { to: '/my-claims',   label: 'Claims',  icon: 'claims' },
@@ -172,15 +174,17 @@ export default function Layout() {
 
   function handleSearchKeyDown(e) {
     if (e.key === 'Enter' && searchQuery.trim()) {
+      const q = searchQuery.trim();
       setSearchFocused(false);
-      navigate(`/lost-items?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      navigate(`/search?q=${encodeURIComponent(q)}`);
     }
   }
 
   function handleSuggestionClick(text) {
-    setSearchQuery(text);
     setSearchFocused(false);
-    navigate(`/lost-items?search=${encodeURIComponent(text)}`);
+    setSearchQuery('');
+    navigate(`/search?q=${encodeURIComponent(text)}`);
   }
 
   function navClass({ isActive }) {

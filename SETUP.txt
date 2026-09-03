@@ -1,0 +1,120 @@
+================================================================================
+                    CAMPUSFIND AI - SETUP & RUN GUIDE (CMD)
+================================================================================
+
+This guide contains all Windows Command Prompt (CMD) commands to set up and run 
+both the Backend (.NET ASP.NET Core) and Frontend (React + Vite) from the root.
+
+--------------------------------------------------------------------------------
+0. PREREQUISITES
+--------------------------------------------------------------------------------
+Make sure you have installed on your machine:
+  1. .NET 10 (or .NET 8+) SDK      -> Verify with: dotnet --version
+  2. Node.js (v20+ or v22 LTS)     -> Verify with: node -v && npm -v
+  3. SQL Server / SQLEXPRESS       -> Ensure SQL Server service is running
+
+================================================================================
+PART 1: ONE-TIME SETUP (FIRST TIME ONLY)
+================================================================================
+
+Open Command Prompt (CMD) in the root folder (`CampusFind AI` or `CampusFindAI`)
+and run the following commands:
+
+--- OPTION A: If your CMD is inside "d:\CampusFind AI" ---
+
+[1] Setup Backend:
+    cd CampusFindAI\backend
+    dotnet tool install --global dotnet-ef
+    dotnet restore
+    dotnet ef database update
+    cd ..\..
+
+[2] Setup Frontend:
+    cd CampusFindAI\frontend
+    npm install
+    if not exist .env copy .env.example .env
+    cd ..\..
+
+
+--- OPTION B: If your CMD is inside "d:\CampusFind AI\CampusFindAI" ---
+
+[1] Setup Backend:
+    cd backend
+    dotnet tool install --global dotnet-ef
+    dotnet restore
+    dotnet ef database update
+    cd ..
+
+[2] Setup Frontend:
+    cd frontend
+    npm install
+    if not exist .env copy .env.example .env
+    cd ..
+
+
+================================================================================
+PART 2: RUNNING FRONTEND & BACKEND FROM ROOT (CMD)
+================================================================================
+
+--------------------------------------------------------------------------------
+METHOD 1: ONE-LINE SHORTCUT (Launches both in separate CMD windows)
+--------------------------------------------------------------------------------
+
+>>> If you are in "d:\CampusFind AI":
+    start "CampusFind Backend" cmd /k "cd /d "%CD%\CampusFindAI\backend" && dotnet run"
+    start "CampusFind Frontend" cmd /k "cd /d "%CD%\CampusFindAI\frontend" && npm run dev"
+
+>>> If you are in "d:\CampusFind AI\CampusFindAI":
+    start "CampusFind Backend" cmd /k "cd /d "%CD%\backend" && dotnet run"
+    start "CampusFind Frontend" cmd /k "cd /d "%CD%\frontend" && npm run dev"
+
+
+--------------------------------------------------------------------------------
+METHOD 2: MANUAL TWO TERMINAL WINDOWS (Step-by-step)
+--------------------------------------------------------------------------------
+
+[TERMINAL 1 - BACKEND]
+  1. Open a CMD window in the root folder.
+  2. Navigate to backend and start server:
+     cd CampusFindAI\backend
+     dotnet run
+  3. Backend will start at:
+     - HTTPS: https://localhost:7001
+     - HTTP:  http://localhost:5001
+     - Swagger UI: https://localhost:7001/swagger
+
+[TERMINAL 2 - FRONTEND]
+  1. Open a second CMD window in the root folder.
+  2. Navigate to frontend and start Vite dev server:
+     cd CampusFindAI\frontend
+     npm run dev
+  3. Frontend will start at:
+     - Local URL: http://localhost:5173
+
+
+================================================================================
+PART 3: SUMMARY OF URLS & ENDPOINTS
+================================================================================
+  - Frontend Web App:     http://localhost:5173
+  - Backend API:          https://localhost:7001/api  (or http://localhost:5001/api)
+  - Swagger Documentation: https://localhost:7001/swagger
+
+
+================================================================================
+PART 4: TROUBLESHOOTING & COMMON ISSUES
+================================================================================
+
+1. Database Connection Error:
+   - Open backend\appsettings.json
+   - Check the "DefaultConnection" string.
+   - If using local SQLEXPRESS: Server=.\\SQLEXPRESS;Database=CampusFindAI;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True
+   - If using (localdb)\mssqllocaldb: Server=(localdb)\\mssqllocaldb;Database=CampusFindAI;Trusted_Connection=True;MultipleActiveResultSets=true
+
+2. Port Already in Use:
+   - Backend: Check if another instance of dotnet is running in Task Manager.
+   - Frontend: If port 5173 is occupied, Vite will automatically prompt or use port 5174.
+
+3. HTTPS Certificate Warning:
+   - Run in CMD: dotnet dev-certs https --trust
+
+================================================================================
