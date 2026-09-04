@@ -376,7 +376,8 @@ export function ItemCard({ item, type = 'lost', linkTo, isMine }) {
   const statusCls   = isLost ? 'badge-warning' : 'badge-success';
   const image       = item?.imageUrls?.[0];
   const score       = item?.matchScore ?? item?.confidenceScore;
-  const to          = linkTo ?? `/${isLost ? 'lost' : 'found'}-items/${item?.id}`;
+  const canClaim    = !isLost && !isMine && item?.status !== 'Returned';
+  const to          = linkTo ?? `/${isLost ? 'lost' : 'found'}-items/${item?.id}${canClaim ? '?claim=1' : ''}`;
 
   return (
     <Link to={to} className="item-card" aria-label={item?.title}>
@@ -443,7 +444,27 @@ export function ItemCard({ item, type = 'lost', linkTo, isMine }) {
       {/* Footer */}
       <div className="item-card-footer">
         <StatusBadge status={item?.status} />
-        <span className="text-xs font-semibold" style={{ color: 'var(--primary-deep)' }}>Details →</span>
+        {canClaim ? (
+          <span
+            className="btn btn-xs btn-primary"
+            style={{
+              padding: '4px 10px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              background: 'var(--primary)',
+              color: 'white',
+              borderRadius: 'var(--radius-full)',
+              boxShadow: 'var(--shadow-xs)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            ⚖️ Claim Item →
+          </span>
+        ) : (
+          <span className="text-xs font-semibold" style={{ color: 'var(--primary-deep)' }}>Details →</span>
+        )}
       </div>
     </Link>
   );

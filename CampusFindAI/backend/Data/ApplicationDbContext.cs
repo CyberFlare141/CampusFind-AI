@@ -24,6 +24,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ChatHistory> ChatHistories => Set<ChatHistory>();
     public DbSet<AIRequest> AIRequests => Set<AIRequest>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
+    public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -130,5 +131,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(x => x.FoundItemId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ClaimVerification>()
+            .HasOne(x => x.Claim)
+            .WithOne(x => x.Verification)
+            .HasForeignKey<ClaimVerification>(x => x.ClaimId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ClaimVerification>()
+            .Property(x => x.ConfidenceScore)
+            .HasPrecision(5, 2);
     }
 }

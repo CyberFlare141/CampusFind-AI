@@ -8,7 +8,8 @@ public class ClaimService(
     IClaimRepository claimRepository,
     IFoundItemRepository foundItemRepository,
     IImageRepository imageRepository,
-    IAuditLogService auditLogService) : IClaimService
+    IAuditLogService auditLogService,
+    IClaimVerificationRepository verificationRepository) : IClaimService
 {
     private const string StatusPending = "Pending";
     private const string StatusApproved = "Approved";
@@ -49,14 +50,26 @@ public class ClaimService(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetByStatusAsync(StatusPending, cancellationToken);
-        return claims.Select(MapToDto).ToList();
+        var dtos = new List<ClaimDto>();
+        foreach (var claim in claims)
+        {
+            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
+            dtos.Add(MapToDto(claim, v));
+        }
+        return dtos;
     }
 
     public async Task<IReadOnlyList<ClaimDto>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetAllAsync(cancellationToken);
-        return claims.Select(MapToDto).ToList();
+        var dtos = new List<ClaimDto>();
+        foreach (var claim in claims)
+        {
+            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
+            dtos.Add(MapToDto(claim, v));
+        }
+        return dtos;
     }
 
     public async Task<IReadOnlyList<ClaimDto>> GetMyClaimsAsync(
@@ -64,7 +77,13 @@ public class ClaimService(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetByClaimantIdAsync(userId, cancellationToken);
-        return claims.Select(MapToDto).ToList();
+        var dtos = new List<ClaimDto>();
+        foreach (var claim in claims)
+        {
+            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
+            dtos.Add(MapToDto(claim, v));
+        }
+        return dtos;
     }
 
     public async Task<ClaimDto?> GetByIdAsync(
@@ -72,7 +91,9 @@ public class ClaimService(
         CancellationToken cancellationToken = default)
     {
         var claim = await claimRepository.GetByIdAsync(id, cancellationToken);
-        return claim is null ? null : MapToDto(claim);
+        if (claim is null) return null;
+        var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
+        return MapToDto(claim, v);
     }
 
     public async Task<ClaimReviewDto?> GetReviewAsync(Guid id, CancellationToken cancellationToken = default)
@@ -80,6 +101,7 @@ public class ClaimService(
         var claim = await claimRepository.GetReviewByIdAsync(id, cancellationToken);
         if (claim is null) return null;
         var images = await imageRepository.GetByFoundItemIdsAsync([claim.FoundItemId], cancellationToken);
+        var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
         return new ClaimReviewDto
         {
             Id = claim.Id, FoundItemId = claim.FoundItemId, FoundItemTitle = claim.FoundItem?.Title ?? string.Empty,
@@ -89,7 +111,13 @@ public class ClaimService(
             ReviewedByEmail = claim.ReviewedByUser?.Email, ReviewedAt = claim.ReviewedAt, DecisionNotes = claim.DecisionNotes,
             FoundAt = claim.FoundItem?.FoundAt,
             ImageUrls = images.Select(image => image.Url).ToList(),
-            Claimant = MapPerson(claim.ClaimantUser), Reporter = MapPerson(claim.FoundItem?.User)
+            Claimant = MapPerson(claim.ClaimantUser), Reporter = MapPerson(claim.FoundItem?.User),
+            VerificationStatus = v?.Status,
+            VerificationScore = v?.ConfidenceScore,
+            VerificationMatchedCount = v?.MatchedCount,
+            VerificationTotalQuestions = v?.TotalQuestions,
+            VerificationPassed = v?.Passed,
+            VerificationAttemptsRemaining = v is not null ? Math.Max(0, v.MaxAttempts - v.AttemptCount) : null
         };
     }
 
@@ -126,7 +154,7 @@ public class ClaimService(
         return MapToDto(updated!);
     }
 
-    private static ClaimDto MapToDto(Claim claim)
+    private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null)
     {
         return new ClaimDto
         {
@@ -142,7 +170,13 @@ public class ClaimService(
             ReviewedByUserId = claim.ReviewedByUserId,
             ReviewedByEmail = claim.ReviewedByUser?.Email,
             ReviewedAt = claim.ReviewedAt,
-            DecisionNotes = claim.DecisionNotes
+            DecisionNotes = claim.DecisionNotes,
+            VerificationStatus = verification?.Status,
+            VerificationScore = verification?.ConfidenceScore,
+            VerificationMatchedCount = verification?.MatchedCount,
+            VerificationTotalQuestions = verification?.TotalQuestions,
+            VerificationPassed = verification?.Passed,
+            VerificationAttemptsRemaining = verification is not null ? Math.Max(0, verification.MaxAttempts - verification.AttemptCount) : null
         };
     }
 

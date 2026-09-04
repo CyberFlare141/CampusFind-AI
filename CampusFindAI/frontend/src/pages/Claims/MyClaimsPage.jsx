@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getMyClaims } from '../../api/claims';
-import { Alert, EmptyState, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
+import { getAllFoundItems } from '../../api/foundItems';
+import { Alert, EmptyState, PageLoading, SkeletonGrid, ItemCard, StatusBadge, formatDate } from '../../components/Ui';
+import VerificationModal from '../../components/VerificationModal';
 
-const STATUS_STEPS = ['Pending', 'Verification', 'Approved', 'Handover'];
+const STATUS_STEPS = ['Submitted', 'Verification', 'Approved', 'Handover'];
 
-function ClaimTimeline({ status }) {
-  const currentStep = STATUS_STEPS.indexOf(status);
+function ClaimTimeline({ status, verificationStatus }) {
   const isRejected = status === 'Rejected';
+  let currentStep = 0;
+  if (verificationStatus === 'Completed') currentStep = 1;
+  if (status === 'Approved') currentStep = 2;
+  if (status === 'Handover' || status === 'Returned') currentStep = 3;
 
   return (
     <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
@@ -68,23 +73,32 @@ export default function MyClaimsPage() {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeVerificationClaim, setActiveVerificationClaim] = useState(null);
+  const [foundCatalog, setFoundCatalog] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+
+  async function loadClaims() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getMyClaims();
+      setClaims(data);
+      if (data.length === 0) {
+        setCatalogLoading(true);
+        getAllFoundItems()
+          .then(items => setFoundCatalog(items))
+          .catch(() => {})
+          .finally(() => setCatalogLoading(false));
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await getMyClaims();
-        if (!cancelled) setClaims(data);
-      } catch (err) {
-        if (!cancelled) setError(err.message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
+    loadClaims();
   }, []);
 
   return (
@@ -101,9 +115,27 @@ export default function MyClaimsPage() {
           <h1>My Claims</h1>
           <p className="text-secondary">Track the real-time review status of your item ownership claims.</p>
         </div>
-        <Link to="/found-items" className="btn btn-secondary btn-sm">
-          Browse Found Items <span className="btn-arrow">→</span>
-        </Link>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <Link
+            to="/found-items"
+            className="btn btn-primary btn-md"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: 'var(--shadow-xs)',
+              fontWeight: 700,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            + Claim a Found Item
+          </Link>
+          <Link to="/found-items" className="btn btn-secondary btn-sm">
+            Browse Catalog <span className="btn-arrow">→</span>
+          </Link>
+        </div>
       </motion.div>
 
       <Alert type="error">{error}</Alert>
@@ -150,20 +182,69 @@ export default function MyClaimsPage() {
       {loading ? (
         <PageLoading label="Loading your claims…" />
       ) : claims.length === 0 ? (
-        <EmptyState
-          svgIcon={(
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 32, height: 32 }}>
-              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
-          )}
-          title="No active claims filed yet"
-          message="When you identify an item in the campus Found catalog as yours, submit a claim and its live verification progress will appear here."
-          action={(
-            <Link to="/found-items" className="btn btn-primary btn-lg">
-              Browse Campus Found Items <span className="btn-arrow">→</span>
-            </Link>
-          )}
-        />
+        <div>
+          <EmptyState
+            svgIcon={(
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 34, height: 34, color: 'var(--primary)' }}>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            )}
+            title="No active claims filed yet"
+            message="To claim a lost belonging, find your item in the campus catalog below, click 'Claim Item', and answer the AI ownership questions for Security Review."
+            action={(
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Link to="/found-items" className="btn btn-primary btn-lg">
+                  ⚖️ Browse All Found Items <span className="btn-arrow">→</span>
+                </Link>
+                <Link to="/search" className="btn btn-secondary btn-lg">
+                  🔍 AI Semantic Search
+                </Link>
+              </div>
+            )}
+          />
+
+          {/* Quick Claim Catalog Section */}
+          <div style={{ marginTop: 40, borderTop: '1px solid var(--border)', paddingTop: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <span className="eyebrow" style={{ color: 'var(--primary-deep)', fontWeight: 800 }}>Campus Catalog</span>
+                <h3 style={{ fontSize: '1.25rem', margin: '2px 0 4px', fontFamily: 'var(--font-display)' }}>
+                  Recent Campus Found Items — Ready to Claim
+                </h3>
+                <p className="text-xs text-muted">
+                  Click <strong>"Claim Item →"</strong> on any item you recognize to start your ownership verification claim.
+                </p>
+              </div>
+              <Link to="/found-items" className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                View Full Catalog ({foundCatalog.length}) →
+              </Link>
+            </div>
+
+            {catalogLoading ? (
+              <SkeletonGrid count={3} />
+            ) : foundCatalog.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', background: 'var(--surface-card)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border)' }}>
+                <p className="text-sm text-muted">No items currently reported in the found catalog.</p>
+                <Link to="/lost-items/new" className="btn btn-primary btn-sm" style={{ marginTop: 10 }}>
+                  Report a Lost Item Instead →
+                </Link>
+              </div>
+            ) : (
+              <div className="item-grid">
+                {foundCatalog.slice(0, 6).map((item, i) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.05, 0.25), duration: 0.3 }}
+                  >
+                    <ItemCard item={item} type="found" isMine={false} />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {claims.map((claim, i) => (
@@ -185,6 +266,74 @@ export default function MyClaimsPage() {
                 </div>
                 <StatusBadge status={claim.status} />
               </div>
+
+              {/* ── Ownership Verification Status / Prompt ──────── */}
+              {claim.status === 'Pending' && (
+                claim.verificationStatus === 'Completed' ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'var(--verify-surface, #C7EABB)',
+                    color: '#2d5a27',
+                    fontSize: '0.86rem',
+                    fontWeight: 700,
+                    marginBottom: 14,
+                    border: '1px solid #84B179',
+                  }}>
+                    <span>✓</span> AI Ownership Verification Submitted — Campus Security is reviewing your answers.
+                  </div>
+                ) : claim.verificationStatus === 'Locked' ? (
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'var(--danger-bg)',
+                    color: 'var(--danger)',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    marginBottom: 14,
+                  }}>
+                    ⚠️ Maximum verification attempts reached. Please visit the Campus Security Desk for manual verification.
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: 'var(--verify-bg, #E8F5BD)',
+                    border: '1.5px solid var(--verify-primary, #84B179)',
+                    marginBottom: 14,
+                    flexWrap: 'wrap',
+                    gap: 10,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1F2937' }}>
+                        🛡️ AI Ownership Verification
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>
+                        Answer 3 brief questions about distinctive details to expedite verification.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => setActiveVerificationClaim(claim)}
+                      style={{
+                        background: 'var(--verify-primary, #84B179)',
+                        borderColor: 'var(--verify-primary, #84B179)',
+                        color: '#1F2937',
+                        fontWeight: 700,
+                      }}
+                    >
+                      Answer Questions →
+                    </button>
+                  </div>
+                )
+              )}
 
               {claim.claimantNotes && (
                 <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.6, border: '1px solid var(--border)' }}>
@@ -212,11 +361,21 @@ export default function MyClaimsPage() {
                 </div>
               )}
 
-              <ClaimTimeline status={claim.status} />
+              <ClaimTimeline status={claim.status} verificationStatus={claim.verificationStatus} />
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* ── Ownership Verification Modal ────────────────────── */}
+      <VerificationModal
+        claim={activeVerificationClaim}
+        isOpen={Boolean(activeVerificationClaim)}
+        onClose={() => setActiveVerificationClaim(null)}
+        onComplete={() => {
+          loadClaims();
+        }}
+      />
     </div>
   );
 }

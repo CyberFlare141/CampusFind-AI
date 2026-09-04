@@ -37,6 +37,7 @@ public class UserService(
 
         ValidatePassword(request.Password);
 
+        var role = Enum.TryParse<UserRole>(request.Role, true, out var parsedRole) ? parsedRole : UserRole.Student;
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid().ToString(),
@@ -44,7 +45,7 @@ public class UserService(
             NormalizedUserName = Normalize(email),
             Email = email,
             NormalizedEmail = Normalize(email),
-            Role = UserRole.Student,
+            Role = role,
             EmailConfirmed = false,
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString(),
@@ -55,7 +56,7 @@ public class UserService(
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
         await userRepository.CreateAsync(user, cancellationToken);
-        await userRepository.AddToRoleAsync(user.Id, UserRole.Student.ToString(), cancellationToken);
+        await userRepository.AddToRoleAsync(user.Id, role.ToString(), cancellationToken);
 
         return await CreateAuthResponseAsync(user, cancellationToken);
     }

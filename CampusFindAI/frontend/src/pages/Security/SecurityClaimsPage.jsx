@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getPendingClaims, getAllClaims, decideClaim, getClaimReview } from '../../api/claims';
+import { getPendingClaims, getAllClaims, decideClaim, getClaimReview, getOfficerVerificationReview } from '../../api/claims';
 import { Alert, ButtonSpinner, EmptyState, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
@@ -144,6 +144,14 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
         </div>
         <StatusBadge status={claim.status} />
       </div>
+
+      {/* ── Ownership Verification Panel ─────────────────────── */}
+      <OfficerVerificationPanel
+        claim={claim}
+        reviewable={reviewable && !showForm}
+        onApprove={() => startDecision('approve')}
+        onReject={() => startDecision('reject')}
+      />
 
       {claim.claimantNotes && (
         <div style={{ padding: '12px 16px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', marginBottom: 14, fontSize: '0.9rem', lineHeight: 1.6, border: '1px solid var(--border)' }}>
@@ -306,5 +314,211 @@ function EvidencePerson({ title, person }) {
         </dl>
       ) : <p className="text-muted text-sm">No profile data available.</p>}
     </section>
+  );
+}
+
+function OfficerVerificationPanel({ claim, onApprove, onReject, reviewable }) {
+  const [review, setReview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [openBreakdown, setOpenBreakdown] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await getOfficerVerificationReview(claim.id);
+        if (active) setReview(data);
+      } catch {
+        // Handled gracefully
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, [claim.id]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'var(--surface-card-alt)', marginBottom: 14, fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
+        Loading AI ownership verification…
+      </div>
+    );
+  }
+
+  if (!review || review.questions.length === 0) {
+    return (
+      <div style={{
+        padding: '12px 16px',
+        borderRadius: '12px',
+        background: 'var(--surface-card-alt)',
+        border: '1px solid var(--border)',
+        marginBottom: 14,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 8,
+      }}>
+        <div>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+            Ownership Verification
+          </span>
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+            Status: <strong>{claim.verificationStatus || 'Not Started'}</strong>
+          </div>
+        </div>
+        <span className="badge badge-muted">No AI Questions Generated</span>
+      </div>
+    );
+  }
+
+  const claimNumber = review.claimNumber || `CF-${claim.id.slice(0, 6).toUpperCase()}`;
+  const studentName = review.studentName || claim.claimantEmail;
+
+  return (
+    <div
+      style={{
+        padding: '20px',
+        borderRadius: '14px',
+        background: 'var(--verify-bg, #E8F5BD)',
+        border: '1.5px solid var(--verify-primary, #84B179)',
+        marginBottom: 16,
+        color: 'var(--verify-text, #1F2937)',
+      }}
+    >
+      {/* ── Panel Header ─────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+        <div>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2d5a27' }}>
+            Ownership Verification
+          </span>
+          <h4 style={{ margin: '3px 0 4px', fontSize: '1.15rem', fontWeight: 800, color: '#1F2937' }}>
+            Claim #{claimNumber}
+          </h4>
+          <p style={{ margin: 0, fontSize: '0.88rem', color: '#374151' }}>
+            Student: <strong style={{ color: '#1F2937' }}>{studentName}</strong>
+          </p>
+        </div>
+
+        <div
+          style={{
+            background: 'var(--verify-surface, #C7EABB)',
+            padding: '10px 16px',
+            borderRadius: '10px',
+            border: '1px solid rgba(132, 177, 121, 0.45)',
+            textAlign: 'right',
+          }}
+        >
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2d5a27' }}>
+            Verification Result
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1F2937', marginTop: 1 }}>
+            {review.matchedCount} / {review.totalQuestions} answers matched
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#374151', marginTop: 2 }}>
+            Confidence: <strong style={{ color: review.confidenceScore >= 70 ? '#2d5a27' : '#991B1B' }}>{Math.round(review.confidenceScore)}%</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Breakdown Toggle ──────────────────────────── */}
+      <div style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => setOpenBreakdown(o => !o)}
+          style={{ padding: '4px 8px', fontSize: '0.82rem', fontWeight: 600, color: '#2d5a27' }}
+        >
+          {openBreakdown ? '▲ Hide AI Evaluation Breakdown' : '▼ Inspect Question-by-Question Answers'}
+        </button>
+      </div>
+
+      {/* ── Detailed Question Breakdown ──────────────── */}
+      {openBreakdown && (
+        <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+          {review.questions.map((q, idx) => (
+            <div
+              key={q.id || idx}
+              style={{
+                padding: '12px 14px',
+                background: '#FFFFFF',
+                borderRadius: '10px',
+                border: `1px solid ${q.matched ? 'rgba(132, 177, 121, 0.7)' : 'rgba(239, 68, 68, 0.4)'}`,
+                fontSize: '0.88rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                <div style={{ fontWeight: 700, color: '#1F2937' }}>
+                  Q{idx + 1}: {q.question}
+                </div>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    background: q.matched ? '#DCFCE7' : '#FEE2E2',
+                    color: q.matched ? '#166534' : '#991B1B',
+                  }}
+                >
+                  {q.matched ? '✓ Matched' : '✗ No Match'} ({Math.round(q.confidence * 100)}%)
+                </span>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#4B5563', marginBottom: 2 }}>
+                <strong>Student Answer:</strong> {q.studentAnswer ? `"${q.studentAnswer}"` : <span style={{ color: '#9CA3AF' }}>(No answer provided)</span>}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#2d5a27', marginBottom: 2 }}>
+                <strong>Expected Detail (Officer Only):</strong> "{q.expectedAnswer}"
+              </div>
+              {q.reasoning && (
+                <div style={{ fontSize: '0.78rem', color: '#6B7280', fontStyle: 'italic', marginTop: 4 }}>
+                  AI Analysis: {q.reasoning}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Quick Officer Decisions ──────────────────── */}
+      {reviewable && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'center',
+            paddingTop: 12,
+            borderTop: '1px solid rgba(132, 177, 121, 0.4)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={onApprove}
+            style={{
+              background: 'var(--verify-primary, #84B179)',
+              borderColor: 'var(--verify-primary, #84B179)',
+              color: '#1F2937',
+              fontWeight: 700,
+            }}
+          >
+            ✓ Approve Claim
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-danger"
+            onClick={onReject}
+          >
+            ✗ Reject Claim
+          </button>
+          <span style={{ fontSize: '0.76rem', color: '#4B5563', marginLeft: 'auto' }}>
+            Officer remains the final authority
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

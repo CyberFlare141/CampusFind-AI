@@ -28,6 +28,9 @@ public static class ServiceExtensions
         services.AddSingleton<IReportImageStorage, ReportImageStorage>();
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IClaimService, ClaimService>();
+        services.AddScoped<IClaimVerificationRepository, ClaimVerificationRepository>();
+        services.AddScoped<IOwnershipVerificationService, OwnershipVerificationService>();
+        services.AddDataProtection();
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddSingleton<IImageSimilarityService, ImageSimilarityService>();
         services.AddScoped<IMatchService, MatchService>();

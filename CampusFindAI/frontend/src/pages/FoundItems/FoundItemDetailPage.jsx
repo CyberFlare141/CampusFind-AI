@@ -6,6 +6,7 @@ import { createClaim, getMyClaims } from '../../api/claims';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
+import VerificationModal from '../../components/VerificationModal';
 
 export default function FoundItemDetailPage() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function FoundItemDetailPage() {
   const [claimSubmitting, setClaimSubmitting] = useState(false);
   const [claimError, setClaimError] = useState('');
   const [claimSuccess, setClaimSuccess] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +37,11 @@ export default function FoundItemDetailPage() {
         setItem(itemData);
         const mine = myClaims.find(c => c.foundItemId === id);
         setExistingClaim(mine || null);
+
+        const params = new URLSearchParams(location.search);
+        if (params.get('claim') === '1' && !mine) {
+          setShowClaimForm(true);
+        }
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -54,6 +61,7 @@ export default function FoundItemDetailPage() {
       setExistingClaim(claim);
       setClaimSuccess(true);
       setShowClaimForm(false);
+      setShowVerificationModal(true);
     } catch (err) {
       setClaimError(err.message);
     } finally {
@@ -187,23 +195,87 @@ export default function FoundItemDetailPage() {
 
             {existingClaim ? (
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 16,
-                padding: '16px 20px',
+                display: 'grid',
+                gap: 14,
+                padding: '18px 20px',
                 background: 'var(--surface-card-alt)',
                 borderRadius: 'var(--radius-xl)',
                 border: '1px solid var(--border)',
-                flexWrap: 'wrap',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className="text-sm font-semibold text-secondary">Your claim status:</span>
-                  <StatusBadge status={existingClaim.status} />
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  flexWrap: 'wrap',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="text-sm font-semibold text-secondary">Your claim status:</span>
+                    <StatusBadge status={existingClaim.status} />
+                  </div>
+                  <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--primary-deep)' }}>
+                    View claim progress →
+                  </Link>
                 </div>
-                <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--primary-deep)' }}>
-                  View claim progress →
-                </Link>
+
+                {existingClaim.status === 'Pending' && (
+                  existingClaim.verificationStatus === 'Completed' ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: 'var(--verify-surface, #C7EABB)',
+                      color: '#2d5a27',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      border: '1px solid #84B179',
+                    }}>
+                      <span>✓</span> Ownership questions answered. Campus Security is reviewing your claim.
+                    </div>
+                  ) : existingClaim.verificationStatus === 'Locked' ? (
+                    <div style={{
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: 'var(--danger-bg)',
+                      color: 'var(--danger)',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                    }}>
+                      ⚠️ Verification attempts reached. Manual verification required at Security Desk.
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: 'var(--verify-bg, #E8F5BD)',
+                      border: '1px solid var(--verify-primary, #84B179)',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                    }}>
+                      <div style={{ fontSize: '0.85rem', color: '#1F2937' }}>
+                        <strong>🛡️ Action Required:</strong> Answer 3 quick ownership questions to verify your claim.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={() => setShowVerificationModal(true)}
+                        style={{
+                          background: 'var(--verify-primary, #84B179)',
+                          borderColor: 'var(--verify-primary, #84B179)',
+                          color: '#1F2937',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Start Verification →
+                      </button>
+                    </div>
+                  )
+                )}
               </div>
             ) : showClaimForm ? (
               <motion.form
@@ -294,6 +366,19 @@ export default function FoundItemDetailPage() {
           </dl>
         </motion.div>
       )}
+
+      {/* ── Ownership Verification Modal ────────────────────── */}
+      <VerificationModal
+        claim={existingClaim}
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onComplete={() => {
+          getMyClaims().then(claims => {
+            const mine = claims.find(c => c.foundItemId === id);
+            if (mine) setExistingClaim(mine);
+          });
+        }}
+      />
     </div>
   );
 }
