@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getPendingClaims, getAllClaims, decideClaim, getClaimReview, getOfficerVerificationReview } from '../../api/claims';
+import { getPendingClaims, getAllClaims, decideClaim, completeHandover, getClaimReview, getOfficerVerificationReview } from '../../api/claims';
 import { Alert, ButtonSpinner, EmptyState, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
@@ -99,6 +99,9 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
   const [review, setReview] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [showHandover, setShowHandover] = useState(false);
+  const [handoverNotes, setHandoverNotes] = useState('');
+  const [handoverSuccess, setHandoverSuccess] = useState('');
 
   function startDecision(action) { setPendingAction(action); setShowForm(true); setRowError(''); }
 
@@ -129,6 +132,26 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
       setRowError(err.message);
     } finally {
       setReviewLoading(false);
+    }
+  }
+
+  async function submitHandover(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setRowError('');
+    try {
+      const result = await completeHandover(claim.id, { handoverNotes: handoverNotes.trim() || undefined });
+      onDecided(result.claim);
+      setHandoverSuccess(
+        result.closedLostReportsCount > 0
+          ? `Handover recorded. ${result.closedLostReportsCount} matching lost report${result.closedLostReportsCount === 1 ? '' : 's'} closed.`
+          : 'Handover recorded. The found item is now marked as returned.'
+      );
+      setShowHandover(false);
+    } catch (err) {
+      setRowError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -183,6 +206,7 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
       )}
 
       <Alert type="error">{rowError}</Alert>
+      {handoverSuccess && <Alert type="success">{handoverSuccess}</Alert>}
 
       {/* ── Evidence Drawer ──────────────────────────────────── */}
       {reviewOpen && review && <ClaimEvidence review={review} />}
@@ -221,6 +245,30 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
         </motion.form>
       )}
 
+      {showHandover && (
+        <motion.form
+          onSubmit={submitHandover}
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          style={{ marginTop: 16, padding: 16, borderRadius: 'var(--radius-md)', background: 'var(--success-bg)', border: '1px solid var(--success)' }}
+        >
+          <h4 style={{ marginBottom: 6 }}>Confirm in-person handover</h4>
+          <p className="text-sm" style={{ marginBottom: 12 }}>
+            Confirm only after the item has been physically returned to the approved claimant. This marks the item as returned and closes any AI-linked open lost reports belonging to them.
+          </p>
+          <div className="form-field">
+            <label htmlFor={`handover-notes-${claim.id}`}>Handover notes (optional)</label>
+            <textarea id={`handover-notes-${claim.id}`} rows={2} value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="e.g. Student ID verified at Security Desk" />
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <motion.button type="submit" className="btn btn-primary btn-sm" disabled={submitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              {submitting && <ButtonSpinner />} Confirm Handover
+            </motion.button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowHandover(false)} disabled={submitting}>Cancel</button>
+          </div>
+        </motion.form>
+      )}
+
       {/* ── Action Buttons ───────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <button type="button" className="btn btn-secondary btn-sm" onClick={openReview} disabled={reviewLoading}>
@@ -235,6 +283,16 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
               ✗ Reject Claim
             </motion.button>
           </>
+        )}
+        {claim.status === 'Approved' && !showHandover && (
+          <motion.button type="button" className="btn btn-primary btn-sm" onClick={() => { setShowHandover(true); setHandoverSuccess(''); }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            ✓ Confirm Handover
+          </motion.button>
+        )}
+        {claim.status === 'Returned' && (
+          <span className="text-sm" style={{ color: 'var(--success)', fontWeight: 700 }}>
+            Returned {claim.handedOverAt ? `on ${formatDate(claim.handedOverAt)}` : ''}
+          </span>
         )}
       </div>
     </div>

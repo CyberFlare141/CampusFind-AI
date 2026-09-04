@@ -34,4 +34,10 @@ public interface IClaimService
         string officerUserId,
         ClaimDecisionDto request,
         CancellationToken cancellationToken = default);
+
+    Task<CompleteHandoverResponseDto> CompleteHandoverAsync(
+        Guid claimId,
+        string officerUserId,
+        CompleteHandoverDto request,
+        CancellationToken cancellationToken = default);
 }

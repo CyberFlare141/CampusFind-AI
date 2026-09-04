@@ -12,7 +12,7 @@ export default function ItemCard({ kind, item, mine }) {
   const dateValue   = isLost ? item.lostAt : item.foundAt;
   const basePath    = isLost ? '/lost-items' : '/found-items';
   const image       = item.imageUrls?.[0];
-  const canClaim    = !isLost && !mine && item.status !== 'Returned';
+  const canClaim    = !isLost && !mine && item.status === 'Available';
   const linkTo      = `${basePath}/${item.id}${canClaim ? '?claim=1' : ''}`;
 
   return (

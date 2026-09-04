@@ -17,10 +17,13 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
                 ClaimantUserId,
                 ClaimantNotes,
                 Status,
-                CreatedAt,
-                ReviewedByUserId,
-                ReviewedAt,
-                DecisionNotes
+            CreatedAt,
+            ReviewedByUserId,
+            ReviewedAt,
+            DecisionNotes,
+            HandedOverByUserId,
+            HandedOverAt,
+            HandoverNotes
             )
             VALUES (
                 @Id,
@@ -28,10 +31,13 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
                 @ClaimantUserId,
                 @ClaimantNotes,
                 @Status,
-                @CreatedAt,
-                @ReviewedByUserId,
-                @ReviewedAt,
-                @DecisionNotes
+            @CreatedAt,
+            @ReviewedByUserId,
+            @ReviewedAt,
+            @DecisionNotes,
+            @HandedOverByUserId,
+            @HandedOverAt,
+            @HandoverNotes
             );
             """;
 
@@ -48,6 +54,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         command.Parameters.AddWithValue("@ReviewedByUserId", (object?)claim.ReviewedByUserId ?? DBNull.Value);
         command.Parameters.AddWithValue("@ReviewedAt", (object?)claim.ReviewedAt ?? DBNull.Value);
         command.Parameters.AddWithValue("@DecisionNotes", (object?)claim.DecisionNotes ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandedOverByUserId", (object?)claim.HandedOverByUserId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandedOverAt", (object?)claim.HandedOverAt ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverNotes", (object?)claim.HandoverNotes ?? DBNull.Value);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -122,6 +131,16 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             cancellationToken);
     }
 
+    public Task<IReadOnlyList<Claim>> GetByFoundItemIdAsync(Guid foundItemId, CancellationToken cancellationToken = default)
+    {
+        var sql = BaseSelect + """
+
+            WHERE c.FoundItemId = @FoundItemId
+            ORDER BY c.CreatedAt DESC;
+            """;
+        return QueryAsync(sql, command => command.Parameters.AddWithValue("@FoundItemId", foundItemId), cancellationToken);
+    }
+
     public void Update(Claim claim)
     {
         const string sql = """
@@ -130,7 +149,10 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
                 ReviewedByUserId = @ReviewedByUserId,
                 ReviewedAt = @ReviewedAt,
                 DecisionNotes = @DecisionNotes,
-                ClaimantNotes = @ClaimantNotes
+                ClaimantNotes = @ClaimantNotes,
+                HandedOverByUserId = @HandedOverByUserId,
+                HandedOverAt = @HandedOverAt,
+                HandoverNotes = @HandoverNotes
             WHERE Id = @Id;
             """;
 
@@ -144,6 +166,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         command.Parameters.AddWithValue("@ReviewedAt", (object?)claim.ReviewedAt ?? DBNull.Value);
         command.Parameters.AddWithValue("@DecisionNotes", (object?)claim.DecisionNotes ?? DBNull.Value);
         command.Parameters.AddWithValue("@ClaimantNotes", (object?)claim.ClaimantNotes ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandedOverByUserId", (object?)claim.HandedOverByUserId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandedOverAt", (object?)claim.HandedOverAt ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverNotes", (object?)claim.HandoverNotes ?? DBNull.Value);
 
         command.ExecuteNonQuery();
     }
@@ -201,6 +226,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             ReviewedByUserId = reader.GetNullableString("ReviewedByUserId"),
             ReviewedAt = reader.GetNullableDateTime("ReviewedAt"),
             DecisionNotes = reader.GetNullableString("DecisionNotes"),
+            HandedOverByUserId = reader.GetNullableString("HandedOverByUserId"),
+            HandedOverAt = reader.GetNullableDateTime("HandedOverAt"),
+            HandoverNotes = reader.GetNullableString("HandoverNotes"),
             FoundItem = new FoundItem
             {
                 Id = reader.GetGuid("FoundItemId"),
@@ -272,6 +300,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             c.ReviewedByUserId,
             c.ReviewedAt,
             c.DecisionNotes,
+            c.HandedOverByUserId,
+            c.HandedOverAt,
+            c.HandoverNotes,
             fi.Title AS FoundItemTitle,
             fi.Description AS FoundItemDescription,
             cu.Email AS ClaimantEmail,
@@ -285,7 +316,7 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
     private const string ReviewSelect = """
         SELECT
             c.Id AS ClaimId, c.FoundItemId, c.ClaimantUserId, c.ClaimantNotes, c.Status, c.CreatedAt,
-            c.ReviewedByUserId, c.ReviewedAt, c.DecisionNotes,
+            c.ReviewedByUserId, c.ReviewedAt, c.DecisionNotes, c.HandedOverByUserId, c.HandedOverAt, c.HandoverNotes,
             fi.Title AS FoundItemTitle, fi.Description AS FoundItemDescription, fi.UserId AS ReporterUserId, fi.FoundAt,
             cu.Email AS ClaimantEmail, ru.Email AS ReviewedByEmail,
             cup.FullName AS ClaimantFullName, cup.Department AS ClaimantDepartment, cup.JobTitle AS ClaimantJobTitle,

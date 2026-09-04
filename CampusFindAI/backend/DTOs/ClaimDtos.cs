@@ -27,6 +27,9 @@ public class ClaimDto
     public string? ReviewedByEmail { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public string? DecisionNotes { get; set; }
+    public string? HandedOverByUserId { get; set; }
+    public DateTime? HandedOverAt { get; set; }
+    public string? HandoverNotes { get; set; }
 
     public string? VerificationStatus { get; set; }
     public decimal? VerificationScore { get; set; }
@@ -42,6 +45,17 @@ public class ClaimDecisionDto
     public bool Approve { get; set; }
 
     public string? DecisionNotes { get; set; }
+}
+
+public class CompleteHandoverDto
+{
+    public string? HandoverNotes { get; set; }
+}
+
+public class CompleteHandoverResponseDto
+{
+    public ClaimDto Claim { get; set; } = new();
+    public int ClosedLostReportsCount { get; set; }
 }
 
 public class ClaimReviewDto : ClaimDto

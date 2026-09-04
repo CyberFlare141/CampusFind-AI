@@ -10,7 +10,7 @@ public class FoundItemService(IFoundItemRepository repository, IImageRepository 
     {
         if (string.IsNullOrWhiteSpace(request.Title)) throw new ArgumentException("Title is required.");
         imageStorage.Validate(request.Images);
-        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId };
+        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, Status = "Available", CreatedAt = DateTime.UtcNow };
         await repository.AddAsync(item, cancellationToken);
         var images = await imageStorage.SaveAsync(null, item.Id, request.Images, cancellationToken);
         await imageRepository.AddRangeAsync(images, cancellationToken);
@@ -30,5 +30,5 @@ public class FoundItemService(IFoundItemRepository repository, IImageRepository 
         var byItem = images.Where(x => x.FoundItemId.HasValue).GroupBy(x => x.FoundItemId!.Value).ToDictionary(x => x.Key, x => (IReadOnlyList<Image>)x.ToList());
         return items.Select(x => MapToDto(x, byItem.GetValueOrDefault(x.Id, []))).ToList();
     }
-    private static FoundItemDto MapToDto(FoundItem item, IReadOnlyList<Image> images) => new() { Id = item.Id, UserId = item.UserId, Title = item.Title, Description = item.Description, FoundAt = item.FoundAt, CategoryId = item.CategoryId, LocationId = item.LocationId, ImageUrls = images.Select(x => x.Url).ToList() };
+    private static FoundItemDto MapToDto(FoundItem item, IReadOnlyList<Image> images) => new() { Id = item.Id, UserId = item.UserId, Title = item.Title, Description = item.Description, FoundAt = item.FoundAt, CategoryId = item.CategoryId, LocationId = item.LocationId, Status = item.Status, CreatedAt = item.CreatedAt, ImageUrls = images.Select(x => x.Url).ToList() };
 }

@@ -120,6 +120,21 @@ public class ClaimsController(
         return Ok(claim);
     }
 
+    /// <summary>Records the final in-person handover after an approved claim.</summary>
+    [HttpPost("{id:guid}/handover")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<CompleteHandoverResponseDto>> CompleteHandover(
+        Guid id,
+        CompleteHandoverDto request,
+        CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+
+        var result = await service.CompleteHandoverAsync(id, officerId, request, cancellationToken);
+        return Ok(result);
+    }
+
     /// <summary>Student starts / retrieves AI ownership verification questions for their claim.</summary>
     [HttpPost("{id:guid}/verification")]
     public async Task<ActionResult<ClaimVerificationResponseDto>> GetOrGenerateVerification(

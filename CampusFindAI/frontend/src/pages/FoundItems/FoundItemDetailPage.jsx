@@ -279,7 +279,7 @@ export default function FoundItemDetailPage() {
                   )
                 )}
               </div>
-            ) : showClaimForm ? (
+            ) : showClaimForm && item.status === 'Available' ? (
               <motion.form
                 onSubmit={handleClaimSubmit}
                 initial={{ opacity: 0, height: 0 }}
@@ -335,15 +335,21 @@ export default function FoundItemDetailPage() {
                 <p className="text-secondary text-sm" style={{ marginBottom: 16, maxWidth: 580 }}>
                   If you lost this item on campus, submit an ownership claim with identifying proof. Campus Security will verify your claim.
                 </p>
-                <motion.button
-                  type="button"
-                  className="btn btn-primary btn-lg"
-                  onClick={() => setShowClaimForm(true)}
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  ⚖️ Claim This Item
-                </motion.button>
+                {item.status === 'Available' ? (
+                  <motion.button
+                    type="button"
+                    className="btn btn-primary btn-lg"
+                    onClick={() => setShowClaimForm(true)}
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    ⚖️ Claim This Item
+                  </motion.button>
+                ) : (
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+                    This item is currently {item.status?.toLowerCase() || 'unavailable'} and is not accepting new claims.
+                  </p>
+                )}
               </div>
             )}
           </div>

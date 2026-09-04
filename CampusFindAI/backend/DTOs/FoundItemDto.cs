@@ -16,5 +16,9 @@ public class FoundItemDto
 
     public Guid? LocationId { get; set; }
 
+    public string Status { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+
     public IReadOnlyList<string> ImageUrls { get; set; } = [];
 }
