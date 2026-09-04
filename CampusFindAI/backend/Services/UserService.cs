@@ -37,7 +37,9 @@ public class UserService(
 
         ValidatePassword(request.Password);
 
-        var role = Enum.TryParse<UserRole>(request.Role, true, out var parsedRole) ? parsedRole : UserRole.Student;
+        // Public registration must never be able to grant a privileged role.
+        // Security officers and administrators are provisioned by an authorized operator.
+        const UserRole role = UserRole.Student;
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid().ToString(),

@@ -1,4 +1,5 @@
 using CampusFindAI.Api.DTOs;
+using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
 
@@ -9,7 +10,8 @@ public class ClaimService(
     IFoundItemRepository foundItemRepository,
     IImageRepository imageRepository,
     IAuditLogService auditLogService,
-    IClaimVerificationRepository verificationRepository) : IClaimService
+    IClaimVerificationRepository verificationRepository,
+    ApplicationDbContext dbContext) : IClaimService
 {
     private const string StatusPending = "Pending";
     private const string StatusApproved = "Approved";
@@ -22,6 +24,17 @@ public class ClaimService(
     {
         var foundItem = await foundItemRepository.GetByIdAsync(request.FoundItemId, cancellationToken)
             ?? throw new InvalidOperationException("Found item does not exist.");
+
+        if (foundItem.UserId == claimantUserId)
+        {
+            throw new InvalidOperationException("You cannot submit a claim for an item you reported.");
+        }
+
+        var existingClaims = await claimRepository.GetByClaimantIdAsync(claimantUserId, cancellationToken);
+        if (existingClaims.Any(existing => existing.FoundItemId == foundItem.Id))
+        {
+            throw new InvalidOperationException("You have already submitted a claim for this item.");
+        }
 
         var claim = new Claim
         {
@@ -40,6 +53,11 @@ public class ClaimService(
             claimantUserId,
             "ClaimSubmitted",
             $"Claim {claim.Id} submitted for found item {foundItem.Id}.",
+            cancellationToken);
+
+        await CreateNotificationAsync(
+            foundItem.UserId,
+            $"A new ownership claim was submitted for your found-item report: {foundItem.Title}.",
             cancellationToken);
 
         var saved = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -150,8 +168,30 @@ public class ClaimService(
             $"Claim {claim.Id} was {claim.Status.ToLowerInvariant()}.",
             cancellationToken);
 
+        await CreateNotificationAsync(
+            claim.ClaimantUserId,
+            request.Approve
+                ? $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was approved."
+                : $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was not approved.",
+            cancellationToken);
+
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
         return MapToDto(updated!);
+    }
+
+    private async Task CreateNotificationAsync(
+        string userId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        dbContext.Notifications.Add(new Notification
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Message = message,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null)

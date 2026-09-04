@@ -125,7 +125,7 @@ export default function FoundItemFormPage() {
           <SuccessCheck size={72} />
           <h2 style={{ marginTop: 20, marginBottom: 8 }}>Found Item Logged!</h2>
           <p className="text-secondary" style={{ marginBottom: 28, maxWidth: 440, margin: '0 auto 28px' }}>
-            Thank you for turning in this item. Your report is recorded and ready for Security Office verification.
+            Thank you for turning in this item. Your report is recorded and available for matching and ownership claims.
           </p>
 
           <div style={{
@@ -137,10 +137,10 @@ export default function FoundItemFormPage() {
             marginBottom: 28,
           }}>
             <p style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.95rem' }}>
-              ⏳ Pending Security Review
+              ✓ Available for Matching
             </p>
             <p style={{ fontSize: '0.88rem', color: 'var(--warning)', lineHeight: 1.6 }}>
-              Campus Security will verify the entry before matching it with prospective claimants.
+              Campus Security can review any ownership claims that are submitted for this item.
             </p>
           </div>
 
