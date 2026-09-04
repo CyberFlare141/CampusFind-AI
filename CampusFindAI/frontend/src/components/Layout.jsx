@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { getNotifications, markNotificationRead } from '../api/notifications';
 import './layout.css';
 
 /* ── Inline SVG Icon System ─────────────────────────────────── */
@@ -149,6 +150,10 @@ export default function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -187,12 +192,48 @@ export default function Layout() {
     navigate(`/search?q=${encodeURIComponent(text)}`);
   }
 
+  async function toggleNotifications() {
+    const willOpen = !notificationsOpen;
+    setNotificationsOpen(willOpen);
+    if (!willOpen) return;
+
+    setNotificationsLoading(true);
+    setNotificationsError('');
+    try {
+      setNotifications(await getNotifications());
+    } catch (err) {
+      setNotificationsError(err.message || 'Could not load notifications.');
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }
+
+  async function handleNotificationClick(notification) {
+    if (notification.isRead) return;
+    try {
+      await markNotificationRead(notification.id);
+      setNotifications(current => current.map(item =>
+        item.id === notification.id ? { ...item, isRead: true } : item
+      ));
+    } catch (err) {
+      setNotificationsError(err.message || 'Could not mark the notification as read.');
+    }
+  }
+
+  useEffect(() => {
+    setNotificationsOpen(false);
+    setNotifications([]);
+    setNotificationsError('');
+  }, [user?.id]);
+
   function navClass({ isActive }) {
     return `nav-item ${isActive ? 'active' : ''}`;
   }
   function mobileNavClass({ isActive }) {
     return `mobile-nav-btn ${isActive ? 'active' : ''}`;
   }
+
+  const unreadNotifications = notifications.filter(notification => !notification.isRead).length;
 
   return (
     <div className="app-shell">
@@ -264,11 +305,62 @@ export default function Layout() {
         </div>
 
         {/* Right Actions */}
-        <div className="topbar-actions">
-          <button className="topbar-action-btn" aria-label="Notifications" title="Notifications">
+        <div className="topbar-actions" style={{ position: 'relative' }}>
+          <button
+            className="topbar-action-btn"
+            aria-label="Notifications"
+            aria-expanded={notificationsOpen}
+            title="Notifications"
+            onClick={toggleNotifications}
+          >
             <Icon name="bell" />
-            <span className="topbar-notif-dot" />
+            {unreadNotifications > 0 && <span className="topbar-notif-dot" />}
           </button>
+          <AnimatePresence>
+            {notificationsOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16 }}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 10px)', right: 38, width: 340,
+                  maxWidth: 'calc(100vw - 32px)', background: 'var(--surface-card, #fff)',
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-elevated)', overflow: 'hidden', zIndex: 30,
+                }}
+              >
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', fontWeight: 700 }}>Notifications</div>
+                {notificationsLoading ? (
+                  <p className="text-sm text-muted" style={{ padding: 16 }}>Loading notifications…</p>
+                ) : notificationsError ? (
+                  <p className="text-sm" style={{ padding: 16, color: 'var(--danger)' }}>{notificationsError}</p>
+                ) : notifications.length === 0 ? (
+                  <p className="text-sm text-muted" style={{ padding: 16 }}>You have no notifications yet.</p>
+                ) : (
+                  <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                    {notifications.map(notification => (
+                      <button
+                        key={notification.id}
+                        type="button"
+                        onClick={() => handleNotificationClick(notification)}
+                        style={{
+                          display: 'block', width: '100%', textAlign: 'left', padding: '13px 16px',
+                          border: 0, borderBottom: '1px solid var(--border)', cursor: notification.isRead ? 'default' : 'pointer',
+                          background: notification.isRead ? 'transparent' : 'var(--surface-card-alt, #f5f8f2)', color: 'inherit',
+                        }}
+                      >
+                        <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: notification.isRead ? 400 : 650, lineHeight: 1.4 }}>{notification.message}</span>
+                        <span className="text-xs text-muted" style={{ display: 'block', marginTop: 5 }}>
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <Link to="/profile" className="topbar-avatar" aria-label="Profile" title={displayName}>
             {initials}
           </Link>

@@ -182,10 +182,12 @@ export default function FoundItemDetailPage() {
             <dt>Date Found</dt>
             <dd>{formatDate(item.foundAt)}</dd>
           </div>
-          <div>
-            <dt>Logged On</dt>
-            <dd>{formatDate(item.createdAt)}</dd>
-          </div>
+          {item.createdAt && (
+            <div>
+              <dt>Logged On</dt>
+              <dd>{formatDate(item.createdAt)}</dd>
+            </div>
+          )}
         </dl>
 
         {/* ── Claim Section ───────────────────────────────────────── */}
@@ -349,7 +351,7 @@ export default function FoundItemDetailPage() {
       </motion.div>
 
       {/* ── Administrator: Reporter Contact Card ─────────────────── */}
-      {user?.role === 'Administrator' && (
+      {user?.role === 'Administrator' && item.reporterEmail && (
         <motion.div
           className="card card-pad"
           style={{ marginTop: 20 }}

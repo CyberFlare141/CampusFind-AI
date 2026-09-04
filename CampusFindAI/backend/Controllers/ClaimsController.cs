@@ -82,6 +82,13 @@ public class ClaimsController(
             return NotFound();
         }
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var canReviewClaims = User.IsInRole("SecurityOfficer") || User.IsInRole("Administrator");
+        if (string.IsNullOrEmpty(userId) || (!canReviewClaims && claim.ClaimantUserId != userId))
+        {
+            return Forbid();
+        }
+
         return Ok(claim);
     }
 
