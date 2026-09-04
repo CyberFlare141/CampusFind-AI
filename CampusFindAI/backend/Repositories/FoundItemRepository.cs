@@ -19,7 +19,9 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 LocationId,
                 Title,
                 Description,
-                FoundAt
+                FoundAt,
+                Status,
+                CreatedAt
             )
             VALUES (
                 @Id,
@@ -28,7 +30,9 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 @LocationId,
                 @Title,
                 @Description,
-                @FoundAt
+                @FoundAt,
+                @Status,
+                @CreatedAt
             );
             """;
 
@@ -43,6 +47,8 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         command.Parameters.AddWithValue("@Title", item.Title);
         command.Parameters.AddWithValue("@Description", (object?)item.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("@FoundAt", (object?)item.FoundAt ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Status", item.Status);
+        command.Parameters.AddWithValue("@CreatedAt", item.CreatedAt);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -52,7 +58,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt
+            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE Id = @Id;
             """;
@@ -71,9 +77,9 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt
+            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
-            ORDER BY FoundAt DESC;
+            ORDER BY CreatedAt DESC;
             """;
 
         return await QueryManyAsync(sql, null, cancellationToken);
@@ -84,10 +90,10 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt
+            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE UserId = @UserId
-            ORDER BY FoundAt DESC;
+            ORDER BY CreatedAt DESC;
             """;
 
         return await QueryManyAsync(
@@ -100,6 +106,17 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
+    }
+
+    public async Task UpdateStatusAsync(Guid id, string status, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE FoundItems SET Status = @Status WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters.AddWithValue("@Status", status);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<FoundItem>> QueryManyAsync(
@@ -134,7 +151,9 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
             LocationId = reader.GetNullableGuid("LocationId"),
             Title = reader.GetRequiredString("Title"),
             Description = reader.GetNullableString("Description"),
-            FoundAt = reader.GetNullableDateTime("FoundAt")
+            FoundAt = reader.GetNullableDateTime("FoundAt"),
+            Status = reader.GetRequiredString("Status"),
+            CreatedAt = reader.GetDateTime("CreatedAt")
         };
     }
 }

@@ -67,6 +67,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<FoundItem>().Property(x => x.Status).HasMaxLength(30).HasDefaultValue("Available");
+        builder.Entity<FoundItem>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
         builder.Entity<Claim>()
             .HasOne(x => x.ClaimantUser)
             .WithMany()

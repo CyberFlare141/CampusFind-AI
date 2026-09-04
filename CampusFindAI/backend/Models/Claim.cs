@@ -12,7 +12,7 @@ public class Claim
     /// </summary>
     public string? ClaimantNotes { get; set; }
 
-    /// <summary>Pending, Approved, or Rejected.</summary>
+    /// <summary>Pending, Approved, Rejected, or Returned.</summary>
     public string Status { get; set; } = "Pending";
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -20,6 +20,9 @@ public class Claim
     public string? ReviewedByUserId { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public string? DecisionNotes { get; set; }
+    public string? HandedOverByUserId { get; set; }
+    public DateTime? HandedOverAt { get; set; }
+    public string? HandoverNotes { get; set; }
 
     public FoundItem? FoundItem { get; set; }
     public ApplicationUser? ClaimantUser { get; set; }

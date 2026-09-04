@@ -11,7 +11,9 @@ public class ClaimService(
     IImageRepository imageRepository,
     IAuditLogService auditLogService,
     IClaimVerificationRepository verificationRepository,
-    ApplicationDbContext dbContext) : IClaimService
+    ApplicationDbContext dbContext,
+    ILostItemRepository lostItemRepository,
+    IMatchRepository matchRepository) : IClaimService
 {
     private const string StatusPending = "Pending";
     private const string StatusApproved = "Approved";
@@ -28,6 +30,11 @@ public class ClaimService(
         if (foundItem.UserId == claimantUserId)
         {
             throw new InvalidOperationException("You cannot submit a claim for an item you reported.");
+        }
+
+        if (foundItem.Status != "Available")
+        {
+            throw new InvalidOperationException("This item is no longer available for new ownership claims.");
         }
 
         var existingClaims = await claimRepository.GetByClaimantIdAsync(claimantUserId, cancellationToken);
@@ -127,6 +134,7 @@ public class ClaimService(
             ClaimantEmail = claim.ClaimantUser?.Email ?? string.Empty, ClaimantNotes = claim.ClaimantNotes,
             Status = claim.Status, CreatedAt = claim.CreatedAt, ReviewedByUserId = claim.ReviewedByUserId,
             ReviewedByEmail = claim.ReviewedByUser?.Email, ReviewedAt = claim.ReviewedAt, DecisionNotes = claim.DecisionNotes,
+            HandedOverByUserId = claim.HandedOverByUserId, HandedOverAt = claim.HandedOverAt, HandoverNotes = claim.HandoverNotes,
             FoundAt = claim.FoundItem?.FoundAt,
             ImageUrls = images.Select(image => image.Url).ToList(),
             Claimant = MapPerson(claim.ClaimantUser), Reporter = MapPerson(claim.FoundItem?.User),
@@ -154,6 +162,15 @@ public class ClaimService(
                 $"This claim has already been {claim.Status.ToLowerInvariant()}.");
         }
 
+        if (request.Approve)
+        {
+            var existingApproved = await claimRepository.GetByFoundItemIdAsync(claim.FoundItemId, cancellationToken);
+            if (existingApproved.Any(existing => (existing.Status is StatusApproved or "Returned") && existing.Id != claim.Id))
+            {
+                throw new InvalidOperationException("Another claim for this item has already been approved or handed over.");
+            }
+        }
+
         claim.Status = request.Approve ? StatusApproved : StatusRejected;
         claim.ReviewedByUserId = officerUserId;
         claim.ReviewedAt = DateTime.UtcNow;
@@ -161,6 +178,11 @@ public class ClaimService(
 
         claimRepository.Update(claim);
         await claimRepository.SaveChangesAsync(cancellationToken);
+
+        if (request.Approve)
+        {
+            await foundItemRepository.UpdateStatusAsync(claim.FoundItemId, "Claimed", cancellationToken);
+        }
 
         await auditLogService.LogAsync(
             officerUserId,
@@ -177,6 +199,61 @@ public class ClaimService(
 
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
         return MapToDto(updated!);
+    }
+
+    public async Task<CompleteHandoverResponseDto> CompleteHandoverAsync(
+        Guid claimId,
+        string officerUserId,
+        CompleteHandoverDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var claim = await claimRepository.GetByIdAsync(claimId, cancellationToken)
+            ?? throw new InvalidOperationException("Claim not found.");
+
+        if (claim.Status != StatusApproved)
+        {
+            throw new InvalidOperationException("Only an approved claim can be completed as a handover.");
+        }
+
+        claim.Status = "Returned";
+        claim.HandedOverByUserId = officerUserId;
+        claim.HandedOverAt = DateTime.UtcNow;
+        claim.HandoverNotes = request.HandoverNotes?.Trim();
+        claimRepository.Update(claim);
+        await claimRepository.SaveChangesAsync(cancellationToken);
+        await foundItemRepository.UpdateStatusAsync(claim.FoundItemId, "Returned", cancellationToken);
+
+        var linkedMatches = await matchRepository.GetByFoundItemIdAsync(claim.FoundItemId, cancellationToken);
+        var reportsToClose = linkedMatches
+            .Where(match => match.LostItem?.UserId == claim.ClaimantUserId && match.LostItem.Status == "Open")
+            .Select(match => match.LostItemId)
+            .Distinct()
+            .ToArray();
+        foreach (var lostItemId in reportsToClose)
+        {
+            await lostItemRepository.UpdateStatusAsync(lostItemId, "Closed", cancellationToken);
+        }
+
+        await auditLogService.LogAsync(
+            officerUserId,
+            "ItemHandedOver",
+            $"Claim {claim.Id} was completed and found item {claim.FoundItemId} was returned.",
+            cancellationToken);
+
+        var title = claim.FoundItem?.Title ?? "the found item";
+        await CreateNotificationAsync(claim.ClaimantUserId, $"Handover complete: {title} has been returned to you.", cancellationToken);
+        var foundItem = await foundItemRepository.GetByIdAsync(claim.FoundItemId, cancellationToken);
+        if (foundItem is not null)
+        {
+            await CreateNotificationAsync(foundItem.UserId, $"Handover complete: {title} has been returned to its owner.", cancellationToken);
+        }
+
+        var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
+        return new CompleteHandoverResponseDto
+        {
+            Claim = MapToDto(updated!),
+            ClosedLostReportsCount = reportsToClose.Length,
+        };
     }
 
     private async Task CreateNotificationAsync(
@@ -211,6 +288,9 @@ public class ClaimService(
             ReviewedByEmail = claim.ReviewedByUser?.Email,
             ReviewedAt = claim.ReviewedAt,
             DecisionNotes = claim.DecisionNotes,
+            HandedOverByUserId = claim.HandedOverByUserId,
+            HandedOverAt = claim.HandedOverAt,
+            HandoverNotes = claim.HandoverNotes,
             VerificationStatus = verification?.Status,
             VerificationScore = verification?.ConfidenceScore,
             VerificationMatchedCount = verification?.MatchedCount,

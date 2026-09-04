@@ -7,6 +7,10 @@ public interface IMatchRepository
     Task<IReadOnlyList<Match>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Match>> GetByFoundItemIdAsync(
+        Guid foundItemId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExistsAsync(
         Guid lostItemId,
         Guid foundItemId,

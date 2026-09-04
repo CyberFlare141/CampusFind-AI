@@ -27,6 +27,10 @@ public interface IClaimRepository
         string claimantUserId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Claim>> GetByFoundItemIdAsync(
+        Guid foundItemId,
+        CancellationToken cancellationToken = default);
+
     void Update(Claim claim);
 
     Task SaveChangesAsync(

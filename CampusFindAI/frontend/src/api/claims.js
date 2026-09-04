@@ -43,6 +43,14 @@ export function decideClaim(id, { approve, decisionNotes }) {
   });
 }
 
+/** Security officer / administrator only. Records the final in-person return. */
+export function completeHandover(id, { handoverNotes }) {
+  return apiRequest(`/claims/${id}/handover`, {
+    method: 'POST',
+    body: { handoverNotes: handoverNotes || null },
+  });
+}
+
 /** Student / claimant: retrieves or generates AI ownership verification questions. */
 export function getOrGenerateVerification(claimId) {
   return apiRequest(`/claims/${claimId}/verification`, {

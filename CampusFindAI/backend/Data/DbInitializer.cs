@@ -83,6 +83,31 @@ public static class DbInitializer
                 ALTER TABLE Claims ADD ReviewedByUserId nvarchar(450) NULL;
             END;
 
+            IF COL_LENGTH('Claims', 'HandedOverByUserId') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD HandedOverByUserId nvarchar(max) NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'HandedOverAt') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD HandedOverAt datetime2 NULL;
+            END;
+
+            IF COL_LENGTH('Claims', 'HandoverNotes') IS NULL
+            BEGIN
+                ALTER TABLE Claims ADD HandoverNotes nvarchar(max) NULL;
+            END;
+
+            IF COL_LENGTH('FoundItems', 'Status') IS NULL
+            BEGIN
+                ALTER TABLE FoundItems ADD Status nvarchar(30) NOT NULL CONSTRAINT DF_FoundItems_Status DEFAULT 'Available';
+            END;
+
+            IF COL_LENGTH('FoundItems', 'CreatedAt') IS NULL
+            BEGIN
+                ALTER TABLE FoundItems ADD CreatedAt datetime2 NOT NULL CONSTRAINT DF_FoundItems_CreatedAt DEFAULT GETUTCDATE();
+            END;
+
             IF NOT EXISTS (
                 SELECT 1
                 FROM sys.indexes

@@ -9,6 +9,8 @@ public class FoundItem
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime? FoundAt { get; set; }
+    public string Status { get; set; } = "Available";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ApplicationUser? User { get; set; }
     public Category? Category { get; set; }

@@ -108,6 +108,17 @@ public class LostItemRepository(ISqlConnectionFactory connectionFactory)
         return Task.CompletedTask;
     }
 
+    public async Task UpdateStatusAsync(Guid id, string status, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE LostItems SET Status = @Status WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters.AddWithValue("@Status", status);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private async Task<IReadOnlyList<LostItem>> QueryManyAsync(
         string sql,
         Action<SqlCommand>? configure,

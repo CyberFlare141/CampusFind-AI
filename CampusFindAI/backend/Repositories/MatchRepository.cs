@@ -59,6 +59,36 @@ public class MatchRepository(ISqlConnectionFactory connectionFactory) : IMatchRe
         return matches;
     }
 
+    public async Task<IReadOnlyList<Match>> GetByFoundItemIdAsync(Guid foundItemId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT m.Id, m.LostItemId, m.FoundItemId, m.ConfidenceScore,
+                   li.Title AS LostItemTitle, li.UserId AS LostItemUserId, li.Status AS LostItemStatus,
+                   fi.Title AS FoundItemTitle, fi.UserId AS FoundItemUserId
+            FROM Matches m
+            INNER JOIN LostItems li ON li.Id = m.LostItemId
+            INNER JOIN FoundItems fi ON fi.Id = m.FoundItemId
+            WHERE m.FoundItemId = @FoundItemId;
+            """;
+
+        var matches = new List<Match>();
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@FoundItemId", foundItemId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            matches.Add(new Match
+            {
+                Id = reader.GetGuid("Id"), LostItemId = reader.GetGuid("LostItemId"), FoundItemId = reader.GetGuid("FoundItemId"), ConfidenceScore = reader.GetDecimal("ConfidenceScore"),
+                LostItem = new LostItem { Id = reader.GetGuid("LostItemId"), Title = reader.GetRequiredString("LostItemTitle"), UserId = reader.GetRequiredString("LostItemUserId"), Status = reader.GetRequiredString("LostItemStatus") },
+                FoundItem = new FoundItem { Id = reader.GetGuid("FoundItemId"), Title = reader.GetRequiredString("FoundItemTitle"), UserId = reader.GetRequiredString("FoundItemUserId") }
+            });
+        }
+        return matches;
+    }
+
     public async Task<bool> ExistsAsync(
         Guid lostItemId,
         Guid foundItemId,
