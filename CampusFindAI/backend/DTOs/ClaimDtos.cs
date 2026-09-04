@@ -27,6 +27,13 @@ public class ClaimDto
     public string? ReviewedByEmail { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public string? DecisionNotes { get; set; }
+
+    public string? VerificationStatus { get; set; }
+    public decimal? VerificationScore { get; set; }
+    public int? VerificationMatchedCount { get; set; }
+    public int? VerificationTotalQuestions { get; set; }
+    public bool? VerificationPassed { get; set; }
+    public int? VerificationAttemptsRemaining { get; set; }
 }
 
 public class ClaimDecisionDto
@@ -43,6 +50,7 @@ public class ClaimReviewDto : ClaimDto
     public ClaimPersonDto Reporter { get; set; } = new();
     public DateTime? FoundAt { get; set; }
     public IReadOnlyList<string> ImageUrls { get; set; } = [];
+    public OfficerVerificationReviewDto? VerificationReview { get; set; }
 }
 
 public class ClaimPersonDto

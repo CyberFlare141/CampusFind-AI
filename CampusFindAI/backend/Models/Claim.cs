@@ -24,4 +24,5 @@ public class Claim
     public FoundItem? FoundItem { get; set; }
     public ApplicationUser? ClaimantUser { get; set; }
     public ApplicationUser? ReviewedByUser { get; set; }
+    public ClaimVerification? Verification { get; set; }
 }

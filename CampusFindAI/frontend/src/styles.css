@@ -34,6 +34,12 @@
   --accent-bg:        rgba(200, 169, 107, 0.12);
   --accent-border:    rgba(200, 169, 107, 0.35);
 
+  /* ── Ownership Verification Tokens ── */
+  --verify-primary:   #84B179;
+  --verify-surface:   #C7EABB;
+  --verify-bg:        #E8F5BD;
+  --verify-text:      #1F2937;
+
   /* ── Text ── */
   --text-primary:     #252C22;   /* Deep warm charcoal */
   --text-secondary:   #4A5A47;   /* Sage-tinted dark grey */

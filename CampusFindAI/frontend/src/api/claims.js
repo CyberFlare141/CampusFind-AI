@@ -42,3 +42,24 @@ export function decideClaim(id, { approve, decisionNotes }) {
     body: { approve, decisionNotes: decisionNotes || null },
   });
 }
+
+/** Student / claimant: retrieves or generates AI ownership verification questions. */
+export function getOrGenerateVerification(claimId) {
+  return apiRequest(`/claims/${claimId}/verification`, {
+    method: 'POST',
+  });
+}
+
+/** Student / claimant: submits answers to verification questions. */
+export function submitVerificationAnswers(claimId, answers) {
+  return apiRequest(`/claims/${claimId}/verification/submit`, {
+    method: 'POST',
+    body: { answers },
+  });
+}
+
+/** Security officer / administrator only: view detailed AI evaluation, match score, and question breakdown. */
+export function getOfficerVerificationReview(claimId) {
+  return apiRequest(`/claims/${claimId}/verification/officer-review`);
+}
+
