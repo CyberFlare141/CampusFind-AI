@@ -10,7 +10,8 @@ namespace CampusFindAI.Api.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 public class LostItemsController(
-    ILostItemService service) : ControllerBase
+    ILostItemService service,
+    IInstitutionalAccessService accessService) : ControllerBase
 {
     [HttpPost]
     [RequestSizeLimit(26 * 1024 * 1024)]
@@ -24,6 +25,7 @@ public class LostItemsController(
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
         var item = await service.CreateAsync(
             userId,

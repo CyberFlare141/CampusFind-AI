@@ -118,6 +118,34 @@ public static class DbInitializer
                 ALTER TABLE AuditLogs ADD Details nvarchar(max) NULL;
             END;
 
+            IF COL_LENGTH('Notifications', 'CreatedAt') IS NULL
+            BEGIN
+                ALTER TABLE Notifications ADD CreatedAt datetime2 NOT NULL CONSTRAINT DF_Notifications_CreatedAt DEFAULT GETUTCDATE();
+            END;
+
+            IF COL_LENGTH('AspNetUsers', 'IsRestricted') IS NULL
+            BEGIN
+                ALTER TABLE AspNetUsers ADD IsRestricted bit NOT NULL CONSTRAINT DF_AspNetUsers_IsRestricted DEFAULT 0;
+            END;
+
+            IF OBJECT_ID('SecurityOfficerRequests', 'U') IS NULL
+            BEGIN
+                CREATE TABLE SecurityOfficerRequests (
+                    Id uniqueidentifier NOT NULL PRIMARY KEY,
+                    UserId nvarchar(450) NOT NULL,
+                    Reason nvarchar(500) NOT NULL,
+                    AdditionalInformation nvarchar(2000) NOT NULL,
+                    Status nvarchar(30) NOT NULL,
+                    SubmittedAt datetime2 NOT NULL,
+                    ReviewedAt datetime2 NULL,
+                    ReviewedByUserId nvarchar(450) NULL,
+                    AdminNotes nvarchar(1000) NULL,
+                    CONSTRAINT FK_SecurityOfficerRequests_User FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE,
+                    CONSTRAINT FK_SecurityOfficerRequests_Reviewer FOREIGN KEY (ReviewedByUserId) REFERENCES AspNetUsers (Id)
+                );
+                CREATE INDEX IX_SecurityOfficerRequests_UserId_Status ON SecurityOfficerRequests(UserId, Status);
+            END;
+
             IF COL_LENGTH('Claims', 'ClaimantNotes') IS NULL
             BEGIN
                 ALTER TABLE Claims ADD ClaimantNotes nvarchar(max) NULL;

@@ -10,7 +10,8 @@ namespace CampusFindAI.Api.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 public class FoundItemsController(
-    IFoundItemService service) : ControllerBase
+    IFoundItemService service,
+    IInstitutionalAccessService accessService) : ControllerBase
 {
     [HttpPost]
     [RequestSizeLimit(26 * 1024 * 1024)]
@@ -24,6 +25,7 @@ public class FoundItemsController(
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
         var item = await service.CreateAsync(
             userId,

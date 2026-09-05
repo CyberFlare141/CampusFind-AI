@@ -121,7 +121,7 @@ export default function FoundItemFormPage() {
     }
   }
 
-  if (user?.role === 'Administrator') return <Navigate to="/found-items" replace />;
+  if (user?.role === 'Administrator' || user?.isRestricted) return <Navigate to="/found-items" replace />;
 
   /* ── Success State ─────────────────────────────────────────── */
   if (submitted) {

@@ -20,6 +20,8 @@ public static class ServiceExtensions
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IInstitutionalAccessService, InstitutionalAccessService>();
+        services.AddScoped<ISecurityOfficerRequestService, SecurityOfficerRequestService>();
         services.AddScoped<ILostItemRepository, LostItemRepository>();
         services.AddScoped<ILostItemService, LostItemService>();
         services.AddScoped<IFoundItemRepository, FoundItemRepository>();

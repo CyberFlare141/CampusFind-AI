@@ -29,6 +29,8 @@ import SecurityClaimsPage from './pages/Security/SecurityClaimsPage';
 import SecurityMatchesPage from './pages/Security/SecurityMatchesPage';
 import SecurityLoginHistoryPage from './pages/Security/SecurityLoginHistoryPage';
 import SecurityOwnershipReviewsPage from './pages/Security/SecurityOwnershipReviewsPage';
+import SecurityOfficerRequestPage from './pages/SecurityOfficerRequestPage';
+import AdminSecurityOfficerRequestsPage from './pages/AdminSecurityOfficerRequestsPage';
 
 export default function App() {
   return (
@@ -76,6 +78,7 @@ export default function App() {
             <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/matches/:matchId/verify" element={<OwnershipVerificationPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />
+            <Route path="/security-officer-request" element={<SecurityOfficerRequestPage />} />
           </Route>
 
           {/* Security Office (role-protected) */}
@@ -91,6 +94,10 @@ export default function App() {
             <Route path="/security/matches" element={<SecurityMatchesPage />} />
             <Route path="/security/login-history" element={<SecurityLoginHistoryPage />} />
             <Route path="/security/ownership-verifications" element={<SecurityOwnershipReviewsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requireAdministrator><Layout /></ProtectedRoute>}>
+            <Route path="/admin/security-officer-requests" element={<AdminSecurityOfficerRequestsPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

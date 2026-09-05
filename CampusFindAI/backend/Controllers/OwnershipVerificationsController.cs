@@ -9,7 +9,7 @@ namespace CampusFindAI.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/ownership-verifications")]
-public sealed class OwnershipVerificationsController(IOwnershipVerificationService service) : ControllerBase
+public sealed class OwnershipVerificationsController(IOwnershipVerificationService service, IInstitutionalAccessService accessService) : ControllerBase
 {
     [HttpGet("matches/{matchId:guid}/status")]
     public Task<ActionResult<OwnershipVerificationStatusDto>> Status(Guid matchId, CancellationToken cancellationToken) => Execute<OwnershipVerificationStatusDto>(async user => Ok(await service.GetStatusAsync(matchId, user, cancellationToken)));
@@ -24,6 +24,7 @@ public sealed class OwnershipVerificationsController(IOwnershipVerificationServi
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId)) return Forbid();
         try { return await action(userId); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (UnauthorizedAccessException) { return Forbid(); }

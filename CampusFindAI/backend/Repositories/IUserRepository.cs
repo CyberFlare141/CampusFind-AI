@@ -26,6 +26,9 @@ public interface IUserRepository
         string userId,
         string roleName,
         CancellationToken cancellationToken = default);
+    
+        Task UpdateRoleAsync(string userId, UserRole role, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
 
     Task EnsureRoleExistsAsync(
         string roleName,

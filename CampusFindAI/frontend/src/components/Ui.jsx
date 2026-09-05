@@ -324,9 +324,9 @@ export function StatusBadge({ status }) {
 }
 
 /* ── Role Badge ──────────────────────────────────────────────── */
-export function RoleBadge({ role }) {
+export function RoleBadge({ role, isRestricted = false }) {
   const map = {
-    Student:         { cls: 'badge-info',    label: 'Student' },
+    Student:         { cls: 'badge-info',    label: isRestricted ? 'User' : 'Student' },
     SecurityOfficer: { cls: 'badge-warning', label: 'Security Officer' },
     Administrator:   { cls: 'badge-danger',  label: 'Administrator' },
   };

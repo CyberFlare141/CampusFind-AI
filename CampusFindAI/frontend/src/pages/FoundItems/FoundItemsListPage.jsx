@@ -7,7 +7,7 @@ import { Alert, EmptyState, SkeletonGrid, ItemCard } from '../../components/Ui';
 
 export default function FoundItemsListPage() {
   const { user } = useAuth();
-  const canReportItems = user?.role !== 'Administrator';
+  const canReportItems = !user?.isRestricted && user?.role !== 'Administrator';
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') === 'mine' ? 'mine' : 'all';
   const initialSearch = searchParams.get('search') || '';
@@ -81,6 +81,8 @@ export default function FoundItemsListPage() {
           </motion.div>
         )}
       </motion.div>
+
+      {user?.isRestricted && <Alert type="info">Your account can browse found-item reports, but institutional access is required to report an item or submit a claim. Use Officer Request from the navigation to apply.</Alert>}
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <div className="tabs">
