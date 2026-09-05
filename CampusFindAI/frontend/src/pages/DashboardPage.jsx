@@ -113,7 +113,7 @@ export default function DashboardPage() {
 
   const openLostCount   = myLostItems.filter(i => i.status === 'Open').length;
   const pendingClaims   = myClaims.filter(c => c.status === 'Pending').length;
-  const canReportItems  = user?.role !== 'Administrator';
+  const canReportItems  = !user?.isRestricted && user?.role !== 'Administrator';
   const displayName     = user?.email?.split('@')[0] ?? 'there';
 
   function submitDashboardSearch(event) {
@@ -189,6 +189,9 @@ export default function DashboardPage() {
                 </Link>
               </motion.div>
             </div>
+          )}
+          {user?.isRestricted && (
+            <div style={{ marginTop: 18 }}><p className="text-muted">Your account can browse campus reports. Institutional accounts can report items and submit claims.</p><Link to="/security-officer-request" className="btn btn-secondary">Request Security Officer access</Link></div>
           )}
 
           {isOfficer && (

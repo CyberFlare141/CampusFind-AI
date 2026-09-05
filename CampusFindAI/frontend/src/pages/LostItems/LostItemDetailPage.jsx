@@ -46,7 +46,7 @@ export default function LostItemDetailPage() {
   if (!item) return null;
 
   const isMine = item.userId === user?.id;
-  const canReportItems = user?.role !== 'Administrator';
+  const canReportItems = !user?.isRestricted && user?.role !== 'Administrator';
   const images = item.imageUrls ?? [];
 
   return (

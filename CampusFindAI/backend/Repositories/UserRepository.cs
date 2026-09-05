@@ -8,7 +8,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
 {
     public async Task<IReadOnlyList<ApplicationUser>> GetByRoleAsync(UserRole role, CancellationToken cancellationToken = default)
     {
-        const string sql = "SELECT Id, Role, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount FROM AspNetUsers WHERE Role = @Role;";
+        const string sql = "SELECT Id, Role, IsRestricted, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount FROM AspNetUsers WHERE Role = @Role;";
         var users = new List<ApplicationUser>();
         await using var connection = connectionFactory.CreateConnection(); await connection.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection); command.Parameters.AddWithValue("@Role", role.ToString());
@@ -23,6 +23,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
             SELECT TOP (1)
                 Id,
                 Role,
+                IsRestricted,
                 UserName,
                 NormalizedUserName,
                 Email,
@@ -61,6 +62,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
             SELECT TOP (1)
                 Id,
                 Role,
+                IsRestricted,
                 UserName,
                 NormalizedUserName,
                 Email,
@@ -132,6 +134,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
             INSERT INTO AspNetUsers (
                 Id,
                 Role,
+                IsRestricted,
                 UserName,
                 NormalizedUserName,
                 Email,
@@ -150,6 +153,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
             VALUES (
                 @Id,
                 @Role,
+                @IsRestricted,
                 @UserName,
                 @NormalizedUserName,
                 @Email,
@@ -173,6 +177,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         await using var command = new SqlCommand(sql, connection);
         command.Parameters.AddWithValue("@Id", user.Id);
         command.Parameters.AddWithValue("@Role", user.Role.ToString());
+        command.Parameters.AddWithValue("@IsRestricted", user.IsRestricted);
         command.Parameters.AddWithValue("@UserName", (object?)user.UserName ?? DBNull.Value);
         command.Parameters.AddWithValue("@NormalizedUserName", (object?)user.NormalizedUserName ?? DBNull.Value);
         command.Parameters.AddWithValue("@Email", (object?)user.Email ?? DBNull.Value);
@@ -188,6 +193,17 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled);
         command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
 
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task UpdateRoleAsync(string userId, UserRole role, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE AspNetUsers SET Role = @Role, IsRestricted = 0 WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", userId);
+        command.Parameters.AddWithValue("@Role", role.ToString());
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
@@ -275,9 +291,9 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
             PasswordHash = reader.GetNullableString("PasswordHash"),
             SecurityStamp = reader.GetNullableString("SecurityStamp"),
             ConcurrencyStamp = reader.GetNullableString("ConcurrencyStamp"),
-            PhoneNumber = reader.GetNullableString("PhoneNumber"),
-            PhoneNumberConfirmed = reader.GetBoolean(reader.GetOrdinal("PhoneNumberConfirmed")),
-            TwoFactorEnabled = reader.GetBoolean(reader.GetOrdinal("TwoFactorEnabled")),
+                IsRestricted = reader.GetBoolean(reader.GetOrdinal("IsRestricted")),
+                PhoneNumber = reader.GetNullableString("PhoneNumber"),
+                PhoneNumberConfirmed = reader.GetBoolean(reader.GetOrdinal("PhoneNumberConfirmed")),
             LockoutEnd = reader.IsDBNull(reader.GetOrdinal("LockoutEnd"))
                 ? null
                 : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("LockoutEnd")),

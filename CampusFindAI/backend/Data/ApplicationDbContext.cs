@@ -26,6 +26,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AIRequest> AIRequests => Set<AIRequest>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
     public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
+    public DbSet<SecurityOfficerRequest> SecurityOfficerRequests => Set<SecurityOfficerRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -33,6 +34,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Role>().ToTable("Roles");
         builder.Entity<ApplicationUser>().Property(x => x.Role).HasConversion<string>();
+        builder.Entity<ApplicationUser>().Property(x => x.IsRestricted).HasDefaultValue(false);
 
         builder.Entity<UserProfile>()
             .HasOne(x => x.User)
@@ -154,5 +156,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasPrecision(5, 2);
         builder.Entity<ClaimVerification>().Property(x => x.SecurityReviewNote).HasMaxLength(1000);
         builder.Entity<ClaimVerification>().HasIndex(x => x.MatchId).IsUnique().HasFilter("[MatchId] IS NOT NULL");
+
+        builder.Entity<SecurityOfficerRequest>().HasIndex(x => new { x.UserId, x.Status });
+        builder.Entity<SecurityOfficerRequest>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SecurityOfficerRequest>().HasOne(x => x.ReviewedByUser).WithMany().HasForeignKey(x => x.ReviewedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SecurityOfficerRequest>().Property(x => x.Reason).HasMaxLength(500);
+        builder.Entity<SecurityOfficerRequest>().Property(x => x.AdditionalInformation).HasMaxLength(2000);
+        builder.Entity<SecurityOfficerRequest>().Property(x => x.AdminNotes).HasMaxLength(1000);
+        builder.Entity<SecurityOfficerRequest>().Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
     }
 }

@@ -138,14 +138,14 @@ function getRolePillClass(role) {
   if (role === 'Administrator')   return 'role-pill role-pill-admin';
   return 'role-pill role-pill-student';
 }
-function getRoleLabel(role) {
+function getRoleLabel(role, isRestricted) {
   if (role === 'SecurityOfficer') return 'Security';
   if (role === 'Administrator')   return 'Admin';
-  return 'Student';
+  return isRestricted ? 'User' : 'Student';
 }
 
 export default function Layout() {
-  const { user, isOfficer, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -161,11 +161,14 @@ export default function Layout() {
     ? user.email.slice(0, 2).toUpperCase()
     : '??';
   const displayName = user?.email?.split('@')[0] ?? 'User';
-  const canReportItems = user?.role !== 'Administrator';
+  const canReportItems = !user?.isRestricted && user?.role !== 'Administrator';
+  const canAccessSecurityOffice = user?.role === 'SecurityOfficer';
 
   const studentLinks = user?.role === 'Administrator'
-    ? STUDENT_LINKS.filter(l => l.to !== '/my-claims')
-    : STUDENT_LINKS;
+    ? STUDENT_LINKS.filter(l => !['/search', '/my-claims', '/my-matches'].includes(l.to))
+    : (user?.isRestricted || user?.role === 'SecurityOfficer'
+      ? STUDENT_LINKS.filter(l => !['/my-claims', '/my-matches'].includes(l.to))
+      : STUDENT_LINKS);
 
   const SUGGESTIONS = [
     'Black leather wallet near library',
@@ -401,7 +404,12 @@ export default function Layout() {
               </NavLink>
             ))}
 
-            {isOfficer && (
+            {user?.isRestricted && <NavLink to="/security-officer-request" className={navClass}>
+              <span className="nav-icon"><Icon name="shield" /></span>
+              <span className="nav-label">Officer Request</span>
+            </NavLink>}
+
+            {canAccessSecurityOffice && (
               <>
                 <div className="sidebar-divider" />
                 <span className="sidebar-section-label">Security Office</span>
@@ -413,6 +421,11 @@ export default function Layout() {
                 ))}
               </>
             )}
+
+            {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass}>
+              <span className="nav-icon"><Icon name="shield" /></span>
+              <span className="nav-label">Officer Requests</span>
+            </NavLink>}
 
             <div className="sidebar-divider" />
             <NavLink to="/profile" className={navClass}>
@@ -430,7 +443,7 @@ export default function Layout() {
                   <span className="sidebar-user-name">{displayName}</span>
                   <span className="sidebar-user-role">
                     <span className={getRolePillClass(user?.role)}>
-                      {getRoleLabel(user?.role)}
+                      {getRoleLabel(user?.role, user?.isRestricted)}
                     </span>
                   </span>
                 </span>
@@ -497,8 +510,11 @@ export default function Layout() {
               <span className="nav-label">{link.label}</span>
             </NavLink>
           ))}
+          {user?.isRestricted && <NavLink to="/security-officer-request" className={navClass} onClick={() => setDrawerOpen(false)}>
+            <span className="nav-icon"><Icon name="shield" /></span><span className="nav-label">Officer Request</span>
+          </NavLink>}
 
-          {isOfficer && (
+          {canAccessSecurityOffice && (
             <>
               <div className="sidebar-divider" />
               <span className="sidebar-section-label">Security Office</span>
@@ -512,6 +528,9 @@ export default function Layout() {
               ))}
             </>
           )}
+          {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass} onClick={() => setDrawerOpen(false)}>
+            <span className="nav-icon"><Icon name="shield" /></span><span className="nav-label">Officer Requests</span>
+          </NavLink>}
           <div className="sidebar-divider" />
           <NavLink to="/profile" className={navClass} onClick={() => setDrawerOpen(false)}>
             <span className="nav-icon"><Icon name="user" /></span>
@@ -525,7 +544,7 @@ export default function Layout() {
             <span className="sidebar-user-info">
               <span className="sidebar-user-name">{displayName}</span>
               <span className="sidebar-user-role">
-                <span className={getRolePillClass(user?.role)}>{getRoleLabel(user?.role)}</span>
+                <span className={getRolePillClass(user?.role)}>{getRoleLabel(user?.role, user?.isRestricted)}</span>
               </span>
             </span>
           </Link>
@@ -539,7 +558,11 @@ export default function Layout() {
       {/* ── Mobile Bottom Nav ──────────────────────────────────── */}
       <nav className="mobile-nav" aria-label="Bottom navigation">
         <div className="mobile-nav-inner">
-          {BOTTOM_NAV_LINKS.map(link => (
+          {BOTTOM_NAV_LINKS.filter(link => {
+            if (user?.role === 'Administrator' && link.to === '/search') return false;
+            if (user?.role === 'SecurityOfficer' && link.to === '/my-claims') return false;
+            return true;
+          }).map(link => (
             <NavLink
               key={link.to}
               to={link.to}

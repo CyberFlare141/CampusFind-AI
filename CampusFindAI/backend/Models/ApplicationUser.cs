@@ -5,6 +5,7 @@ namespace CampusFindAI.Api.Models;
 public class ApplicationUser : IdentityUser
 {
     public UserRole Role { get; set; } = UserRole.Student;
+    public bool IsRestricted { get; set; }
 
     public UserProfile? UserProfile { get; set; }
     public Reputation? Reputation { get; set; }

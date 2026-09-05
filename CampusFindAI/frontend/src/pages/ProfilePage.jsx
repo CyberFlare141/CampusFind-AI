@@ -28,6 +28,7 @@ const emptyProfile = {
   phone: null,
   bio: null,
   avatarUrl: null,
+  isRestricted: false,
 };
 
 export default function ProfilePage() {
@@ -214,6 +215,7 @@ export default function ProfilePage() {
   }
 
   const isOfficerOrAdmin = profile.role === 'SecurityOfficer' || profile.role === 'Administrator';
+  const isRestrictedUser = Boolean(profile.isRestricted ?? user?.isRestricted);
   const displayName = profile.fullName || profile.email?.split('@')[0] || user?.email?.split('@')[0] || 'Campus Member';
   const initials = displayName
     .split(' ')
@@ -274,21 +276,18 @@ export default function ProfilePage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', margin: 0 }}>{displayName}</h1>
-              <RoleBadge role={profile.role} />
+              <RoleBadge role={profile.role} isRestricted={isRestrictedUser} />
             </div>
-            <p className="text-sm text-secondary" style={{ marginBottom: 6 }}>
-              {profile.email} {profile.department ? `· ${profile.department}` : ''}
-            </p>
+            <p className="text-sm text-secondary" style={{ marginBottom: 6 }}>{profile.email}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              <span>🏛️ {profile.university || 'Affiliated Campus'}</span>
-              <span>·</span>
+              {!isRestrictedUser && <><span>🏛️ {profile.university || 'Affiliated Campus'}</span><span>·</span></>}
               <span>Account Status: Active</span>
             </div>
           </div>
         </div>
 
         {/* Right: Edit Profile CTA Action */}
-        <div style={{ zIndex: 1 }}>
+        {!isRestrictedUser && <div style={{ zIndex: 1 }}>
           <motion.button
             className="btn btn-primary btn-md"
             onClick={handleOpenEdit}
@@ -300,11 +299,11 @@ export default function ProfilePage() {
             </svg>
             Edit Profile <span className="btn-arrow">→</span>
           </motion.button>
-        </div>
+        </div>}
       </motion.div>
 
       {/* ── 2. Profile Completeness Indicator ─────────────────── */}
-      <motion.div
+      {!isRestrictedUser && <motion.div
         className="profile-completeness-card"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -337,7 +336,7 @@ export default function ProfilePage() {
             ? 'Your campus identity is complete. All academic credentials are saved in the database.'
             : 'Complete your department and university details to make lost & found matching and ownership verification smoother.'}
         </p>
-      </motion.div>
+      </motion.div>}
 
       {/* ── 3. Tabs Navigation ─────────────────────────────────── */}
       <div className="tabs">
@@ -346,7 +345,7 @@ export default function ProfilePage() {
           className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          Academic Details &amp; Activity
+          {isRestrictedUser ? 'Activity' : 'Academic Details & Activity'}
         </button>
         <button
           type="button"
@@ -436,7 +435,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Structured Academic & Personal Information */}
-          <div className="card card-pad-lg">
+          {!isRestrictedUser && <div className="card card-pad-lg">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: 4 }}>Academic &amp; Personal Details</h3>
@@ -633,7 +632,7 @@ export default function ProfilePage() {
                 )}
               </p>
             </div>
-          </div>
+          </div>}
         </div>
       )}
 

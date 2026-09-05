@@ -11,7 +11,8 @@ namespace CampusFindAI.Api.Controllers;
 [Route("api/[controller]")]
 public class ClaimsController(
     IClaimService service,
-    IOwnershipVerificationService verificationService) : ControllerBase
+    IOwnershipVerificationService verificationService,
+    IInstitutionalAccessService accessService) : ControllerBase
 {
     /// <summary>A student files a claim of ownership against a found item.</summary>
     [HttpPost]
@@ -25,6 +26,7 @@ public class ClaimsController(
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
         var claim = await service.CreateAsync(userId, request, cancellationToken);
 
@@ -146,6 +148,7 @@ public class ClaimsController(
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
         try
         {
@@ -178,6 +181,7 @@ public class ClaimsController(
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
         try
         {

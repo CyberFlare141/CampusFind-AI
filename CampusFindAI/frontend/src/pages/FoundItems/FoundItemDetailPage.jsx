@@ -79,7 +79,7 @@ export default function FoundItemDetailPage() {
   if (!item) return null;
 
   const isMine = item.userId === user?.id;
-  const canClaimItems = user?.role !== 'Administrator';
+  const canClaimItems = !user?.isRestricted && user?.role !== 'Administrator';
   const images = item.imageUrls ?? [];
 
   return (
@@ -96,6 +96,9 @@ export default function FoundItemDetailPage() {
       )}
       {claimSuccess && (
         <Alert type="success">Your ownership claim has been submitted. Campus Security will verify the details and notify you.</Alert>
+      )}
+      {user?.isRestricted && (
+        <Alert type="info">Restricted accounts can browse this item, but institutional access is required to submit an ownership claim. Use Officer Request from the navigation to apply.</Alert>
       )}
 
       <motion.div

@@ -127,7 +127,7 @@ export default function LostItemFormPage() {
     }
   }
 
-  if (user?.role === 'Administrator') return <Navigate to="/lost-items" replace />;
+  if (user?.role === 'Administrator' || user?.isRestricted) return <Navigate to="/lost-items" replace />;
 
   /* ── Success State ─────────────────────────────────────────── */
   if (submitted) {

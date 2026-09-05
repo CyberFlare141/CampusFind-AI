@@ -48,6 +48,7 @@ public class UserService(
             Email = email,
             NormalizedEmail = Normalize(email),
             Role = role,
+            IsRestricted = !IsEduEmail(email),
             EmailConfirmed = false,
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString(),
@@ -149,7 +150,8 @@ public class UserService(
             {
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                IsRestricted = user.IsRestricted
             }
         };
     }
@@ -226,6 +228,12 @@ public class UserService(
 
     private static string Normalize(string value) => value.Trim().ToUpperInvariant();
 
+    private static bool IsEduEmail(string email)
+    {
+        var at = email.LastIndexOf('@');
+        return at >= 0 && email[(at + 1)..].EndsWith(".edu", StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task<ApplicationUser> RequireUserAsync(string userId, CancellationToken cancellationToken) =>
         await userRepository.GetByIdAsync(userId, cancellationToken) ?? throw new UnauthorizedAccessException("Your account could not be found.");
 
@@ -233,6 +241,7 @@ public class UserService(
     {
         Email = user.Email ?? string.Empty,
         Role = user.Role.ToString(),
+        IsRestricted = user.IsRestricted,
         FullName = profile?.FullName,
         University = profile?.University,
         Department = profile?.Department,
