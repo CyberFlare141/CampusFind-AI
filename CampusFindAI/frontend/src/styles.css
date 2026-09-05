@@ -1,38 +1,55 @@
 /* ============================================================
-   CampusFind AI — Design System v3.5 (Premium Art-Directed)
-   Palette: Warm Ivory (#F7F4ED) · Light Sage (#C7D3C0) ·
-            Primary Sage (#8FA28A) · Restrained Gold (#C8A96B)
+   CampusFind AI — Design System
+   Campus green, teal discovery, and violet AI accents
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
 
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
+  --color-primary: #166534;
+  --color-primary-soft: #4F7A57;
+  --color-success: #22C55E;
+  --color-sage: #DCE7D8;
+  --color-teal: #0F766E;
+  --color-ai: #7C6CC4;
+  --color-bg: #F8F7F2;
+  --color-surface: #FFFFFF;
+  --color-text: #17211B;
+  --color-text-muted: #64748B;
+  --color-border: #E2E8E0;
+  --color-danger: #DC2626;
+  --color-warning: #F59E0B;
   /* ── 4 Surface Levels ── */
   /* Level 0: Primary canvas */
-  --bg:               #F8F7F2;
+  --bg:               var(--color-bg);
   /* Level 1: Soft supporting surface */
-  --surface:          #DCE7D8;
+  --surface:          var(--color-sage);
   --surface-hover:    #D1E0CC;
   --surface-tinted:   #EEF3EB;
   /* Level 2: Elevated surface (warm ivory / subtle tonal variation) */
-  --surface-raised:   #FFFFFF;
-  --surface-card:     #FFFFFF;
+  --surface-raised:   var(--color-surface);
+  --surface-card:     var(--color-surface);
   --surface-card-alt: #F6F8F4;
   /* Level 3: Inset control */
   --surface-inset:    #F2F5F0;
 
   /* ── Primary & Accent Colors ── */
-  --primary:          #8FA28A;   /* Primary Sage — buttons, active states */
-  --primary-hover:    #7C9177;   /* Sage hover */
-  --primary-deep:     #4A6347;   /* Deep sage — links, high contrast text */
-  --primary-subtle:   rgba(143, 162, 138, 0.16);
-  --primary-glow:     rgba(143, 162, 138, 0.28);
+  --primary:          var(--color-primary);
+  --primary-hover:    #14532D;
+  --primary-deep:     #14532D;
+  --primary-soft:     var(--color-primary-soft);
+  --primary-subtle:   rgba(22, 101, 52, 0.12);
+  --primary-glow:     rgba(22, 101, 52, 0.22);
 
-  --accent:           #C8A96B;   /* Warm Gold — premium accents only */
-  --accent-hover:     #B59556;
-  --accent-deep:      #7A5F28;
-  --accent-bg:        rgba(200, 169, 107, 0.12);
-  --accent-border:    rgba(200, 169, 107, 0.35);
+  --accent:           var(--color-teal);
+  --accent-hover:     #0B5D57;
+  --accent-deep:      #115E59;
+  --accent-bg:        rgba(15, 118, 110, 0.11);
+  --accent-border:    rgba(15, 118, 110, 0.26);
+  --ai:               var(--color-ai);
+  --ai-deep:          #5B4BA0;
+  --ai-bg:            #F0EDFC;
+  --ai-border:        #DCD5F7;
 
   /* ── Ownership Verification Tokens ── */
   --verify-primary:   #84B179;
@@ -41,15 +58,15 @@
   --verify-text:      #1F2937;
 
   /* ── Text ── */
-  --text-primary:     #252C22;   /* Deep warm charcoal */
-  --text-secondary:   #4A5A47;   /* Sage-tinted dark grey */
-  --text-muted:       #768873;   /* Soft sage-grey */
-  --text-inverse:     #FAFAF8;   /* Warm white */
+  --text-primary:     var(--color-text);
+  --text-secondary:   #46564B;
+  --text-muted:       var(--color-text-muted);
+  --text-inverse:     #FFFFFF;
 
   /* ── Borders ── */
-  --border:           rgba(44, 51, 41, 0.09);
+  --border:           var(--color-border);
   --border-medium:    rgba(44, 51, 41, 0.16);
-  --border-focus:     #8FA28A;
+  --border-focus:     var(--color-primary);
 
   /* ── Soft Neumorphic & Elevation Shadows ── */
   --shadow-soft:
@@ -70,12 +87,12 @@
   --shadow-xl:        0 24px 64px rgba(44, 51, 41, 0.15);
 
   /* ── Status Colors ── */
-  --success:          #2B734E;
-  --success-bg:       #D8EEDF;
-  --warning:          #8A6010;
-  --warning-bg:       #FBF0D8;
-  --danger:           #A82424;
-  --danger-bg:        #FBE8E8;
+  --success:          var(--color-success);
+  --success-bg:       #DCFCE7;
+  --warning:          var(--color-warning);
+  --warning-bg:       #FEF3C7;
+  --danger:           var(--color-danger);
+  --danger-bg:        #FEE2E2;
   --info:             #3B6B8C;
   --info-bg:          #E2EEF7;
 
@@ -122,27 +139,6 @@
   --transition-slow:  var(--dur-component) var(--ease-smooth);
   --transition-page:  var(--dur-page) var(--ease-smooth);
 
-  /* Campus utility palette overrides */
-  --primary: #4F7A57;
-  --primary-hover: #3E6547;
-  --primary-deep: #166534;
-  --primary-subtle: rgba(79, 122, 87, 0.13);
-  --primary-glow: rgba(79, 122, 87, 0.22);
-  --accent: #0F766E;
-  --accent-hover: #0B5D57;
-  --accent-deep: #115E59;
-  --accent-bg: rgba(15, 118, 110, 0.11);
-  --accent-border: rgba(15, 118, 110, 0.26);
-  --ai: #7C6CC4;
-  --ai-deep: #5B4BA0;
-  --ai-bg: #F0EDFC;
-  --ai-border: #DCD5F7;
-  --text-primary: #17211B;
-  --text-secondary: #46564B;
-  --text-muted: #64748B;
-  --border: #E2E8E0;
-  --border-medium: #CBD7C9;
-  --border-focus: #4F7A57;
   --radius-lg: 18px;
   --radius-xl: 18px;
   --font-body: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
@@ -174,7 +170,7 @@ img { max-width: 100%; display: block; }
   outline-offset: 2px;
   border-radius: 4px;
 }
-::selection { background: rgba(143, 162, 138, 0.30); color: var(--text-primary); }
+::selection { background: var(--surface); color: var(--text-primary); }
 
 /* ── Typography Scale ────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
@@ -348,7 +344,7 @@ p  { margin: 0; line-height: 1.65; }
 .card-hover:hover {
   box-shadow: var(--shadow-elevated);
   transform: translateY(-2px);
-  border-color: rgba(143, 162, 138, 0.35);
+  border-color: rgba(22, 101, 52, 0.35);
 }
 
 .card-pad    { padding: var(--space-6); }
@@ -455,13 +451,13 @@ p  { margin: 0; line-height: 1.65; }
   background: var(--accent);
   color: #251D0B;
   border-color: var(--accent);
-  box-shadow: 0 3px 12px rgba(200, 169, 107, 0.35);
+  box-shadow: 0 3px 12px rgba(15, 118, 110, 0.28);
   font-weight: 700;
 }
 .btn-accent:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(200, 169, 107, 0.45);
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.36);
 }
 
 .btn-sm    { padding: 0.45rem 1rem; font-size: 0.82rem; border-radius: var(--radius-sm); }
@@ -551,7 +547,7 @@ textarea { resize: vertical; min-height: 110px; }
 .badge-warning { background: var(--warning-bg); color: var(--warning); }
 .badge-danger  { background: var(--danger-bg);  color: var(--danger); }
 .badge-neutral { background: var(--surface-tinted); color: var(--text-secondary); }
-.badge-primary { background: rgba(143, 162, 138, 0.22); color: var(--primary-deep); border: 1px solid rgba(143, 162, 138, 0.35); }
+.badge-primary { background: var(--primary-subtle); color: var(--primary-deep); border: 1px solid rgba(22, 101, 52, 0.35); }
 .badge-accent  { background: var(--accent-bg);  color: var(--accent-deep); border: 1px solid var(--accent-border); }
 
 /* ── Alerts / Notices ───────────────────────────────────────── */
@@ -915,8 +911,8 @@ textarea { resize: vertical; min-height: 110px; }
 }
 .stat-card .sub { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
 .stat-card.accent {
-  border-color: var(--accent-border);
-  background: linear-gradient(145deg, var(--surface-card), var(--accent-bg));
+  border-color: var(--ai-border);
+  background: linear-gradient(145deg, var(--surface-card), var(--ai-bg));
 }
 .stat-card .stat-link {
   font-size: 0.85rem;
@@ -1136,7 +1132,7 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
 
 /* ── Dashboard Hero (Level 2 Elevated Tactile Showcase) ───────── */
 .dashboard-hero {
-  background: linear-gradient(155deg, var(--surface-card) 0%, #E8E3D7 100%);
+  background: linear-gradient(155deg, var(--surface-card) 0%, #EFF6EC 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-2xl);
   padding: var(--space-10) var(--space-12);
@@ -1150,7 +1146,7 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
   position: absolute;
   width: 380px; height: 380px;
   border-radius: 50%;
-  background: rgba(143, 162, 138, 0.14);
+  background: rgba(22, 101, 52, 0.12);
   top: -140px; right: -90px;
   pointer-events: none;
 }
@@ -1158,7 +1154,7 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
   content: '';
   position: absolute;
   width: 6px; height: 60%;
-  background: linear-gradient(to bottom, var(--accent), rgba(200, 169, 107, 0));
+  background: linear-gradient(to bottom, var(--ai), rgba(124, 108, 196, 0));
   left: 0; top: 20%;
   border-radius: 0 4px 4px 0;
   opacity: 0.85;
@@ -1183,22 +1179,13 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
 
 /* ── AI Match / Spotlight Card ───────────────────────────────── */
 .ai-match-card {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+  background: #F4F8F3;
+  border: 1px solid var(--surface);
   border-radius: var(--radius-xl);
-  padding: var(--space-7);
-  color: white;
+  padding: 22px 28px;
+  color: var(--text-primary);
   position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-elevated);
-}
-.ai-match-card::before {
-  content: '';
-  position: absolute;
-  width: 220px; height: 220px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  top: -70px; right: -50px;
-  pointer-events: none;
+  box-shadow: var(--shadow-sm);
 }
 .ai-match-title {
   display: flex;
@@ -1208,21 +1195,69 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: var(--space-3);
+  color: var(--ai-deep);
+  margin: 0;
   font-family: var(--font-display);
 }
-.ai-match-bar {
-  height: 7px;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  margin-bottom: var(--space-4);
+.ai-match-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-.ai-match-bar-fill {
-  height: 100%;
-  background: rgba(255, 255, 255, 0.92);
+.ai-match-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
   border-radius: var(--radius-full);
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--primary-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.ai-match-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14);
+}
+.ai-match-metric {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.ai-match-description {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin-bottom: 3px;
+}
+.ai-match-detail {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+.ai-match-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.ai-match-actions .btn {
+  min-height: 34px;
+}
+@media (max-width: 560px) {
+  .ai-match-card { padding: 22px; }
+  .ai-match-actions { display: grid; grid-template-columns: 1fr; }
+  .ai-match-actions .btn { width: 100%; }
 }
 
 /* ── Dashboard Columns (Asymmetric Visual Rhythm) ───────────── */
@@ -1761,8 +1796,7 @@ input:checked + .toggle-slider:before {
     transform: none !important;
   }
   .empty-state-icon-wrap,
-  .dashboard-hero > div:first-child,
-  .ai-match-bar-fill {
+  .dashboard-hero > div:first-child {
     animation: none !important;
     transform: none !important;
   }
