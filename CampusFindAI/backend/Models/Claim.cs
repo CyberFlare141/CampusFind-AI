@@ -23,6 +23,9 @@ public class Claim
     public string? HandedOverByUserId { get; set; }
     public DateTime? HandedOverAt { get; set; }
     public string? HandoverNotes { get; set; }
+    public string? HandoverQrToken { get; set; }
+    public DateTime? HandoverQrCreatedAt { get; set; }
+    public DateTime? HandoverQrUsedAt { get; set; }
 
     public FoundItem? FoundItem { get; set; }
     public ApplicationUser? ClaimantUser { get; set; }

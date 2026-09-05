@@ -51,7 +51,7 @@ public sealed class OwnershipVerificationService(
         var answers = Answers(request.Answers, v.TotalQuestions);
         v.SubmittedAnswersJson = _protector.Protect(JsonSerializer.Serialize(answers)); v.AttemptCount++; v.Status = "PendingSecurityReview"; v.SubmittedAt = DateTime.UtcNow; v.Passed = false; v.ConfidenceScore = null; v.MatchedCount = null; v.EvaluationResultJson = null;
         await verifications.UpdateAsync(v, ct); await audit.LogAsync(userId, "VerificationSubmitted", $"Ownership verification submitted for Security review for match {matchId}.", ct);
-        foreach (var officer in (await users.GetByRoleAsync(UserRole.SecurityOfficer, ct)).Concat(await users.GetByRoleAsync(UserRole.Administrator, ct)).DistinctBy(x => x.Id)) await notifications.CreateAsync(officer.Id, $"Ownership verification requires review for Claim #{v.ClaimId.ToString("N")[..8].ToUpperInvariant()}.", ct);
+        foreach (var officer in (await users.GetByRoleAsync(UserRole.SecurityOfficer, ct)).Concat(await users.GetByRoleAsync(UserRole.Administrator, ct)).DistinctBy(x => x.Id)) await notifications.CreateAsync(officer.Id, $"Ownership verification requires review for Claim #{v.ClaimId.ToString("N")[..8].ToUpperInvariant()}.", "/security/ownership-verifications", "verification-review", ct);
         return new() { Status = v.Status, AttemptsRemaining = Math.Max(0, v.MaxAttempts - v.AttemptCount), CanAccessHandoverChat = false, Message = "Ownership verification submitted. Your answers are waiting for review by a Security Officer." };
     }
 
@@ -63,8 +63,8 @@ public sealed class OwnershipVerificationService(
         var match = await matches.GetByIdAsync(v.MatchId!.Value, ct) ?? throw new KeyNotFoundException("AI match not found.");
         v.Status = approve ? "Approved" : v.AttemptCount >= v.MaxAttempts ? "AttemptsExhausted" : "Rejected"; v.Passed = approve; v.PassedAt = approve ? DateTime.UtcNow : null; v.SecurityReviewedByUserId = officerId; v.SecurityReviewedAt = DateTime.UtcNow; v.SecurityReviewNote = note?.Trim(); await verifications.UpdateAsync(v, ct);
         await audit.LogAsync(officerId, approve ? "VerificationSecurityApproved" : "VerificationSecurityRejected", $"Security reviewed ownership verification {v.Id}; approved={approve}.", ct);
-        await notifications.CreateAsync(match.LostItem!.UserId, approve ? "Ownership verification approved. Secure handover chat is now available." : "Ownership verification was not approved by Security.", ct);
-        if (approve) { await notifications.CreateAsync(match.FoundItem!.UserId, "Ownership verification for your found item was approved. Secure handover chat is now available.", ct); await audit.LogAsync(officerId, "HandoverChatUnlocked", $"Handover chat eligibility unlocked for match {match.Id}.", ct); }
+        await notifications.CreateAsync(match.LostItem!.UserId, approve ? "Ownership verification approved. Secure handover chat is now available." : "Ownership verification was not approved by Security.", "/my-claims", approve ? "verification-approved" : "verification-rejected", ct);
+        if (approve) { await notifications.CreateAsync(match.FoundItem!.UserId, "Ownership verification for your found item was approved. Secure handover chat is now available.", "/security/claims", "verification-approved", ct); await audit.LogAsync(officerId, "HandoverChatUnlocked", $"Handover chat eligibility unlocked for match {match.Id}.", ct); }
         return await SecurityReview(v, ct);
     }
     public Task<bool> CanAccessHandoverChatAsync(Guid matchId, string userId, CancellationToken ct = default) => CanChat(matchId, userId, ct);

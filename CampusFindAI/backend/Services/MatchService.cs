@@ -149,7 +149,7 @@ public class MatchService(ILostItemRepository lostItemRepository, IFoundItemRepo
             if (await matchRepository.ExistsAsync(suggestion.LostItemId, suggestion.FoundItemId, cancellationToken)) continue;
             await matchRepository.AddAsync(new Match { Id = Guid.NewGuid(), LostItemId = suggestion.LostItemId, FoundItemId = suggestion.FoundItemId, ConfidenceScore = suggestion.ConfidenceScore }, cancellationToken);
             if (suggestion.ConfidenceScore >= NotificationThreshold)
-                await notificationService.CreateAsync(suggestion.LostItemUserId, $"Possible match found: Your {suggestion.LostItemTitle} has a {Math.Round(suggestion.ConfidenceScore)}% match with a recently found item.", cancellationToken);
+                await notificationService.CreateAsync(suggestion.LostItemUserId, $"Possible match found: Your {suggestion.LostItemTitle} has a {Math.Round(suggestion.ConfidenceScore)}% match with a recently found item.", "/my-matches", "match-found", cancellationToken);
         }
         await matchRepository.SaveChangesAsync(cancellationToken);
     }

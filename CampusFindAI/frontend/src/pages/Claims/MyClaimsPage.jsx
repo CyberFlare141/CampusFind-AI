@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getMyClaims } from '../../api/claims';
+import { getHandoverQr, getMyClaims } from '../../api/claims';
+import { QRCodeSVG } from 'qrcode.react';
 import { getAllFoundItems } from '../../api/foundItems';
 import { Alert, EmptyState, PageLoading, SkeletonGrid, ItemCard, StatusBadge, formatDate } from '../../components/Ui';
 import VerificationModal from '../../components/VerificationModal';
@@ -65,6 +66,26 @@ function ClaimTimeline({ status, verificationStatus }) {
           Claim was reviewed and declined by Security.
         </p>
       )}
+    </div>
+  );
+}
+
+function HandoverQrCard({ claim }) {
+  const [qr, setQr] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    if (claim.status !== 'Approved') return;
+    getHandoverQr(claim.id).then(setQr).catch(err => setError(err.message));
+  }, [claim.id, claim.status]);
+  if (claim.status !== 'Approved') return null;
+  return (
+    <div style={{ marginBottom: 14, padding: 16, borderRadius: 12, background: 'var(--success-bg)', border: '1px solid var(--success)', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+      {qr ? <QRCodeSVG value={qr.token} size={150} bgColor="#ffffff" includeMargin /> : <div style={{ width: 150, height: 150, display: 'grid', placeItems: 'center', background: '#fff' }}>{error ? 'QR unavailable' : 'Loading QR…'}</div>}
+      <div style={{ flex: 1, minWidth: 220 }}>
+        <strong style={{ display: 'block', marginBottom: 5, color: 'var(--success)' }}>Claim approved</strong>
+        <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>Show this QR code at the Security Desk. The officer will scan and confirm the handover before the item is marked returned.</p>
+        {error && <p className="text-xs" style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
+      </div>
     </div>
   );
 }
@@ -343,6 +364,8 @@ export default function MyClaimsPage() {
                   {claim.claimantNotes}
                 </div>
               )}
+
+              <HandoverQrCard claim={claim} />
 
               {claim.decisionNotes && (
                 <div style={{

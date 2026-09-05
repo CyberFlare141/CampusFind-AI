@@ -164,5 +164,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<SecurityOfficerRequest>().Property(x => x.AdditionalInformation).HasMaxLength(2000);
         builder.Entity<SecurityOfficerRequest>().Property(x => x.AdminNotes).HasMaxLength(1000);
         builder.Entity<SecurityOfficerRequest>().Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Entity<Claim>().Property(x => x.HandoverQrToken).HasMaxLength(128);
     }
 }

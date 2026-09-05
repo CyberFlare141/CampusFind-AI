@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getPendingClaims, getAllClaims, decideClaim, completeHandover, getClaimReview, getOfficerVerificationReview } from '../../api/claims';
+import { getPendingClaims, getAllClaims, decideClaim, confirmHandoverQr, getClaimReview, getOfficerVerificationReview } from '../../api/claims';
 import { Alert, ButtonSpinner, EmptyState, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
@@ -100,6 +100,7 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [showHandover, setShowHandover] = useState(false);
+  const [scannedToken, setScannedToken] = useState('');
   const [handoverNotes, setHandoverNotes] = useState('');
   const [handoverSuccess, setHandoverSuccess] = useState('');
 
@@ -140,7 +141,7 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
     setSubmitting(true);
     setRowError('');
     try {
-      const result = await completeHandover(claim.id, { handoverNotes: handoverNotes.trim() || undefined });
+      const result = await confirmHandoverQr(claim.id, { token: scannedToken.trim(), handoverNotes: handoverNotes.trim() || undefined });
       onDecided(result.claim);
       setHandoverSuccess(
         result.closedLostReportsCount > 0
@@ -246,17 +247,21 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
           animate={{ opacity: 1, height: 'auto' }}
           style={{ marginTop: 16, padding: 16, borderRadius: 'var(--radius-md)', background: 'var(--success-bg)', border: '1px solid var(--success)' }}
         >
-          <h4 style={{ marginBottom: 6 }}>Confirm in-person handover</h4>
+          <h4 style={{ marginBottom: 6 }}>Scan student handover QR</h4>
           <p className="text-sm" style={{ marginBottom: 12 }}>
-            Confirm only after the item has been physically returned to the approved claimant. This marks the item as returned and closes any AI-linked open lost reports belonging to them.
+            Scan the student's QR code with the Security Desk scanner, or paste the scanned token below. Confirm only after the item has been physically returned.
           </p>
+          <div className="form-field">
+            <label htmlFor={`handover-qr-${claim.id}`}>QR token</label>
+            <input id={`handover-qr-${claim.id}`} autoFocus value={scannedToken} onChange={e => setScannedToken(e.target.value)} placeholder="Scan QR code here" required />
+          </div>
           <div className="form-field">
             <label htmlFor={`handover-notes-${claim.id}`}>Handover notes (optional)</label>
             <textarea id={`handover-notes-${claim.id}`} rows={2} value={handoverNotes} onChange={(e) => setHandoverNotes(e.target.value)} placeholder="e.g. Student ID verified at Security Desk" />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <motion.button type="submit" className="btn btn-primary btn-sm" disabled={submitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              {submitting && <ButtonSpinner />} Confirm Handover
+              {submitting && <ButtonSpinner />} Approve QR &amp; Complete Handover
             </motion.button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowHandover(false)} disabled={submitting}>Cancel</button>
           </div>
@@ -279,8 +284,8 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
           </>
         )}
         {claim.status === 'Approved' && !showHandover && (
-          <motion.button type="button" className="btn btn-primary btn-sm" onClick={() => { setShowHandover(true); setHandoverSuccess(''); }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-            ✓ Confirm Handover
+          <motion.button type="button" className="btn btn-primary btn-sm" onClick={() => { setShowHandover(true); setHandoverSuccess(''); setScannedToken(''); }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            Scan Student QR
           </motion.button>
         )}
         {claim.status === 'Returned' && (

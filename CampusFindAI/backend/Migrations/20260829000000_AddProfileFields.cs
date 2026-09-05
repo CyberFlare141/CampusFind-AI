@@ -12,11 +12,18 @@ public partial class AddProfileFields : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AddColumn<string>(name: "Department", table: "UserProfiles", type: "nvarchar(120)", maxLength: 120, nullable: true);
-        migrationBuilder.AddColumn<string>(name: "JobTitle", table: "UserProfiles", type: "nvarchar(120)", maxLength: 120, nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Semester", table: "UserProfiles", type: "nvarchar(40)", maxLength: 40, nullable: true);
-        migrationBuilder.AddColumn<string>(name: "StudentId", table: "UserProfiles", type: "nvarchar(50)", maxLength: 50, nullable: true);
-        migrationBuilder.AddColumn<DateTime>(name: "CreatedAt", table: "Notifications", type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()");
+        migrationBuilder.Sql("""
+            IF COL_LENGTH('UserProfiles', 'Department') IS NULL
+                ALTER TABLE UserProfiles ADD Department nvarchar(120) NULL;
+            IF COL_LENGTH('UserProfiles', 'JobTitle') IS NULL
+                ALTER TABLE UserProfiles ADD JobTitle nvarchar(120) NULL;
+            IF COL_LENGTH('UserProfiles', 'Semester') IS NULL
+                ALTER TABLE UserProfiles ADD Semester nvarchar(40) NULL;
+            IF COL_LENGTH('UserProfiles', 'StudentId') IS NULL
+                ALTER TABLE UserProfiles ADD StudentId nvarchar(50) NULL;
+            IF COL_LENGTH('Notifications', 'CreatedAt') IS NULL
+                ALTER TABLE Notifications ADD CreatedAt datetime2 NOT NULL CONSTRAINT DF_Notifications_CreatedAt_Migration DEFAULT GETUTCDATE();
+            """);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)

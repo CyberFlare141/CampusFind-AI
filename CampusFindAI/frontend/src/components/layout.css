@@ -725,6 +725,35 @@
   text-transform: uppercase;
 }
 .notification-row:hover { background: var(--surface-card-alt) !important; }
+.notification-toast {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 86px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  display: grid;
+  gap: 4px;
+  padding: 13px 15px;
+  text-align: left;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+  z-index: 31;
+}
+.notification-toast strong { color: var(--primary-deep); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.notification-toast span { font-size: .86rem; line-height: 1.4; }
+.nav-unread-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #4f9f63;
+  box-shadow: 0 0 0 3px rgba(79, 159, 99, .14);
+}
 
 @media (max-width: 768px) {
   .app-shell {

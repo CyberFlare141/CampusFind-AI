@@ -17,7 +17,7 @@ public class NotificationsController(ApplicationDbContext dbContext) : Controlle
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
-        var notifications = await dbContext.Notifications.AsNoTracking().Where(item => item.UserId == userId).OrderByDescending(item => item.CreatedAt).Take(20).Select(item => new NotificationDto { Id = item.Id, Message = item.Message, IsRead = item.IsRead, CreatedAt = item.CreatedAt }).ToListAsync(cancellationToken);
+        var notifications = await dbContext.Notifications.AsNoTracking().Where(item => item.UserId == userId).OrderByDescending(item => item.CreatedAt).Take(50).Select(item => new NotificationDto { Id = item.Id, Message = item.Message, Link = item.Link, Category = item.Category, IsRead = item.IsRead, CreatedAt = item.CreatedAt }).ToListAsync(cancellationToken);
         return Ok(notifications);
     }
 

@@ -11,38 +11,18 @@ namespace CampusFindAI.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedAt",
-                table: "FoundItems",
-                type: "datetime2",
-                nullable: false,
-                defaultValueSql: "GETUTCDATE()");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Status",
-                table: "FoundItems",
-                type: "nvarchar(30)",
-                maxLength: 30,
-                nullable: false,
-                defaultValue: "Available");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "HandedOverAt",
-                table: "Claims",
-                type: "datetime2",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "HandedOverByUserId",
-                table: "Claims",
-                type: "nvarchar(max)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "HandoverNotes",
-                table: "Claims",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.Sql("""
+                IF COL_LENGTH('FoundItems', 'CreatedAt') IS NULL
+                    ALTER TABLE FoundItems ADD CreatedAt datetime2 NOT NULL CONSTRAINT DF_FoundItems_CreatedAt_Migration DEFAULT GETUTCDATE();
+                IF COL_LENGTH('FoundItems', 'Status') IS NULL
+                    ALTER TABLE FoundItems ADD Status nvarchar(30) NOT NULL CONSTRAINT DF_FoundItems_Status_Migration DEFAULT 'Available';
+                IF COL_LENGTH('Claims', 'HandedOverAt') IS NULL
+                    ALTER TABLE Claims ADD HandedOverAt datetime2 NULL;
+                IF COL_LENGTH('Claims', 'HandedOverByUserId') IS NULL
+                    ALTER TABLE Claims ADD HandedOverByUserId nvarchar(max) NULL;
+                IF COL_LENGTH('Claims', 'HandoverNotes') IS NULL
+                    ALTER TABLE Claims ADD HandoverNotes nvarchar(max) NULL;
+                """);
 
             migrationBuilder.CreateTable(
                 name: "ClaimVerifications",

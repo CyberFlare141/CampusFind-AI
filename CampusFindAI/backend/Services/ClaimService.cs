@@ -2,6 +2,8 @@ using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace CampusFindAI.Api.Services;
 
@@ -65,6 +67,8 @@ public class ClaimService(
         await CreateNotificationAsync(
             foundItem.UserId,
             $"A new ownership claim was submitted for your found-item report: {foundItem.Title}.",
+            $"/found-items/{foundItem.Id}",
+            "claim-request",
             cancellationToken);
 
         var saved = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -143,7 +147,8 @@ public class ClaimService(
             VerificationMatchedCount = v?.MatchedCount,
             VerificationTotalQuestions = v?.TotalQuestions,
             VerificationPassed = v?.Passed,
-            VerificationAttemptsRemaining = v is not null ? Math.Max(0, v.MaxAttempts - v.AttemptCount) : null
+            VerificationAttemptsRemaining = v is not null ? Math.Max(0, v.MaxAttempts - v.AttemptCount) : null,
+            VerificationMatchId = v?.MatchId
         };
     }
 
@@ -175,6 +180,15 @@ public class ClaimService(
         claim.ReviewedByUserId = officerUserId;
         claim.ReviewedAt = DateTime.UtcNow;
         claim.DecisionNotes = request.DecisionNotes?.Trim();
+        if (request.Approve)
+        {
+            if (string.IsNullOrWhiteSpace(claim.HandoverQrToken))
+            {
+                claim.HandoverQrToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+                claim.HandoverQrCreatedAt = DateTime.UtcNow;
+            }
+            claim.HandoverQrUsedAt = null;
+        }
 
         claimRepository.Update(claim);
         await claimRepository.SaveChangesAsync(cancellationToken);
@@ -195,6 +209,8 @@ public class ClaimService(
             request.Approve
                 ? $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was approved."
                 : $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was not approved.",
+            "/my-claims",
+            request.Approve ? "claim-approved" : "claim-rejected",
             cancellationToken);
 
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -214,11 +230,17 @@ public class ClaimService(
         {
             throw new InvalidOperationException("Only an approved claim can be completed as a handover.");
         }
+        var scannedToken = NormalizeHandoverToken(request.Token);
+        if (string.IsNullOrWhiteSpace(scannedToken) || claim.HandoverQrUsedAt is not null || !CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(claim.HandoverQrToken ?? string.Empty), System.Text.Encoding.UTF8.GetBytes(scannedToken)))
+        {
+            throw new InvalidOperationException("This QR code does not match the approved claim or has already been used.");
+        }
 
         claim.Status = "Returned";
         claim.HandedOverByUserId = officerUserId;
         claim.HandedOverAt = DateTime.UtcNow;
         claim.HandoverNotes = request.HandoverNotes?.Trim();
+        claim.HandoverQrUsedAt = DateTime.UtcNow;
         claimRepository.Update(claim);
         await claimRepository.SaveChangesAsync(cancellationToken);
         await foundItemRepository.UpdateStatusAsync(claim.FoundItemId, "Returned", cancellationToken);
@@ -241,11 +263,11 @@ public class ClaimService(
             cancellationToken);
 
         var title = claim.FoundItem?.Title ?? "the found item";
-        await CreateNotificationAsync(claim.ClaimantUserId, $"Handover complete: {title} has been returned to you.", cancellationToken);
+        await CreateNotificationAsync(claim.ClaimantUserId, $"Handover complete: {title} has been returned to you.", "/my-claims", "handover-complete", cancellationToken);
         var foundItem = await foundItemRepository.GetByIdAsync(claim.FoundItemId, cancellationToken);
         if (foundItem is not null)
         {
-            await CreateNotificationAsync(foundItem.UserId, $"Handover complete: {title} has been returned to its owner.", cancellationToken);
+            await CreateNotificationAsync(foundItem.UserId, $"Handover complete: {title} has been returned to its owner.", $"/found-items/{foundItem.Id}", "handover-complete", cancellationToken);
         }
 
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -256,8 +278,59 @@ public class ClaimService(
         };
     }
 
-    private Task CreateNotificationAsync(string userId, string message, CancellationToken cancellationToken) =>
-        notificationService.CreateAsync(userId, message, cancellationToken);
+    public async Task<HandoverQrDto> GetHandoverQrAsync(Guid claimId, string claimantUserId, CancellationToken cancellationToken = default)
+    {
+        var claim = await claimRepository.GetByIdAsync(claimId, cancellationToken)
+            ?? throw new KeyNotFoundException("Claim not found.");
+        if (claim.ClaimantUserId != claimantUserId) throw new UnauthorizedAccessException();
+        if (claim.Status != StatusApproved || claim.HandoverQrUsedAt is not null)
+            throw new InvalidOperationException("A handover QR code is not available for this claim.");
+
+        if (string.IsNullOrWhiteSpace(claim.HandoverQrToken))
+        {
+            claim.HandoverQrToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            claim.HandoverQrCreatedAt = DateTime.UtcNow;
+            claimRepository.Update(claim);
+            await claimRepository.SaveChangesAsync(cancellationToken);
+        }
+
+        return new HandoverQrDto { ClaimId = claim.Id, Token = claim.HandoverQrToken, CreatedAt = claim.HandoverQrCreatedAt ?? claim.ReviewedAt ?? DateTime.UtcNow };
+    }
+
+    public async Task<CompleteHandoverResponseDto> ConfirmHandoverQrAsync(Guid claimId, string officerUserId, HandoverQrConfirmationDto request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(NormalizeHandoverToken(request.Token))) throw new InvalidOperationException("Scan the student's QR code or paste its value before confirming.");
+        return await CompleteHandoverAsync(claimId, officerUserId, new CompleteHandoverDto { Token = request.Token, HandoverNotes = request.HandoverNotes }, cancellationToken);
+    }
+
+    private static string NormalizeHandoverToken(string? rawToken)
+    {
+        var token = Uri.UnescapeDataString(rawToken?.Trim().Trim('"', '\'') ?? string.Empty);
+        if (token.StartsWith('{') && token.EndsWith('}'))
+        {
+            try
+            {
+                using var payload = JsonDocument.Parse(token);
+                if (payload.RootElement.TryGetProperty("token", out var tokenProperty))
+                    token = tokenProperty.GetString()?.Trim() ?? string.Empty;
+            }
+            catch (JsonException)
+            {
+                return string.Empty;
+            }
+        }
+
+        if (Uri.TryCreate(token, UriKind.Absolute, out var uri))
+        {
+            var queryToken = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)["token"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(queryToken)) return queryToken.Trim().ToUpperInvariant();
+        }
+
+        return new string(token.Where(character => !char.IsWhiteSpace(character)).ToArray()).ToUpperInvariant();
+    }
+
+    private Task CreateNotificationAsync(string userId, string message, string link, string category, CancellationToken cancellationToken) =>
+        notificationService.CreateAsync(userId, message, link, category, cancellationToken);
 
     private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null)
     {
@@ -284,7 +357,8 @@ public class ClaimService(
             VerificationMatchedCount = verification?.MatchedCount,
             VerificationTotalQuestions = verification?.TotalQuestions,
             VerificationPassed = verification?.Passed,
-            VerificationAttemptsRemaining = verification is not null ? Math.Max(0, verification.MaxAttempts - verification.AttemptCount) : null
+            VerificationAttemptsRemaining = verification is not null ? Math.Max(0, verification.MaxAttempts - verification.AttemptCount) : null,
+            VerificationMatchId = verification?.MatchId
         };
     }
 

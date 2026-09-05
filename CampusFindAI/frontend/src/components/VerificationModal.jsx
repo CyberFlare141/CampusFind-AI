@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getOrGenerateVerification, submitVerificationAnswers } from '../api/claims';
+import { getMyMatches } from '../api/matches';
+import { startOwnershipVerification, submitOwnershipVerification } from '../api/ownershipVerification';
 import { Alert, ButtonSpinner } from './Ui';
 
 export default function VerificationModal({ claim, isOpen, onClose, onComplete }) {
@@ -14,6 +15,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
   const [result, setResult] = useState(null);
   const [attemptsRemaining, setAttemptsRemaining] = useState(null);
   const [fallbackMessage, setFallbackMessage] = useState('');
+  const [matchId, setMatchId] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !claim?.id) return;
@@ -25,9 +27,18 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
       setCompleted(false);
       setResult(null);
       setCurrentStep(0);
+      setMatchId(null);
       try {
-        const data = await getOrGenerateVerification(claim.id);
+        const matches = await getMyMatches();
+        const match = claim.verificationMatchId
+          ? matches.find(item => item.id === claim.verificationMatchId)
+          : matches
+            .filter(item => item.foundItemId === claim.foundItemId)
+            .sort((left, right) => right.confidenceScore - left.confidenceScore)[0];
+        if (!match) throw new Error('This claim is not linked to an eligible AI match yet.');
+        const data = await startOwnershipVerification(match.id);
         if (!active) return;
+        setMatchId(match.id);
         setQuestions(data.questions || []);
         setAnswers(new Array((data.questions || []).length).fill(''));
         setAttemptsRemaining(Math.max(0, data.maxAttempts - data.attemptCount));
@@ -77,7 +88,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
     setError('');
     setSubmitting(true);
     try {
-      const res = await submitVerificationAnswers(claim.id, answers);
+      const res = await submitOwnershipVerification(matchId, answers);
       setResult(res);
       setAttemptsRemaining(res.attemptsRemaining);
       setCompleted(true);

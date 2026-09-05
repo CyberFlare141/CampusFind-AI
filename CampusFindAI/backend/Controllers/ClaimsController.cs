@@ -137,6 +137,28 @@ public class ClaimsController(
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/handover-qr")]
+    public async Task<ActionResult<HandoverQrDto>> GetHandoverQr(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { return Ok(await service.GetHandoverQrAsync(id, userId, cancellationToken)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/handover/confirm-qr")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<CompleteHandoverResponseDto>> ConfirmHandoverQr(Guid id, HandoverQrConfirmationDto request, CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+        try { return Ok(await service.ConfirmHandoverQrAsync(id, officerId, request, cancellationToken)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
     /// <summary>Student starts / retrieves AI ownership verification questions for their claim.</summary>
     [HttpPost("{id:guid}/verification")]
     public async Task<ActionResult<ClaimVerificationResponseDto>> GetOrGenerateVerification(
