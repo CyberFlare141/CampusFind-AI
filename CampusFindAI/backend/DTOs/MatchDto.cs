@@ -19,6 +19,8 @@ public class MatchDto
 
     public decimal ConfidenceScore { get; set; }
 
+    // This is deliberately only match metadata. Private finder verification details are never mapped here.
+
     /// <summary>Human-readable rationale for this potential match.</summary>
     public string Explanation { get; set; } = string.Empty;
 

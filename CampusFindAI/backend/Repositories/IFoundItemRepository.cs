@@ -24,6 +24,9 @@ public interface IFoundItemRepository
         string status,
         CancellationToken cancellationToken = default);
 
+    Task UpdatePrivateVerificationDetailsAsync(Guid id, string privateVerificationDetails, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support private verification detail updates."));
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 }

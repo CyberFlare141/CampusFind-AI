@@ -72,6 +72,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<FoundItem>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         builder.Entity<LostItem>().Property(x => x.LocationDetails).HasMaxLength(200);
         builder.Entity<FoundItem>().Property(x => x.LocationDetails).HasMaxLength(200);
+        builder.Entity<FoundItem>().Property(x => x.PrivateVerificationDetails).HasMaxLength(1000);
         builder.Entity<Floor>().HasIndex(x => new { x.BuildingId, x.FloorNumber }).IsUnique();
         builder.Entity<Floor>().HasOne(x => x.Building).WithMany(x => x.Floors).HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<Location>().HasOne(x => x.Floor).WithMany(x => x.Locations).HasForeignKey(x => x.FloorId).OnDelete(DeleteBehavior.Restrict);
@@ -151,5 +152,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<ClaimVerification>()
             .Property(x => x.ConfidenceScore)
             .HasPrecision(5, 2);
+        builder.Entity<ClaimVerification>().Property(x => x.SecurityReviewNote).HasMaxLength(1000);
+        builder.Entity<ClaimVerification>().HasIndex(x => x.MatchId).IsUnique().HasFilter("[MatchId] IS NOT NULL");
     }
 }

@@ -6,6 +6,31 @@ namespace CampusFindAI.Api.Repositories;
 
 public class MatchRepository(ISqlConnectionFactory connectionFactory) : IMatchRepository
 {
+    public async Task<Match?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT m.Id, m.LostItemId, m.FoundItemId, m.ConfidenceScore,
+                   li.Title AS LostItemTitle, li.UserId AS LostItemUserId, li.Status AS LostItemStatus,
+                   fi.Title AS FoundItemTitle, fi.UserId AS FoundItemUserId, fi.Status AS FoundItemStatus
+            FROM Matches m
+            INNER JOIN LostItems li ON li.Id = m.LostItemId
+            INNER JOIN FoundItems fi ON fi.Id = m.FoundItemId
+            WHERE m.Id = @Id;
+            """;
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", id);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+        return new Match
+        {
+            Id = reader.GetGuid("Id"), LostItemId = reader.GetGuid("LostItemId"), FoundItemId = reader.GetGuid("FoundItemId"), ConfidenceScore = reader.GetDecimal("ConfidenceScore"),
+            LostItem = new LostItem { Id = reader.GetGuid("LostItemId"), Title = reader.GetRequiredString("LostItemTitle"), UserId = reader.GetRequiredString("LostItemUserId"), Status = reader.GetRequiredString("LostItemStatus") },
+            FoundItem = new FoundItem { Id = reader.GetGuid("FoundItemId"), Title = reader.GetRequiredString("FoundItemTitle"), UserId = reader.GetRequiredString("FoundItemUserId"), Status = reader.GetRequiredString("FoundItemStatus") }
+        };
+    }
+
     public async Task<IReadOnlyList<Match>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {

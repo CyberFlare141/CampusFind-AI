@@ -21,12 +21,14 @@ import FoundItemDetailPage from './pages/FoundItems/FoundItemDetailPage';
 import MyClaimsPage from './pages/Claims/MyClaimsPage';
 import SemanticSearchPage from './pages/Search/SemanticSearchPage';
 import MyMatchesPage from './pages/Matches/MyMatchesPage';
+import OwnershipVerificationPage from './pages/Matches/OwnershipVerificationPage';
 
 
 import SecurityOverviewPage from './pages/Security/SecurityOverviewPage';
 import SecurityClaimsPage from './pages/Security/SecurityClaimsPage';
 import SecurityMatchesPage from './pages/Security/SecurityMatchesPage';
 import SecurityLoginHistoryPage from './pages/Security/SecurityLoginHistoryPage';
+import SecurityOwnershipReviewsPage from './pages/Security/SecurityOwnershipReviewsPage';
 
 export default function App() {
   return (
@@ -72,6 +74,7 @@ export default function App() {
 
             <Route path="/my-claims" element={<MyClaimsPage />} />
             <Route path="/my-matches" element={<MyMatchesPage />} />
+            <Route path="/matches/:matchId/verify" element={<OwnershipVerificationPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />
           </Route>
 
@@ -87,6 +90,7 @@ export default function App() {
             <Route path="/security/claims" element={<SecurityClaimsPage />} />
             <Route path="/security/matches" element={<SecurityMatchesPage />} />
             <Route path="/security/login-history" element={<SecurityLoginHistoryPage />} />
+            <Route path="/security/ownership-verifications" element={<SecurityOwnershipReviewsPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
