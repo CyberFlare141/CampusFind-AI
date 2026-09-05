@@ -9,11 +9,13 @@ public class FoundItemService(IFoundItemRepository repository, IImageRepository 
     public async Task<FoundItemDto> CreateAsync(string userId, CreateFoundItemDto request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Title)) throw new ArgumentException("Title is required.");
+        if (string.IsNullOrWhiteSpace(request.PrivateVerificationDetails)) throw new ArgumentException("Private ownership verification details are required.");
         ValidateReportedTime(request.FoundAt, "found");
         if (request.LocationDetails?.Trim().Length > 200) throw new ArgumentException("Additional location details cannot exceed 200 characters.");
+        if (request.PrivateVerificationDetails?.Trim().Length > 1000) throw new ArgumentException("Private verification details cannot exceed 1000 characters.");
         await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, cancellationToken);
         imageStorage.Validate(request.Images);
-        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow };
+        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), PrivateVerificationDetails = request.PrivateVerificationDetails?.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow };
         await repository.AddAsync(item, cancellationToken);
         var images = await imageStorage.SaveAsync(null, item.Id, request.Images, cancellationToken);
         await imageRepository.AddRangeAsync(images, cancellationToken);

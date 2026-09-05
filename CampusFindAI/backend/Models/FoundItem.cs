@@ -9,6 +9,11 @@ public class FoundItem
     public string? LocationDetails { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    /// <summary>
+    /// Finder-provided identifying facts used exclusively by the ownership-verification service.
+    /// This field is deliberately omitted from every public DTO.
+    /// </summary>
+    public string? PrivateVerificationDetails { get; set; }
     public DateTime? FoundAt { get; set; }
     public string Status { get; set; } = "Available";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

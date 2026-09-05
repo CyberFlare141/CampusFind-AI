@@ -79,9 +79,8 @@ METHOD 2: MANUAL TWO TERMINAL WINDOWS (Step-by-step)
      cd CampusFindAI\backend
      dotnet run
   3. Backend will start at:
-     - HTTPS: https://localhost:7001
      - HTTP:  http://localhost:5001
-     - Swagger UI: https://localhost:7001/swagger
+     - Swagger UI: http://localhost:5001/swagger
 
 [TERMINAL 2 - FRONTEND]
   1. Open a second CMD window in the root folder.
@@ -96,8 +95,8 @@ METHOD 2: MANUAL TWO TERMINAL WINDOWS (Step-by-step)
 PART 3: SUMMARY OF URLS & ENDPOINTS
 ================================================================================
   - Frontend Web App:     http://localhost:5173
-  - Backend API:          https://localhost:7001/api  (or http://localhost:5001/api)
-  - Swagger Documentation: https://localhost:7001/swagger
+  - Backend API:          http://localhost:5001/api
+  - Swagger Documentation: http://localhost:5001/swagger
 
 
 ================================================================================

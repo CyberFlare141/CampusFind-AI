@@ -4,6 +4,8 @@ namespace CampusFindAI.Api.Repositories;
 
 public interface IMatchRepository
 {
+    Task<Match?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromResult<Match?>(null);
     Task<IReadOnlyList<Match>> GetAllAsync(
         CancellationToken cancellationToken = default);
 

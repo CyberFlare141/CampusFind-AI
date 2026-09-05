@@ -6,6 +6,15 @@ namespace CampusFindAI.Api.Repositories;
 
 public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepository
 {
+    public async Task<IReadOnlyList<ApplicationUser>> GetByRoleAsync(UserRole role, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT Id, Role, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount FROM AspNetUsers WHERE Role = @Role;";
+        var users = new List<ApplicationUser>();
+        await using var connection = connectionFactory.CreateConnection(); await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection); command.Parameters.AddWithValue("@Role", role.ToString());
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken); while (await reader.ReadAsync(cancellationToken)) users.Add(MapUser(reader));
+        return users;
+    }
     public async Task<ApplicationUser?> GetByEmailAsync(
         string email,
         CancellationToken cancellationToken = default)

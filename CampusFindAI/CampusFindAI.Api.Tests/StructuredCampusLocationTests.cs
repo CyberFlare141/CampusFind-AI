@@ -166,6 +166,7 @@ public sealed class StructuredCampusLocationTests
         await service.CreateAsync("student", new CreateFoundItemDto
         {
             Title = "Black wallet",
+            PrivateVerificationDetails = "Small scratch on the inside.",
             LocationDetails = "B block fifth-floor corridor beside the lift"
         });
 
@@ -210,7 +211,7 @@ public sealed class StructuredCampusLocationTests
     }
 
     private static CreateLostItemDto RequestLost(CampusSeed seed) => new() { Title = "Wallet", BuildingId = seed.BlockA.Id, FloorId = seed.AFloor1.Id, LocationId = seed.AFloor1Location.Id, LocationDetails = "Near the lift" };
-    private static CreateFoundItemDto RequestFound(CampusSeed seed) => new() { Title = "Wallet", BuildingId = seed.BlockA.Id, FloorId = seed.AFloor1.Id, LocationId = seed.AFloor1Location.Id, LocationDetails = "Near the lift" };
+    private static CreateFoundItemDto RequestFound(CampusSeed seed) => new() { Title = "Wallet", PrivateVerificationDetails = "Small identifying scratch.", BuildingId = seed.BlockA.Id, FloorId = seed.AFloor1.Id, LocationId = seed.AFloor1Location.Id, LocationDetails = "Near the lift" };
     private static ApplicationDbContext CreateContext() => new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
     private static async Task<CampusSeed> SeedCampusAsync(ApplicationDbContext context)

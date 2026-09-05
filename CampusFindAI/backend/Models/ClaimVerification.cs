@@ -4,6 +4,9 @@ public class ClaimVerification
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid ClaimId { get; set; }
+    /// <summary>The AI match this verification is bound to. Nullable only for legacy records.</summary>
+    public Guid? MatchId { get; set; }
+    public Guid? LostItemId { get; set; }
 
     /// <summary>
     /// AES-256 encrypted payload of generated questions and expected answers (via IDataProtector).
@@ -40,6 +43,10 @@ public class ClaimVerification
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? SubmittedAt { get; set; }
+    public DateTime? PassedAt { get; set; }
+    public string? SecurityReviewedByUserId { get; set; }
+    public DateTime? SecurityReviewedAt { get; set; }
+    public string? SecurityReviewNote { get; set; }
 
     public Claim? Claim { get; set; }
 }

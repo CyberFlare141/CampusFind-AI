@@ -15,6 +15,8 @@ public interface IUserRepository
     Task<IReadOnlyList<string>> GetRolesAsync(
         string userId,
         CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ApplicationUser>> GetByRoleAsync(UserRole role, CancellationToken cancellationToken = default)
+        => Task.FromResult((IReadOnlyList<ApplicationUser>)[]);
 
     Task CreateAsync(
         ApplicationUser user,

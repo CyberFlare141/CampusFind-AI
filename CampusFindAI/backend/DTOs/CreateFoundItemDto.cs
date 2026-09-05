@@ -8,6 +8,9 @@ public class CreateFoundItemDto
 
     public string? Description { get; set; }
 
+    /// <summary>Private identifying facts. Never returned by public Found Item endpoints.</summary>
+    public string? PrivateVerificationDetails { get; set; }
+
     public DateTime? FoundAt { get; set; }
 
     public Guid? CategoryId { get; set; }

@@ -119,6 +119,7 @@ const STUDENT_LINKS = [
 const OFFICER_LINKS = [
   { to: '/security',               label: 'Security Desk',  icon: 'shield',  end: true },
   { to: '/security/claims',        label: 'Claims Review',  icon: 'claims' },
+  { to: '/security/ownership-verifications', label: 'Ownership Reviews', icon: 'shield' },
   { to: '/security/matches',       label: 'AI Matches',     icon: 'matches' },
   { to: '/security/login-history', label: 'Login History',  icon: 'history' },
 ];

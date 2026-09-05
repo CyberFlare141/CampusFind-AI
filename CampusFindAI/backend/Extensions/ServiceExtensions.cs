@@ -31,6 +31,13 @@ public static class ServiceExtensions
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IClaimService, ClaimService>();
         services.AddScoped<IClaimVerificationRepository, ClaimVerificationRepository>();
+        services.AddOptions<OwnershipVerificationOptions>()
+            .Bind(configuration.GetSection(OwnershipVerificationOptions.SectionName))
+            .Validate(x => x.MatchEligibilityThreshold is >= 0m and <= 1m, "MatchEligibilityThreshold must be between 0 and 1.")
+            .Validate(x => x.QuestionCount is >= 3 and <= 4, "QuestionCount must be between 3 and 4.")
+            .Validate(x => x.MaxAttempts is >= 1 and <= 5, "MaxAttempts must be between 1 and 5.")
+            .ValidateOnStart();
+        services.AddScoped<IOwnershipQuestionGenerator, GeminiOwnershipQuestionGenerator>();
         services.AddScoped<IOwnershipVerificationService, OwnershipVerificationService>();
         services.AddDataProtection();
         services.AddScoped<IMatchRepository, MatchRepository>();

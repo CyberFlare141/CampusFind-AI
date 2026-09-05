@@ -169,12 +169,6 @@ function ClaimReviewRow({ claim, reviewable, onDecided }) {
       </div>
 
       {/* ── Ownership Verification Panel ─────────────────────── */}
-      <OfficerVerificationPanel
-        claim={claim}
-        reviewable={reviewable && !showForm}
-        onApprove={() => startDecision('approve')}
-        onReject={() => startDecision('reject')}
-      />
 
       {claim.claimantNotes && (
         <div style={{ padding: '12px 16px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', marginBottom: 14, fontSize: '0.9rem', lineHeight: 1.6, border: '1px solid var(--border)' }}>
