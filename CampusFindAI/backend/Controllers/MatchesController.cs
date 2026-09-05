@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CampusFindAI.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "SecurityOfficer,Administrator")]
+[Authorize]
 [Route("api/[controller]")]
 public class MatchesController(IMatchService service) : ControllerBase
 {
@@ -21,6 +21,7 @@ public class MatchesController(IMatchService service) : ControllerBase
 
     /// <summary>Security officer "Suggested Matches" queue.</summary>
     [HttpGet("suggested")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
     public async Task<ActionResult<IReadOnlyList<MatchDto>>> GetSuggested(
         CancellationToken cancellationToken)
     {

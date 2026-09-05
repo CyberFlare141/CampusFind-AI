@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const [myFoundItems, setMyFoundItems] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [myMatches, setMyMatches] = useState([]);
+  const [matchesError, setMatchesError] = useState('');
   const [overview, setOverview] = useState(null);
   const [dashboardQuery, setDashboardQuery] = useState('');
 
@@ -80,15 +81,26 @@ export default function DashboardPage() {
       setLoading(true);
       setError('');
       try {
-        const tasks = [getMyLostItems(), getMyFoundItems(), getMyClaims(), getMyMatches()];
+        const tasks = [getMyLostItems(), getMyFoundItems(), getMyClaims()];
         if (isOfficer) tasks.push(getSecurityOverview());
         const results = await Promise.all(tasks);
         if (cancelled) return;
         setMyLostItems(results[0]);
         setMyFoundItems(results[1]);
         setMyClaims(results[2]);
-        setMyMatches(results[3]);
-        if (isOfficer) setOverview(results[4]);
+        if (isOfficer) setOverview(results[3]);
+        try {
+          const matches = await getMyMatches();
+          if (!cancelled) {
+            setMyMatches(matches);
+            setMatchesError('');
+          }
+        } catch (matchError) {
+          if (!cancelled) {
+            setMyMatches([]);
+            setMatchesError('AI match suggestions are temporarily unavailable.');
+          }
+        }
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -241,7 +253,7 @@ export default function DashboardPage() {
                   label="AI Matches"
                   value={myMatches.length}
                   accent
-                  sub={myMatches.length ? 'Review suggestions' : 'Monitoring reports'}
+                  sub={matchesError || (myMatches.length ? 'Review suggestions' : 'Monitoring reports')}
                   to="/my-matches"
                 />
               )}
@@ -277,61 +289,24 @@ export default function DashboardPage() {
               style={{ marginBottom: 36 }}
             >
               <div className="ai-match-card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div className="ai-match-card-header">
                   <div className="ai-match-title">
-                    <span>✦</span> AI Smart Match Radar
+                    <span>✦</span> AI Matching
                   </div>
-                  <span style={{
-                    background: 'rgba(255,255,255,0.22)',
-                    color: 'white',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: 999,
-                    backdropFilter: 'blur(8px)',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    fontFamily: 'var(--font-display)',
-                  }}>
-                    Active Monitoring
-                  </span>
+                  <span className="ai-match-status"><span aria-hidden="true" />Active</span>
                 </div>
 
-                <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'rgba(255,255,255,0.95)', marginBottom: 8, maxWidth: 620 }}>
-                  CampusFind AI is actively cross-referencing your {myLostItems.length} lost item report{myLostItems.length > 1 ? 's' : ''} against incoming campus found logs.
+                <p className="ai-match-metric">
+                  {myMatches.length > 0 ? myMatches.length + ' possible match' + (myMatches.length === 1 ? '' : 'es') + ' found' : 'Monitoring for possible matches'}
                 </p>
-                <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginBottom: 20, maxWidth: 580 }}>
-                  Matches are ranked by multi-modal similarity including title keywords, time correlation, location proximity, and visual cues.
+                <p className="ai-match-description">
+                  CampusFind is comparing your {myLostItems.length} open lost report{myLostItems.length === 1 ? '' : 's'} with recently reported found items.
                 </p>
-                {myMatches.length > 0 && (
-                  <Link to="/my-matches" style={{ display: 'inline-flex', color: 'white', fontSize: '0.86rem', fontWeight: 700, marginBottom: 18, textDecoration: 'underline' }}>
-                    {myMatches.length} possible AI match{myMatches.length > 1 ? 'es are' : ' is'} ready to review
-                  </Link>
-                )}
+                <p className="ai-match-detail">Matches use description, category, time, location and image similarity.</p>
 
-                <div className="ai-match-bar">
-                  <motion.div
-                    className="ai-match-bar-fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: '82%' }}
-                    transition={{ delay: 0.5, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                  <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.70)' }}>
-                    Continuous campus matching active
-                  </span>
-                  <Link to="/lost-items" className="btn" style={{
-                    background: 'rgba(255,255,255,0.20)',
-                    color: 'white',
-                    border: '1px solid rgba(255,255,255,0.35)',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    backdropFilter: 'blur(8px)',
-                  }}>
-                    View My Lost Reports →
-                  </Link>
+                <div className="ai-match-actions">
+                  <Link to="/my-matches" className="btn btn-primary btn-sm">View AI Matches</Link>
+                  <Link to="/lost-items" className="btn btn-secondary btn-sm">View Lost Reports</Link>
                 </div>
               </div>
             </motion.div>
@@ -511,6 +486,15 @@ export default function DashboardPage() {
 
 /* ── Metric Stat Card Component ──────────────────────────────── */
 function DashStatCard({ iconName, label, value, sub, accent, to }) {
+  const tones = {
+    lost: { background: 'var(--warning-bg)', color: 'var(--warning)', border: 'rgba(245, 158, 11, 0.35)' },
+    found: { background: 'var(--accent-bg)', color: 'var(--accent-deep)', border: 'var(--accent-border)' },
+    claims: { background: 'var(--primary-subtle)', color: 'var(--primary)', border: 'rgba(22, 101, 52, 0.25)' },
+    matches: { background: 'var(--ai-bg)', color: 'var(--ai-deep)', border: 'var(--ai-border)' },
+    pending: { background: 'var(--warning-bg)', color: 'var(--warning)', border: 'rgba(245, 158, 11, 0.35)' },
+  };
+  const tone = tones[iconName] || tones.claims;
+
   return (
     <motion.div
       className={`stat-card ${accent ? 'accent' : ''}`}
@@ -520,12 +504,12 @@ function DashStatCard({ iconName, label, value, sub, accent, to }) {
       <div style={{
         width: 44, height: 44,
         borderRadius: 'var(--radius-md)',
-        background: accent ? 'var(--accent-bg)' : 'rgba(143,162,138,0.16)',
+        background: tone.background,
         display: 'grid',
         placeItems: 'center',
         marginBottom: 8,
-        color: accent ? 'var(--accent-deep)' : 'var(--primary-deep)',
-        border: accent ? '1px solid var(--accent-border)' : '1px solid rgba(143,162,138,0.25)',
+        color: tone.color,
+        border: '1px solid ' + tone.border,
       }}>
         <div style={{ width: 22, height: 22 }}>
           <StatIcon name={iconName} />
