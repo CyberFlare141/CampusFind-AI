@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Models;
@@ -107,7 +108,7 @@ public class SemanticSearchService(
             lostItems, foundItems,
             lostImageLookup, foundImageLookup,
             categories.ToDictionary(c => c.Id, c => c.Name),
-            locations.ToDictionary(l => l.Id, l => l.Name));
+            locations.ToDictionary(l => l.Id, FormatStructuredLocation));
 
         sw.Stop();
 
@@ -270,7 +271,10 @@ public class SemanticSearchService(
 
         // EF Core DbContext is NOT thread-safe — these MUST run sequentially.
         var categories = await dbContext.Categories.AsNoTracking().ToListAsync(ct);
-        var locations  = await dbContext.Locations.AsNoTracking().ToListAsync(ct);
+        var locations  = await dbContext.Locations.AsNoTracking()
+            .Include(location => location.Building)
+            .Include(location => location.Floor)
+            .ToListAsync(ct);
 
         // Image repositories also use raw SqlClient — safe to run in parallel.
         var lostImagesTask  = imageRepository.GetByLostItemIdsAsync(
@@ -318,9 +322,9 @@ public class SemanticSearchService(
         foreach (var item in lostItems)
         {
             var score = ComputeScore(
-                Tokenize(item.Title), Tokenize(item.Description),
+                Tokenize(item.Title), Tokenize(item.Description), Tokenize(NormalizeCampusLocation(item.LocationDetails)),
                 item.CategoryId, item.LocationId, item.LostAt,
-                item.Title, item.Description,
+                item.Title, item.Description, item.LocationDetails,
                 intent, effectiveKeywords, fallbackTokens, categoryMap, locationMap);
 
             if (score > 0)
@@ -334,6 +338,7 @@ public class SemanticSearchService(
                     CategoryName = item.CategoryId.HasValue ? categoryMap.GetValueOrDefault(item.CategoryId.Value) : null,
                     LocationId   = item.LocationId,
                     LocationName = item.LocationId.HasValue ? locationMap.GetValueOrDefault(item.LocationId.Value) : null,
+                    LocationDetails = item.LocationDetails,
                     Date         = item.LostAt,
                     Status       = item.Status,
                     ImageUrls    = lostImages[item.Id].ToList(),
@@ -344,9 +349,9 @@ public class SemanticSearchService(
         foreach (var item in foundItems)
         {
             var score = ComputeScore(
-                Tokenize(item.Title), Tokenize(item.Description),
+                Tokenize(item.Title), Tokenize(item.Description), Tokenize(NormalizeCampusLocation(item.LocationDetails)),
                 item.CategoryId, item.LocationId, item.FoundAt,
-                item.Title, item.Description,
+                item.Title, item.Description, item.LocationDetails,
                 intent, effectiveKeywords, fallbackTokens, categoryMap, locationMap);
 
             if (score > 0)
@@ -360,6 +365,7 @@ public class SemanticSearchService(
                     CategoryName = item.CategoryId.HasValue ? categoryMap.GetValueOrDefault(item.CategoryId.Value) : null,
                     LocationId   = item.LocationId,
                     LocationName = item.LocationId.HasValue ? locationMap.GetValueOrDefault(item.LocationId.Value) : null,
+                    LocationDetails = item.LocationDetails,
                     Date         = item.FoundAt,
                     Status       = null,   // FoundItem has no Status column
                     ImageUrls    = foundImages[item.Id].ToList(),
@@ -373,11 +379,13 @@ public class SemanticSearchService(
     private static double ComputeScore(
         IReadOnlyList<string>    titleTokens,
         IReadOnlyList<string>    descTokens,
+        IReadOnlyList<string>    locationTokens,
         Guid?                    categoryId,
         Guid?                    locationId,
         DateTime?                itemDate,
         string?                  rawTitle,
         string?                  rawDesc,
+        string?                  rawLocation,
         SemanticQueryDto?        intent,
         IReadOnlyList<string>    keywords,
         IReadOnlyList<string>    fallbackTokens,
@@ -385,7 +393,7 @@ public class SemanticSearchService(
         Dictionary<Guid, string> locationMap)
     {
         double score = 0;
-        var allTokens = titleTokens.Concat(descTokens).ToList();
+        var allTokens = titleTokens.Concat(descTokens).Concat(locationTokens).ToList();
 
         // ① Item name match (weight 40 title / 12 desc)
         if (intent?.Item is not null)
@@ -409,11 +417,18 @@ public class SemanticSearchService(
         }
 
         // ③ Location match (weight 18)
-        if (intent?.Location is not null && locationId.HasValue &&
-            locationMap.TryGetValue(locationId.Value, out var locName))
+        if (intent?.Location is not null)
         {
-            if (ContainsCI(locName, intent.Location) || ContainsCI(intent.Location, locName))
-                score += 18;
+            var reportedLocation = string.Join(" ", new[]
+            {
+                rawLocation,
+                locationId.HasValue ? locationMap.GetValueOrDefault(locationId.Value) : null
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+            var queryLocationTokens = Tokenize(NormalizeCampusLocation(intent.Location));
+            var reportedLocationTokens = Tokenize(NormalizeCampusLocation(reportedLocation));
+            if (queryLocationTokens.Count > 0 && reportedLocationTokens.Count > 0)
+                score += (double)queryLocationTokens.Intersect(reportedLocationTokens, StringComparer.OrdinalIgnoreCase).Count()
+                         / queryLocationTokens.Union(reportedLocationTokens, StringComparer.OrdinalIgnoreCase).Count() * 18;
         }
 
         // ④ Date range match (weight 12)
@@ -466,8 +481,30 @@ public class SemanticSearchService(
             .ToList();
     }
 
+    private static string NormalizeCampusLocation(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+
+        var normalized = value.ToLowerInvariant().Replace('-', ' ');
+        normalized = Regex.Replace(normalized, @"\b(?:block\s*([a-z])|([a-z])\s*block)\b", match => $" block{(match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value)} ");
+        normalized = Regex.Replace(normalized, @"\b(?:floor|level)\s*(\d+)\b|\b(\d+)(?:st|nd|rd|th)?\s*(?:floor|level)\b", match => $" floor{(match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value)} ");
+        normalized = Regex.Replace(normalized, @"\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s*(?:floor|level)\b", match => $" floor{OrdinalFloor(match.Groups[1].Value)} ");
+        return normalized.Replace("elevator", "lift", StringComparison.Ordinal);
+    }
+
+    private static int OrdinalFloor(string value) => value switch
+    {
+        "first" => 1, "second" => 2, "third" => 3, "fourth" => 4, "fifth" => 5,
+        "sixth" => 6, "seventh" => 7, "eighth" => 8, "ninth" => 9, "tenth" => 10,
+        _ => 0
+    };
+
     private static bool ContainsCI(string? s, string? sub)
         => s != null && sub != null && s.Contains(sub, StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatStructuredLocation(Location location) =>
+        string.Join(" ", new[] { location.Building?.Name, location.Floor?.Name, location.Name }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
 
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

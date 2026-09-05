@@ -11,6 +11,11 @@ public class MatchDto
     public Guid FoundItemId { get; set; }
     public string FoundItemTitle { get; set; } = string.Empty;
     public string FoundItemUserId { get; set; } = string.Empty;
+    public string? LostCategoryName { get; set; }
+    public string? LostLocationName { get; set; }
+    public string? FoundCategoryName { get; set; }
+    public string? FoundLocationName { get; set; }
+    public string? FoundImageUrl { get; set; }
 
     public decimal ConfidenceScore { get; set; }
 

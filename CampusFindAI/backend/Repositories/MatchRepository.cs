@@ -118,6 +118,37 @@ public class MatchRepository(ISqlConnectionFactory connectionFactory) : IMatchRe
         return result is bool exists && exists;
     }
 
+    public async Task<IReadOnlyList<Match>> GetByLostItemUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT m.Id, m.LostItemId, m.FoundItemId, m.ConfidenceScore,
+                   li.Title AS LostItemTitle, li.UserId AS LostItemUserId, li.Status AS LostItemStatus,
+                   li.CategoryId AS LostCategoryId, li.LocationId AS LostLocationId, li.LocationDetails AS LostLocationDetails,
+                   fi.Title AS FoundItemTitle, fi.UserId AS FoundItemUserId, fi.Status AS FoundItemStatus,
+                   fi.CategoryId AS FoundCategoryId, fi.LocationId AS FoundLocationId, fi.LocationDetails AS FoundLocationDetails
+            FROM Matches m INNER JOIN LostItems li ON li.Id = m.LostItemId
+            INNER JOIN FoundItems fi ON fi.Id = m.FoundItemId
+            WHERE li.UserId = @UserId AND li.Status = 'Open' AND fi.Status = 'Available'
+            ORDER BY m.ConfidenceScore DESC;
+            """;
+        var matches = new List<Match>();
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@UserId", userId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            matches.Add(new Match
+            {
+                Id = reader.GetGuid("Id"), LostItemId = reader.GetGuid("LostItemId"), FoundItemId = reader.GetGuid("FoundItemId"), ConfidenceScore = reader.GetDecimal("ConfidenceScore"),
+                LostItem = new LostItem { Id = reader.GetGuid("LostItemId"), UserId = reader.GetRequiredString("LostItemUserId"), Title = reader.GetRequiredString("LostItemTitle"), Status = reader.GetRequiredString("LostItemStatus"), CategoryId = reader.GetNullableGuid("LostCategoryId"), LocationId = reader.GetNullableGuid("LostLocationId"), LocationDetails = reader.GetNullableString("LostLocationDetails") },
+                FoundItem = new FoundItem { Id = reader.GetGuid("FoundItemId"), UserId = reader.GetRequiredString("FoundItemUserId"), Title = reader.GetRequiredString("FoundItemTitle"), Status = reader.GetRequiredString("FoundItemStatus"), CategoryId = reader.GetNullableGuid("FoundCategoryId"), LocationId = reader.GetNullableGuid("FoundLocationId"), LocationDetails = reader.GetNullableString("FoundLocationDetails") }
+            });
+        }
+        return matches;
+    }
+
     public async Task AddAsync(
         Match match,
         CancellationToken cancellationToken = default)

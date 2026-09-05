@@ -15,6 +15,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Claim> Claims => Set<Claim>();
     public DbSet<Building> Buildings => Set<Building>();
     public DbSet<Location> Locations => Set<Location>();
+    public DbSet<Floor> Floors => Set<Floor>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Image> Images => Set<Image>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -69,6 +70,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<FoundItem>().Property(x => x.Status).HasMaxLength(30).HasDefaultValue("Available");
         builder.Entity<FoundItem>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Entity<LostItem>().Property(x => x.LocationDetails).HasMaxLength(200);
+        builder.Entity<FoundItem>().Property(x => x.LocationDetails).HasMaxLength(200);
+        builder.Entity<Floor>().HasIndex(x => new { x.BuildingId, x.FloorNumber }).IsUnique();
+        builder.Entity<Floor>().HasOne(x => x.Building).WithMany(x => x.Floors).HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Location>().HasOne(x => x.Floor).WithMany(x => x.Locations).HasForeignKey(x => x.FloorId).OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Claim>()
             .HasOne(x => x.ClaimantUser)
@@ -98,6 +104,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Match>()
             .Property(m => m.ConfidenceScore)
             .HasPrecision(5, 2);
+        builder.Entity<Match>().HasIndex(match => new { match.LostItemId, match.FoundItemId }).IsUnique();
 
         builder.Entity<AuditLog>()
             .HasOne(x => x.User)

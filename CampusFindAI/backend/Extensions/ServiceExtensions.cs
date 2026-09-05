@@ -24,6 +24,8 @@ public static class ServiceExtensions
         services.AddScoped<ILostItemService, LostItemService>();
         services.AddScoped<IFoundItemRepository, FoundItemRepository>();
         services.AddScoped<IFoundItemService, FoundItemService>();
+        services.AddScoped<IReferenceDataService, ReferenceDataService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IImageRepository, ImageRepository>();
         services.AddSingleton<IReportImageStorage, ReportImageStorage>();
         services.AddScoped<IClaimRepository, ClaimRepository>();

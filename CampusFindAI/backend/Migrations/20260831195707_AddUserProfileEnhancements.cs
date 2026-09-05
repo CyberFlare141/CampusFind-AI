@@ -52,13 +52,6 @@ namespace CampusFindAI.Api.Migrations
                 maxLength: 150,
                 nullable: true);
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedAt",
-                table: "Notifications",
-                type: "datetime2",
-                nullable: false,
-                defaultValueSql: "GETUTCDATE()");
-
             migrationBuilder.AlterColumn<DateTime>(
                 name: "CreatedAt",
                 table: "AIRequests",
@@ -83,10 +76,6 @@ namespace CampusFindAI.Api.Migrations
             migrationBuilder.DropColumn(
                 name: "University",
                 table: "UserProfiles");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                table: "Notifications");
 
             migrationBuilder.AlterColumn<string>(
                 name: "Phone",

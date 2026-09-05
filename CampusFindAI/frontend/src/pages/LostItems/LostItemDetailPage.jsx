@@ -136,12 +136,16 @@ export default function LostItemDetailPage() {
               {item.description || <span className="text-muted">No additional description provided.</span>}
             </dd>
           </div>
-          {item.location && (
+          {item.locationDetails && (
             <div>
-              <dt>Last Seen Location</dt>
-              <dd style={{ fontWeight: 600 }}>{item.location}</dd>
+              <dt>Reported Location</dt>
+              <dd style={{ fontWeight: 600 }}>{item.locationDetails}</dd>
             </div>
           )}
+          {!item.locationDetails && (item.buildingName || item.floorName || item.locationName || item.location) && (
+            <div><dt>Last Seen Location</dt><dd style={{ fontWeight: 600 }}>{[item.buildingName, item.floorName, item.locationName || item.location].filter(Boolean).join(' • ')}</dd></div>
+          )}
+          {item.categoryName && <div><dt>Category</dt><dd style={{ fontWeight: 600 }}>{item.categoryName}</dd></div>}
           <div>
             <dt>Date Lost</dt>
             <dd>{formatDate(item.lostAt)}</dd>

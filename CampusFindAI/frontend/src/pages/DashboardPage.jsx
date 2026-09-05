@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getMyLostItems } from '../api/lostItems';
 import { getMyFoundItems } from '../api/foundItems';
 import { getMyClaims } from '../api/claims';
+import { getMyMatches } from '../api/matches';
 import { getSecurityOverview } from '../api/security';
 import { publicAssetUrl } from '../api/client';
 import {
@@ -63,12 +64,15 @@ function getTimeEmoji() {
 
 export default function DashboardPage() {
   const { user, isOfficer } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [myLostItems, setMyLostItems] = useState([]);
   const [myFoundItems, setMyFoundItems] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
+  const [myMatches, setMyMatches] = useState([]);
   const [overview, setOverview] = useState(null);
+  const [dashboardQuery, setDashboardQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -76,14 +80,15 @@ export default function DashboardPage() {
       setLoading(true);
       setError('');
       try {
-        const tasks = [getMyLostItems(), getMyFoundItems(), getMyClaims()];
+        const tasks = [getMyLostItems(), getMyFoundItems(), getMyClaims(), getMyMatches()];
         if (isOfficer) tasks.push(getSecurityOverview());
         const results = await Promise.all(tasks);
         if (cancelled) return;
         setMyLostItems(results[0]);
         setMyFoundItems(results[1]);
         setMyClaims(results[2]);
-        if (isOfficer) setOverview(results[3]);
+        setMyMatches(results[3]);
+        if (isOfficer) setOverview(results[4]);
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -98,6 +103,11 @@ export default function DashboardPage() {
   const pendingClaims   = myClaims.filter(c => c.status === 'Pending').length;
   const canReportItems  = user?.role !== 'Administrator';
   const displayName     = user?.email?.split('@')[0] ?? 'there';
+
+  function submitDashboardSearch(event) {
+    event.preventDefault();
+    if (dashboardQuery.trim()) navigate('/search?q=' + encodeURIComponent(dashboardQuery.trim()));
+  }
 
   return (
     <div className="page-container-dashboard">
@@ -126,6 +136,19 @@ export default function DashboardPage() {
               ? 'Security Desk Command — review pending ownership claims, manage AI match suggestions, and audit campus activity.'
               : 'CampusFind AI continuously indexes lost belongings with campus find logs using multi-attribute semantics and verified return handovers.'}
           </p>
+
+          {!isOfficer && (
+            <>
+              <form className="dashboard-search" onSubmit={submitDashboardSearch}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input value={dashboardQuery} onChange={event => setDashboardQuery(event.target.value)} aria-label="Search campus reports naturally" placeholder="Find what you lost — describe it naturally" />
+                <button type="submit" className="btn btn-primary">Search campus</button>
+              </form>
+              <div className="dashboard-search-examples" aria-label="Example searches">
+                {['blue bottle on 4th floor', 'student ID near cafeteria', 'black earbuds in Block C lab'].map(example => <button key={example} type="button" onClick={() => navigate('/search?q=' + encodeURIComponent(example))}>{example}</button>)}
+              </div>
+            </>
+          )}
 
           {canReportItems && (
             <div className="dashboard-ctas">
@@ -189,7 +212,7 @@ export default function DashboardPage() {
       ) : (
         <>
           {/* ── 2. Key Metrics ───────────────────────────────────── */}
-          <div className={`${isOfficer && overview ? 'stat-grid-5' : 'stat-grid'}`} style={{ marginBottom: 36 }}>
+          <div className={isOfficer && overview ? 'stat-grid-5' : 'stat-grid stat-grid-4'} style={{ marginBottom: 36 }}>
             <StaggerList stagger={0.06}>
               <DashStatCard
                 iconName="lost"
@@ -212,6 +235,16 @@ export default function DashboardPage() {
                 sub={pendingClaims > 0 ? `${pendingClaims} awaiting verification` : 'All claims settled'}
                 to="/my-claims"
               />
+              {!isOfficer && (
+                <DashStatCard
+                  iconName="matches"
+                  label="AI Matches"
+                  value={myMatches.length}
+                  accent
+                  sub={myMatches.length ? 'Review suggestions' : 'Monitoring reports'}
+                  to="/my-matches"
+                />
+              )}
               {isOfficer && overview && (
                 <DashStatCard
                   iconName="pending"
@@ -270,6 +303,11 @@ export default function DashboardPage() {
                 <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginBottom: 20, maxWidth: 580 }}>
                   Matches are ranked by multi-modal similarity including title keywords, time correlation, location proximity, and visual cues.
                 </p>
+                {myMatches.length > 0 && (
+                  <Link to="/my-matches" style={{ display: 'inline-flex', color: 'white', fontSize: '0.86rem', fontWeight: 700, marginBottom: 18, textDecoration: 'underline' }}>
+                    {myMatches.length} possible AI match{myMatches.length > 1 ? 'es are' : ' is'} ready to review
+                  </Link>
+                )}
 
                 <div className="ai-match-bar">
                   <motion.div

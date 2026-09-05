@@ -12,5 +12,8 @@ public class CreateLostItemDto
 
     public Guid? CategoryId { get; set; }
 
+    public Guid? BuildingId { get; set; }
+    public Guid? FloorId { get; set; }
     public Guid? LocationId { get; set; }
+    public string? LocationDetails { get; set; }
 }

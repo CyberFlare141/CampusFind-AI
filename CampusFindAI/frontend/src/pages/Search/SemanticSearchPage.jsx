@@ -16,11 +16,11 @@ import { formatDate } from '../../components/Ui';
 
 /* ── Constants ────────────────────────────────────────────────── */
 const EXAMPLE_QUERIES = [
-  'Black leather wallet near the library yesterday',
-  'Found calculator around the cafeteria',
-  'Blue water bottle, Science building',
-  'Lost ID card this morning',
-  'Keys with red lanyard near the parking lot',
+  'black leather wallet near Block B yesterday',
+  'blue bottle on 4th floor',
+  'student ID near cafeteria',
+  'black earbuds in Block C lab',
+  'keys with red lanyard near the parking lot',
 ];
 
 const SEARCH_STEPS = [
@@ -171,7 +171,7 @@ function SearchResultCard({ item, index }) {
             style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}
             title="Relevance score"
           >
-            {Math.round(item.relevanceScore)}%
+            {Math.round(item.relevanceScore)}% relevance
           </span>
         </div>
 
@@ -187,12 +187,12 @@ function SearchResultCard({ item, index }) {
             </p>
           )}
           <div className="item-card-meta">
-            {item.locationName && (
+            {(item.locationDetails || item.locationName) && (
               <div className="item-card-meta-row">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
-                <span>{item.locationName}</span>
+                <span>{item.locationDetails || item.locationName}</span>
               </div>
             )}
             {item.categoryName && (
@@ -349,7 +349,7 @@ export default function SemanticSearchPage() {
             AI Semantic Search
           </h1>
           <p className="text-secondary">
-            Describe what you lost or found in plain language. The AI understands context, not just keywords.
+            Describe the item, where you saw it, or when it went missing. CampusFind AI searches reports by meaning, not just exact words.
           </p>
         </div>
       </motion.div>
@@ -561,7 +561,7 @@ export default function SemanticSearchPage() {
             transition={{ duration: 0.35 }}
           >
             <div className="ss-empty-icon">🔍</div>
-            <h2 className="ss-empty-title">No matching items found</h2>
+            <h2 className="ss-empty-title">We couldn't find a strong match for that description.</h2>
             {result?.interpretedQuery && (
               <div className="ss-chips ss-chips--center" style={{ marginBottom: 16 }}>
                 {buildChips(result.interpretedQuery).map(c => (
@@ -570,13 +570,14 @@ export default function SemanticSearchPage() {
               </div>
             )}
             <p className="ss-empty-msg">
-              Try describing the item differently, using broader location terms,
-              or widening the date range.
+              Try changing the wording, removing a detail, or browsing the campus catalogs while new reports arrive.
             </p>
             {error && <p className="text-sm" style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
-            <button type="button" className="btn btn-primary" onClick={resetSearch}>
-              Try a different search
-            </button>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-primary" onClick={resetSearch}>Try a different search</button>
+              <Link to="/found-items" className="btn btn-secondary">Browse found items</Link>
+              <Link to="/lost-items/new" className="btn btn-secondary">Report a lost item</Link>
+            </div>
           </motion.div>
         )}
 
@@ -631,7 +632,7 @@ export default function SemanticSearchPage() {
               <span className="ss-idle-spark">✦</span>
             </div>
 
-            <h2 className="ss-idle-heading">How it works</h2>
+            <h2 className="ss-idle-heading">Search the campus naturally</h2>
             <div className="ss-how-grid">
               {[
                 { icon: '💬', title: 'Describe naturally', desc: 'Type what you lost or found in plain English — no special keywords needed.' },

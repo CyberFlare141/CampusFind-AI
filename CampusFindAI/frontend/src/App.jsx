@@ -20,6 +20,7 @@ import FoundItemDetailPage from './pages/FoundItems/FoundItemDetailPage';
 
 import MyClaimsPage from './pages/Claims/MyClaimsPage';
 import SemanticSearchPage from './pages/Search/SemanticSearchPage';
+import MyMatchesPage from './pages/Matches/MyMatchesPage';
 
 
 import SecurityOverviewPage from './pages/Security/SecurityOverviewPage';
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/found-items/:id" element={<FoundItemDetailPage />} />
 
             <Route path="/my-claims" element={<MyClaimsPage />} />
+            <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />
           </Route>
 
