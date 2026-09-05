@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, markNotificationRead } from '../api/notifications';
@@ -146,6 +146,7 @@ function getRoleLabel(role, isRestricted) {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -156,6 +157,9 @@ export default function Layout() {
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
+  const [toastNotification, setToastNotification] = useState(null);
+  const notificationIds = useRef(new Set());
+  const notificationBaselineReady = useRef(false);
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -214,12 +218,13 @@ export default function Layout() {
   }
 
   async function handleNotificationClick(notification) {
-    if (notification.isRead) return;
     try {
-      await markNotificationRead(notification.id);
+      if (!notification.isRead) await markNotificationRead(notification.id);
       setNotifications(current => current.map(item =>
         item.id === notification.id ? { ...item, isRead: true } : item
       ));
+      setNotificationsOpen(false);
+      if (notification.link) navigate(notification.link);
     } catch (err) {
       setNotificationsError(err.message || 'Could not mark the notification as read.');
     }
@@ -229,6 +234,9 @@ export default function Layout() {
     setNotificationsOpen(false);
     setNotifications([]);
     setNotificationsError('');
+    setToastNotification(null);
+    notificationIds.current = new Set();
+    notificationBaselineReady.current = false;
   }, [user?.id]);
 
   function navClass({ isActive }) {
@@ -242,11 +250,37 @@ export default function Layout() {
 
   useEffect(() => {
     if (!user) return undefined;
-    const refresh = () => getNotifications().then(setNotifications).catch(() => {});
+    const refresh = () => getNotifications().then(next => {
+      const newUnread = notificationBaselineReady.current
+        ? next.find(item => !item.isRead && !notificationIds.current.has(item.id))
+        : null;
+      notificationIds.current = new Set(next.map(item => item.id));
+      notificationBaselineReady.current = true;
+      setNotifications(next);
+      if (newUnread) {
+        setToastNotification(newUnread);
+        window.setTimeout(() => setToastNotification(current => current?.id === newUnread.id ? null : current), 6000);
+      }
+    }).catch(() => {});
     refresh();
     const interval = window.setInterval(refresh, 25_000);
     return () => window.clearInterval(interval);
   }, [user?.id]);
+
+  useEffect(() => {
+    const matchingUnread = notifications.filter(item => !item.isRead && item.link === location.pathname);
+    if (matchingUnread.length === 0) return;
+    matchingUnread.forEach(item => markNotificationRead(item.id).catch(() => {}));
+    setNotifications(current => current.map(item => matchingUnread.some(match => match.id === item.id) ? { ...item, isRead: true } : item));
+  }, [location.pathname, notifications]);
+
+  function hasUnreadFor(link) {
+    return notifications.some(notification => !notification.isRead && notification.link === link);
+  }
+
+  function renderNavIndicator(link) {
+    return hasUnreadFor(link.to) ? <span className="nav-unread-dot" aria-label="Unread update" /> : null;
+  }
 
   return (
     <div className={'app-shell ' + (collapsed ? 'sidebar-collapsed' : '')}>
@@ -376,6 +410,21 @@ export default function Layout() {
               </motion.div>
             )}
           </AnimatePresence>
+          <AnimatePresence>
+            {toastNotification && (
+              <motion.button
+                type="button"
+                className="notification-toast"
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                onClick={() => handleNotificationClick(toastNotification)}
+              >
+                <strong>New update</strong>
+                <span>{toastNotification.message}</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
           <Link to="/profile" className="topbar-avatar" aria-label="Profile" title={displayName}>
             {initials}
           </Link>
@@ -401,6 +450,7 @@ export default function Layout() {
               <NavLink key={link.to} to={link.to} end={link.end} className={navClass}>
                 <span className="nav-icon"><Icon name={link.icon} /></span>
                 <span className="nav-label">{link.label}</span>
+                {renderNavIndicator(link)}
               </NavLink>
             ))}
 
@@ -417,6 +467,7 @@ export default function Layout() {
                   <NavLink key={link.to} to={link.to} end={link.end} className={navClass}>
                     <span className="nav-icon"><Icon name={link.icon} /></span>
                     <span className="nav-label">{link.label}</span>
+                    {renderNavIndicator(link)}
                   </NavLink>
                 ))}
               </>
@@ -508,6 +559,7 @@ export default function Layout() {
               onClick={() => setDrawerOpen(false)}>
               <span className="nav-icon"><Icon name={link.icon} /></span>
               <span className="nav-label">{link.label}</span>
+              {hasUnreadFor('/security-officer-request') && <span className="nav-unread-dot" aria-label="Unread update" />}
             </NavLink>
           ))}
           {user?.isRestricted && <NavLink to="/security-officer-request" className={navClass} onClick={() => setDrawerOpen(false)}>
@@ -524,12 +576,15 @@ export default function Layout() {
                   onClick={() => setDrawerOpen(false)}>
                   <span className="nav-icon"><Icon name={link.icon} /></span>
                   <span className="nav-label">{link.label}</span>
+                  {renderNavIndicator(link)}
+                  {renderNavIndicator(link)}
                 </NavLink>
               ))}
             </>
           )}
           {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass} onClick={() => setDrawerOpen(false)}>
             <span className="nav-icon"><Icon name="shield" /></span><span className="nav-label">Officer Requests</span>
+            {hasUnreadFor('/admin/security-officer-requests') && <span className="nav-unread-dot" aria-label="Unread update" />}
           </NavLink>}
           <div className="sidebar-divider" />
           <NavLink to="/profile" className={navClass} onClick={() => setDrawerOpen(false)}>
@@ -571,6 +626,7 @@ export default function Layout() {
             >
               <Icon name={link.icon} />
               <span>{link.label}</span>
+              {renderNavIndicator(link)}
             </NavLink>
           ))}
         </div>

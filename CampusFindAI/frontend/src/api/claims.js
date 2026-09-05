@@ -51,6 +51,17 @@ export function completeHandover(id, { handoverNotes }) {
   });
 }
 
+export function getHandoverQr(id) {
+  return apiRequest(`/claims/${id}/handover-qr`);
+}
+
+export function confirmHandoverQr(id, { token, handoverNotes }) {
+  return apiRequest(`/claims/${id}/handover/confirm-qr`, {
+    method: 'POST',
+    body: { token, handoverNotes: handoverNotes || null },
+  });
+}
+
 /** Student / claimant: retrieves or generates AI ownership verification questions. */
 export function getOrGenerateVerification(claimId) {
   return apiRequest(`/claims/${claimId}/verification`, {

@@ -31,26 +31,14 @@ namespace CampusFindAI.Api.Migrations
                 oldType: "nvarchar(max)",
                 oldNullable: true);
 
-            migrationBuilder.AddColumn<string>(
-                name: "AvatarUrl",
-                table: "UserProfiles",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Bio",
-                table: "UserProfiles",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "University",
-                table: "UserProfiles",
-                type: "nvarchar(150)",
-                maxLength: 150,
-                nullable: true);
+            migrationBuilder.Sql("""
+                IF COL_LENGTH('UserProfiles', 'AvatarUrl') IS NULL
+                    ALTER TABLE UserProfiles ADD AvatarUrl nvarchar(500) NULL;
+                IF COL_LENGTH('UserProfiles', 'Bio') IS NULL
+                    ALTER TABLE UserProfiles ADD Bio nvarchar(500) NULL;
+                IF COL_LENGTH('UserProfiles', 'University') IS NULL
+                    ALTER TABLE UserProfiles ADD University nvarchar(150) NULL;
+                """);
 
             migrationBuilder.AlterColumn<DateTime>(
                 name: "CreatedAt",

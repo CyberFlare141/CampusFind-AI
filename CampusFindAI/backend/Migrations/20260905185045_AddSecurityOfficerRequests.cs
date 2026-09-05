@@ -11,53 +11,30 @@ namespace CampusFindAI.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "IsRestricted",
-                table: "AspNetUsers",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.CreateTable(
-                name: "SecurityOfficerRequests",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    AdditionalInformation = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReviewedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    AdminNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SecurityOfficerRequests", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SecurityOfficerRequests_AspNetUsers_ReviewedByUserId",
-                        column: x => x.ReviewedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SecurityOfficerRequests_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SecurityOfficerRequests_ReviewedByUserId",
-                table: "SecurityOfficerRequests",
-                column: "ReviewedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SecurityOfficerRequests_UserId_Status",
-                table: "SecurityOfficerRequests",
-                columns: new[] { "UserId", "Status" });
+            migrationBuilder.Sql("""
+                IF COL_LENGTH('AspNetUsers', 'IsRestricted') IS NULL
+                    ALTER TABLE AspNetUsers ADD IsRestricted bit NOT NULL CONSTRAINT DF_AspNetUsers_IsRestricted_Migration DEFAULT 0;
+                IF OBJECT_ID('SecurityOfficerRequests', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE SecurityOfficerRequests (
+                        Id uniqueidentifier NOT NULL PRIMARY KEY,
+                        UserId nvarchar(450) NOT NULL,
+                        Reason nvarchar(500) NOT NULL,
+                        AdditionalInformation nvarchar(2000) NOT NULL,
+                        Status nvarchar(30) NOT NULL,
+                        SubmittedAt datetime2 NOT NULL,
+                        ReviewedAt datetime2 NULL,
+                        ReviewedByUserId nvarchar(450) NULL,
+                        AdminNotes nvarchar(1000) NULL,
+                        CONSTRAINT FK_SecurityOfficerRequests_User_Migration FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE,
+                        CONSTRAINT FK_SecurityOfficerRequests_Reviewer_Migration FOREIGN KEY (ReviewedByUserId) REFERENCES AspNetUsers (Id)
+                    );
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SecurityOfficerRequests_ReviewedByUserId' AND object_id = OBJECT_ID('SecurityOfficerRequests'))
+                    CREATE INDEX IX_SecurityOfficerRequests_ReviewedByUserId ON SecurityOfficerRequests(ReviewedByUserId);
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SecurityOfficerRequests_UserId_Status' AND object_id = OBJECT_ID('SecurityOfficerRequests'))
+                    CREATE INDEX IX_SecurityOfficerRequests_UserId_Status ON SecurityOfficerRequests(UserId, Status);
+                """);
         }
 
         /// <inheritdoc />

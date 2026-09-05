@@ -23,7 +23,10 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             DecisionNotes,
             HandedOverByUserId,
             HandedOverAt,
-            HandoverNotes
+            HandoverNotes,
+            HandoverQrToken,
+            HandoverQrCreatedAt,
+            HandoverQrUsedAt
             )
             VALUES (
                 @Id,
@@ -37,7 +40,10 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             @DecisionNotes,
             @HandedOverByUserId,
             @HandedOverAt,
-            @HandoverNotes
+            @HandoverNotes,
+            @HandoverQrToken,
+            @HandoverQrCreatedAt,
+            @HandoverQrUsedAt
             );
             """;
 
@@ -57,6 +63,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         command.Parameters.AddWithValue("@HandedOverByUserId", (object?)claim.HandedOverByUserId ?? DBNull.Value);
         command.Parameters.AddWithValue("@HandedOverAt", (object?)claim.HandedOverAt ?? DBNull.Value);
         command.Parameters.AddWithValue("@HandoverNotes", (object?)claim.HandoverNotes ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrToken", (object?)claim.HandoverQrToken ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrCreatedAt", (object?)claim.HandoverQrCreatedAt ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrUsedAt", (object?)claim.HandoverQrUsedAt ?? DBNull.Value);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -152,7 +161,10 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
                 ClaimantNotes = @ClaimantNotes,
                 HandedOverByUserId = @HandedOverByUserId,
                 HandedOverAt = @HandedOverAt,
-                HandoverNotes = @HandoverNotes
+                HandoverNotes = @HandoverNotes,
+                HandoverQrToken = @HandoverQrToken,
+                HandoverQrCreatedAt = @HandoverQrCreatedAt,
+                HandoverQrUsedAt = @HandoverQrUsedAt
             WHERE Id = @Id;
             """;
 
@@ -169,6 +181,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         command.Parameters.AddWithValue("@HandedOverByUserId", (object?)claim.HandedOverByUserId ?? DBNull.Value);
         command.Parameters.AddWithValue("@HandedOverAt", (object?)claim.HandedOverAt ?? DBNull.Value);
         command.Parameters.AddWithValue("@HandoverNotes", (object?)claim.HandoverNotes ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrToken", (object?)claim.HandoverQrToken ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrCreatedAt", (object?)claim.HandoverQrCreatedAt ?? DBNull.Value);
+        command.Parameters.AddWithValue("@HandoverQrUsedAt", (object?)claim.HandoverQrUsedAt ?? DBNull.Value);
 
         command.ExecuteNonQuery();
     }
@@ -229,6 +244,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             HandedOverByUserId = reader.GetNullableString("HandedOverByUserId"),
             HandedOverAt = reader.GetNullableDateTime("HandedOverAt"),
             HandoverNotes = reader.GetNullableString("HandoverNotes"),
+            HandoverQrToken = reader.GetNullableString("HandoverQrToken"),
+            HandoverQrCreatedAt = reader.GetNullableDateTime("HandoverQrCreatedAt"),
+            HandoverQrUsedAt = reader.GetNullableDateTime("HandoverQrUsedAt"),
             FoundItem = new FoundItem
             {
                 Id = reader.GetGuid("FoundItemId"),
@@ -303,6 +321,9 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             c.HandedOverByUserId,
             c.HandedOverAt,
             c.HandoverNotes,
+            c.HandoverQrToken,
+            c.HandoverQrCreatedAt,
+            c.HandoverQrUsedAt,
             fi.Title AS FoundItemTitle,
             fi.Description AS FoundItemDescription,
             cu.Email AS ClaimantEmail,
@@ -317,6 +338,7 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         SELECT
             c.Id AS ClaimId, c.FoundItemId, c.ClaimantUserId, c.ClaimantNotes, c.Status, c.CreatedAt,
             c.ReviewedByUserId, c.ReviewedAt, c.DecisionNotes, c.HandedOverByUserId, c.HandedOverAt, c.HandoverNotes,
+            c.HandoverQrToken, c.HandoverQrCreatedAt, c.HandoverQrUsedAt,
             fi.Title AS FoundItemTitle, fi.Description AS FoundItemDescription, fi.UserId AS ReporterUserId, fi.FoundAt,
             cu.Email AS ClaimantEmail, ru.Email AS ReviewedByEmail,
             cup.FullName AS ClaimantFullName, cup.Department AS ClaimantDepartment, cup.JobTitle AS ClaimantJobTitle,

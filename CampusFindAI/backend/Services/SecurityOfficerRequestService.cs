@@ -66,7 +66,7 @@ public sealed class SecurityOfficerRequestService(
         var message = status == SecurityOfficerRequestStatus.Approved
             ? "Your Security Officer request has been approved. Please sign in again to access the Security Desk."
             : "Your Security Officer request has been rejected.";
-        await notifications.CreateAsync(entity.UserId, message, cancellationToken);
+        await notifications.CreateAsync(entity.UserId, message, "/security-officer-request", "officer-request", cancellationToken);
         await auditLog.LogAsync(administratorId, status == SecurityOfficerRequestStatus.Approved ? "SecurityOfficerRequestApproved" : "SecurityOfficerRequestRejected", $"Request {id} for user {entity.UserId}.", cancellationToken);
         return await GetRequiredAsync(id, cancellationToken);
     }

@@ -37,6 +37,20 @@ public class ClaimDto
     public int? VerificationTotalQuestions { get; set; }
     public bool? VerificationPassed { get; set; }
     public int? VerificationAttemptsRemaining { get; set; }
+    public Guid? VerificationMatchId { get; set; }
+}
+
+public class HandoverQrDto
+{
+    public Guid ClaimId { get; set; }
+    public string Token { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class HandoverQrConfirmationDto
+{
+    public string Token { get; set; } = string.Empty;
+    public string? HandoverNotes { get; set; }
 }
 
 public class ClaimDecisionDto
@@ -50,6 +64,7 @@ public class ClaimDecisionDto
 public class CompleteHandoverDto
 {
     public string? HandoverNotes { get; set; }
+    public string? Token { get; set; }
 }
 
 public class CompleteHandoverResponseDto

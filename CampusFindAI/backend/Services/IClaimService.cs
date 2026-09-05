@@ -40,4 +40,8 @@ public interface IClaimService
         string officerUserId,
         CompleteHandoverDto request,
         CancellationToken cancellationToken = default);
+
+    Task<HandoverQrDto> GetHandoverQrAsync(Guid claimId, string claimantUserId, CancellationToken cancellationToken = default);
+
+    Task<CompleteHandoverResponseDto> ConfirmHandoverQrAsync(Guid claimId, string officerUserId, HandoverQrConfirmationDto request, CancellationToken cancellationToken = default);
 }
