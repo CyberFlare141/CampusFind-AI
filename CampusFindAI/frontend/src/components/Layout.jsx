@@ -113,6 +113,7 @@ const STUDENT_LINKS = [
   { to: '/lost-items',  label: 'Lost Items',   icon: 'lost' },
   { to: '/found-items', label: 'Found Items',  icon: 'found' },
   { to: '/my-claims',   label: 'My Claims',    icon: 'claims' },
+  { to: '/my-matches',  label: 'My AI Matches', icon: 'matches' },
 ];
 
 const OFFICER_LINKS = [
@@ -235,8 +236,16 @@ export default function Layout() {
 
   const unreadNotifications = notifications.filter(notification => !notification.isRead).length;
 
+  useEffect(() => {
+    if (!user) return undefined;
+    const refresh = () => getNotifications().then(setNotifications).catch(() => {});
+    refresh();
+    const interval = window.setInterval(refresh, 25_000);
+    return () => window.clearInterval(interval);
+  }, [user?.id]);
+
   return (
-    <div className="app-shell">
+    <div className={'app-shell ' + (collapsed ? 'sidebar-collapsed' : '')}>
       {/* ── Mobile Topbar ───────────────────────────────────────── */}
       <header className="mobile-topbar">
         <Link to="/" className="mobile-topbar-logo">
@@ -319,6 +328,7 @@ export default function Layout() {
           <AnimatePresence>
             {notificationsOpen && (
               <motion.div
+                className="notification-panel"
                 initial={{ opacity: 0, y: -6, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
@@ -330,7 +340,7 @@ export default function Layout() {
                   boxShadow: 'var(--shadow-elevated)', overflow: 'hidden', zIndex: 30,
                 }}
               >
-                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', fontWeight: 700 }}>Notifications</div>
+                <div className="notification-panel-header">Notifications <span>{unreadNotifications ? unreadNotifications + ' unread' : 'All caught up'}</span></div>
                 {notificationsLoading ? (
                   <p className="text-sm text-muted" style={{ padding: 16 }}>Loading notifications…</p>
                 ) : notificationsError ? (
@@ -341,6 +351,7 @@ export default function Layout() {
                   <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                     {notifications.map(notification => (
                       <button
+                        className="notification-row"
                         key={notification.id}
                         type="button"
                         onClick={() => handleNotificationClick(notification)}

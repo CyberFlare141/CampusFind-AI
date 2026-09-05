@@ -17,6 +17,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 UserId,
                 CategoryId,
                 LocationId,
+                LocationDetails,
                 Title,
                 Description,
                 FoundAt,
@@ -28,6 +29,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 @UserId,
                 @CategoryId,
                 @LocationId,
+                @LocationDetails,
                 @Title,
                 @Description,
                 @FoundAt,
@@ -44,6 +46,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         command.Parameters.AddWithValue("@UserId", item.UserId);
         command.Parameters.AddWithValue("@CategoryId", (object?)item.CategoryId ?? DBNull.Value);
         command.Parameters.AddWithValue("@LocationId", (object?)item.LocationId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LocationDetails", (object?)item.LocationDetails ?? DBNull.Value);
         command.Parameters.AddWithValue("@Title", item.Title);
         command.Parameters.AddWithValue("@Description", (object?)item.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("@FoundAt", (object?)item.FoundAt ?? DBNull.Value);
@@ -58,7 +61,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE Id = @Id;
             """;
@@ -77,7 +80,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             ORDER BY CreatedAt DESC;
             """;
@@ -90,7 +93,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE UserId = @UserId
             ORDER BY CreatedAt DESC;
@@ -149,6 +152,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
             UserId = reader.GetRequiredString("UserId"),
             CategoryId = reader.GetNullableGuid("CategoryId"),
             LocationId = reader.GetNullableGuid("LocationId"),
+            LocationDetails = reader.GetNullableString("LocationDetails"),
             Title = reader.GetRequiredString("Title"),
             Description = reader.GetNullableString("Description"),
             FoundAt = reader.GetNullableDateTime("FoundAt"),

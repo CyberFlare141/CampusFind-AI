@@ -6,43 +6,46 @@
 
 /* ── Shell Wrapper ───────────────────────────────────────────── */
 .app-shell {
-  min-height: 100vh;
+  --sidebar-width: 264px;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  overflow: hidden;
+}
+.app-shell.sidebar-collapsed {
+  --sidebar-width: 76px;
 }
 
 .app-body {
   display: flex;
   flex: 1;
   min-height: 0;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-base);
 }
 
 /* ── Sidebar (Level 2 Tactile Elevated Surface) ──────────────── */
 .sidebar {
-  width: 264px;
-  min-width: 264px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background: var(--surface-card);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: fixed;
   top: 0;
+  bottom: 0;
+  left: 0;
   height: 100vh;
-  overflow-y: auto;
+  height: 100dvh;
+  overflow: hidden;
   overflow-x: hidden;
-  scrollbar-width: none;
   transition: width var(--transition-base), min-width var(--transition-base);
   z-index: 30;
   box-shadow: 4px 0 24px rgba(60, 72, 58, 0.05);
 }
-.sidebar::-webkit-scrollbar { display: none; }
-
-.sidebar.collapsed {
-  width: 76px;
-  min-width: 76px;
-}
-
 /* ── Sidebar Logo Area ───────────────────────────────────────── */
 .sidebar-logo {
   display: flex;
@@ -105,7 +108,12 @@
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
 }
+.sidebar-nav::-webkit-scrollbar { display: none; }
 .sidebar-section-label {
   font-size: 0.68rem;
   font-weight: 700;
@@ -299,10 +307,11 @@
   align-items: center;
   gap: var(--space-5);
   padding: 0 var(--space-8);
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: relative;
+  z-index: 40;
   flex-shrink: 0;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-base);
 }
 
 /* AI Search Bar — Signature Component */
@@ -497,6 +506,9 @@
   background: var(--bg);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ── Mobile Navigation & Bottom Bar ─────────────────────────── */
@@ -685,16 +697,48 @@
 
 /* ── Show/Hide Media Queries ─────────────────────────────────── */
 @media (max-width: 1024px) {
-  .sidebar { width: 230px; min-width: 230px; }
-  .sidebar.collapsed { width: 68px; min-width: 68px; }
+  .app-shell { --sidebar-width: 230px; }
+  .app-shell.sidebar-collapsed { --sidebar-width: 68px; }
 }
 
+.notification-panel { border-color: var(--border-medium) !important; }
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: .9rem;
+  font-weight: 800;
+}
+.notification-panel-header span {
+  color: var(--ai-deep);
+  background: var(--ai-bg);
+  border: 1px solid var(--ai-border);
+  border-radius: var(--radius-full);
+  padding: 3px 8px;
+  font-size: .66rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.notification-row:hover { background: var(--surface-card-alt) !important; }
+
 @media (max-width: 768px) {
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
   .sidebar           { display: none; }
   .topbar            { display: none; }
   .mobile-nav        { display: flex; }
   .mobile-fab-group  { display: block; }
   .mobile-fab        { display: grid; }
   .mobile-topbar     { display: flex; }
-  .app-content       { padding-bottom: 72px; }
+  .app-body          { margin-left: 0; }
+  .app-content       { padding-bottom: 72px; overflow: visible; }
 }

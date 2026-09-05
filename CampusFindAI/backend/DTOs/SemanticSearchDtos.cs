@@ -60,6 +60,7 @@ public class SemanticSearchItemDto
     public string? CategoryName { get; set; }
     public Guid? LocationId { get; set; }
     public string? LocationName { get; set; }
+    public string? LocationDetails { get; set; }
 
     /// <summary>LostAt or FoundAt depending on Type.</summary>
     public DateTime? Date { get; set; }

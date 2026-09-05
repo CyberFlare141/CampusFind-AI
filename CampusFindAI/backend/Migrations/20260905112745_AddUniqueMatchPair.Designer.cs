@@ -4,6 +4,7 @@ using CampusFindAI.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CampusFindAI.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905112745_AddUniqueMatchPair")]
+    partial class AddUniqueMatchPair
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -351,33 +354,6 @@ namespace CampusFindAI.Api.Migrations
                     b.ToTable("Feedback");
                 });
 
-            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BuildingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("FloorNumber")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuildingId", "FloorNumber")
-                        .IsUnique();
-
-                    b.ToTable("Floors");
-                });
-
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,10 +373,6 @@ namespace CampusFindAI.Api.Migrations
 
                     b.Property<DateTime?>("FoundAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("LocationDetails")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uniqueidentifier");
@@ -465,9 +437,6 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<Guid?>("BuildingId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("FloorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -475,8 +444,6 @@ namespace CampusFindAI.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BuildingId");
-
-                    b.HasIndex("FloorId");
 
                     b.ToTable("Locations");
                 });
@@ -495,10 +462,6 @@ namespace CampusFindAI.Api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LocationDetails")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uniqueidentifier");
@@ -887,17 +850,6 @@ namespace CampusFindAI.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
-                {
-                    b.HasOne("CampusFindAI.Api.Models.Building", "Building")
-                        .WithMany("Floors")
-                        .HasForeignKey("BuildingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Building");
-                });
-
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>
                 {
                     b.HasOne("CampusFindAI.Api.Models.Category", "Category")
@@ -942,14 +894,7 @@ namespace CampusFindAI.Api.Migrations
                         .WithMany("Locations")
                         .HasForeignKey("BuildingId");
 
-                    b.HasOne("CampusFindAI.Api.Models.Floor", "Floor")
-                        .WithMany("Locations")
-                        .HasForeignKey("FloorId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("Building");
-
-                    b.Navigation("Floor");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.LostItem", b =>
@@ -1087,8 +1032,6 @@ namespace CampusFindAI.Api.Migrations
 
             modelBuilder.Entity("CampusFindAI.Api.Models.Building", b =>
                 {
-                    b.Navigation("Floors");
-
                     b.Navigation("Locations");
                 });
 
@@ -1102,11 +1045,6 @@ namespace CampusFindAI.Api.Migrations
             modelBuilder.Entity("CampusFindAI.Api.Models.Claim", b =>
                 {
                     b.Navigation("Verification");
-                });
-
-            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
-                {
-                    b.Navigation("Locations");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>

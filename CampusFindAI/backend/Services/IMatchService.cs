@@ -16,4 +16,6 @@ public interface IMatchService
 
     /// <summary>Refreshes matching suggestions after a report is submitted.</summary>
     Task RefreshForFoundItemAsync(Guid foundItemId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<MatchDto>> GetMyMatchesAsync(string userId, CancellationToken cancellationToken = default);
 }

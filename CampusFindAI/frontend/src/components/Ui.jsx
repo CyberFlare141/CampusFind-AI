@@ -428,12 +428,19 @@ export function ItemCard({ item, type = 'lost', linkTo, isMine }) {
           </p>
         )}
         <div className="item-card-meta">
-          {item?.location && (
+          {item?.locationDetails && (
             <div className="item-card-meta-row">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>{item.location}</span>
+              <span>{item.locationDetails}</span>
             </div>
           )}
+          {!item?.locationDetails && (item?.buildingName || item?.floorName || item?.locationName || item?.location) && (
+            <div className="item-card-meta-row">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>{[item.buildingName, item.floorName, item.locationName || item.location].filter(Boolean).join(' • ')}</span>
+            </div>
+          )}
+          {item?.categoryName && <div className="item-card-meta-row"><span>🏷</span><span>{item.categoryName}</span></div>}
           <div className="item-card-meta-row">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>{formatDate(item?.lostAt ?? item?.foundAt ?? item?.createdAt)}</span>

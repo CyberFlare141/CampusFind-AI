@@ -6,6 +6,7 @@ public class FoundItem
     public string UserId { get; set; } = string.Empty;
     public Guid? CategoryId { get; set; }
     public Guid? LocationId { get; set; }
+    public string? LocationDetails { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime? FoundAt { get; set; }

@@ -11,7 +11,7 @@ public class ClaimService(
     IImageRepository imageRepository,
     IAuditLogService auditLogService,
     IClaimVerificationRepository verificationRepository,
-    ApplicationDbContext dbContext,
+    INotificationService notificationService,
     ILostItemRepository lostItemRepository,
     IMatchRepository matchRepository) : IClaimService
 {
@@ -256,20 +256,8 @@ public class ClaimService(
         };
     }
 
-    private async Task CreateNotificationAsync(
-        string userId,
-        string message,
-        CancellationToken cancellationToken)
-    {
-        dbContext.Notifications.Add(new Notification
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Message = message,
-            CreatedAt = DateTime.UtcNow,
-        });
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    private Task CreateNotificationAsync(string userId, string message, CancellationToken cancellationToken) =>
+        notificationService.CreateAsync(userId, message, cancellationToken);
 
     private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null)
     {

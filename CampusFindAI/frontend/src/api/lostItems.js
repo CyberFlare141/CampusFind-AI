@@ -16,13 +16,13 @@ export function getLostItemById(id) {
   return apiRequest(`/lostitems/${id}`);
 }
 
-export function createLostItem({ title, description, lostAt, categoryId, locationId, images = [] }) {
+export function createLostItem({ title, description, lostAt, categoryId, locationDetails, images = [] }) {
   const body = new FormData();
   body.append('title', title);
   if (description) body.append('description', description);
   if (lostAt) body.append('lostAt', lostAt);
   if (categoryId) body.append('categoryId', categoryId);
-  if (locationId) body.append('locationId', locationId);
+  if (locationDetails) body.append('locationDetails', locationDetails);
   images.forEach((image) => body.append('images', image));
   return apiRequest('/lostitems', {
     method: 'POST',

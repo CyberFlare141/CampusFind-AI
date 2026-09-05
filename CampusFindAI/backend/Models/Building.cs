@@ -6,4 +6,5 @@ public class Building
     public string Name { get; set; } = string.Empty;
 
     public ICollection<Location> Locations { get; set; } = new List<Location>();
+    public ICollection<Floor> Floors { get; set; } = new List<Floor>();
 }

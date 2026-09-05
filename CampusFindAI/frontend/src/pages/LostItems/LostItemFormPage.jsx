@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createLostItem } from '../../api/lostItems';
+import { getCategories } from '../../api/reference';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, SuccessCheck } from '../../components/Ui';
 
@@ -50,6 +51,9 @@ export default function LostItemFormPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [lostAt, setLostAt] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [locationText, setLocationText] = useState('');
+  const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -63,6 +67,7 @@ export default function LostItemFormPage() {
   const earliest = new Date();
   earliest.setMonth(earliest.getMonth() - 6);
   const earliestDate = toDateTimeLocal(earliest);
+  useEffect(() => { getCategories().then(setCategories).catch(err => setFormError(err.message)); }, []);
 
   function validateStep0() {
     const errors = {};
@@ -76,6 +81,8 @@ export default function LostItemFormPage() {
     const errors = {};
     if (lostAt && new Date(lostAt) > new Date()) errors.lostAt = "The date lost cannot be in the future.";
     else if (lostAt && new Date(lostAt) < earliest) errors.lostAt = 'Items can only be reported for the last six months.';
+    if (!categoryId) errors.categoryId = 'Select an item category.';
+    if (!locationText.trim()) errors.locationText = 'Describe where you lost the item.';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -107,6 +114,8 @@ export default function LostItemFormPage() {
         title: title.trim(),
         description: description.trim() || undefined,
         lostAt: lostAt ? new Date(lostAt).toISOString() : undefined,
+        categoryId,
+        locationDetails: locationText.trim(),
         images,
       });
       setCreatedId(created.id);
@@ -267,8 +276,13 @@ export default function LostItemFormPage() {
                     : <span className="hint">Choose a date within the last 6 months.</span>
                   }
                 </div>
-                <div style={{ padding: '14px 18px', background: 'var(--surface-card-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  📍 Campus building location tags will be integrated with university map markers.
+                <div className="form-field"><label htmlFor="l-category">Category *</label><select id="l-category" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Select a category</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>{fieldErrors.categoryId && <span className="field-error">{fieldErrors.categoryId}</span>}</div>
+                <div className="form-field">
+                  <label htmlFor="lost-location">Where did you lose it?</label>
+                  <input id="lost-location" type="text" maxLength={200} placeholder="Block B 5th floor near the lift" value={locationText} onChange={e => setLocationText(e.target.value)} className={fieldErrors.locationText ? 'input-error' : ''} />
+                  {fieldErrors.locationText
+                    ? <span className="field-error">{fieldErrors.locationText}</span>
+                    : <span className="hint">Describe the location naturally, e.g. near the library entrance, Block C 7th floor corridor, or beside the canteen.</span>}
                 </div>
               </motion.div>
             )}
@@ -364,6 +378,7 @@ export default function LostItemFormPage() {
                   {[
                     { label: 'Item Title', value: title || '—' },
                     { label: 'Description', value: description || 'Not provided' },
+                    { label: 'Where Lost', value: locationText || 'Not provided' },
                     { label: 'Date Lost', value: lostAt ? new Date(lostAt).toLocaleString() : 'Not specified' },
                     { label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },
                   ].map(({ label, value }) => (
