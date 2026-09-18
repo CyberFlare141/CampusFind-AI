@@ -108,8 +108,8 @@ public sealed class ChatbotService(
             case "notifications":
                 var notifications = await db.Notifications.AsNoTracking().Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.Message, Status = x.IsRead ? "Read" : "New", CreatedAt = x.CreatedAt, Route = x.Link ?? "/" }).ToListAsync(ct);
                 return new ChatResponseDto { Type = "notifications", Text = notifications.Count == 0 ? T("You have no notifications yet.", "আপনার এখনো কোনো notification নেই।") : T("Here are your recent notifications.", "আপনার সাম্প্রতিক notificationগুলো এখানে আছে।"), Cards = notifications };
-            case "my_lost": return await MyReports(userId, true, T, ct);
-            case "my_found": return await MyReports(userId, false, T, ct);
+            case "my_lost": return await MyReports(userId, true, RequestsActiveReports(message), T, ct);
+            case "my_found": return await MyReports(userId, false, RequestsActiveReports(message), T, ct);
             case "search": return await Search(message, T, ct);
             case "lost_draft": return await SearchWithDraft(message, "lost", T("I searched existing reports and prepared a lost-report draft in case none is yours.", "বর্তমান রিপোর্টগুলো খুঁজে একটি lost-report draftও তৈরি করেছি—কোনোটিই আপনার না হলে এটি ব্যবহার করতে পারবেন।"), T, ct);
             case "found_draft": return await SearchWithDraft(message, "found", T("I searched existing reports and prepared a found-report draft. Add private verification details only in the secure form.", "বর্তমান রিপোর্টগুলো খুঁজে একটি found-report draftও তৈরি করেছি। ব্যক্তিগত verification detail শুধু secure form-এ যোগ করবেন।"), T, ct);
@@ -120,15 +120,21 @@ public sealed class ChatbotService(
         }
     }
 
-    private async Task<ChatResponseDto> MyReports(string userId, bool lost, Func<string, string, string> t, CancellationToken ct)
+    private async Task<ChatResponseDto> MyReports(string userId, bool lost, bool activeOnly, Func<string, string, string> t, CancellationToken ct)
     {
         var cards = lost
-            ? await db.LostItems.AsNoTracking().Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.Title, Status = x.Status, CreatedAt = x.CreatedAt, Route = "/lost-items/" + x.Id }).ToListAsync(ct)
-            : await db.FoundItems.AsNoTracking().Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.Title, Status = x.Status, CreatedAt = x.CreatedAt, Route = "/found-items/" + x.Id }).ToListAsync(ct);
+            ? await db.LostItems.AsNoTracking().Where(x => x.UserId == userId && (!activeOnly || x.Status == "Open")).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.Title, Status = x.Status, CreatedAt = x.CreatedAt, Route = "/lost-items/" + x.Id }).ToListAsync(ct)
+            : await db.FoundItems.AsNoTracking().Where(x => x.UserId == userId && (!activeOnly || x.Status == "Available")).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.Title, Status = x.Status, CreatedAt = x.CreatedAt, Route = "/found-items/" + x.Id }).ToListAsync(ct);
         var type = lost ? "lost_reports" : "found_reports";
         var route = lost ? "/lost-items" : "/found-items";
         return new ChatResponseDto { Type = type, Text = cards.Count == 0 ? t("You do not have any reports yet.", "আপনার এখনো কোনো রিপোর্ট নেই।") : t("Here are your recent reports.", "আপনার সাম্প্রতিক রিপোর্টগুলো এখানে আছে।"), Cards = cards, Actions = [new() { Label = t("View all reports", "সব রিপোর্ট দেখুন"), Route = route }] };
     }
+
+    private static bool RequestsActiveReports(string message) =>
+        message.Contains("active", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("open", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("available", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("সক্রিয়", StringComparison.Ordinal);
 
     private async Task<ChatResponseDto> Search(string message, Func<string, string, string> t, CancellationToken ct)
     {

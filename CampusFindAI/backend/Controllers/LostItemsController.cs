@@ -81,4 +81,36 @@ public class LostItemsController(
 
         return Ok(item);
     }
+
+    [HttpPut("{id:guid}")]
+    [RequestSizeLimit(26 * 1024 * 1024)]
+    public async Task<ActionResult<LostItemDto>> Update(Guid id, [FromForm] UpdateLostItemDto request, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.UpdateAsync(userId, id, request, cancellationToken));
+
+    [HttpPatch("{id:guid}/resolve")]
+    public async Task<ActionResult<LostItemDto>> Resolve(Guid id, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.ResolveAsync(userId, id, cancellationToken));
+
+    [HttpPatch("{id:guid}/reopen")]
+    public async Task<ActionResult<LostItemDto>> Reopen(Guid id, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.ReopenAsync(userId, id, cancellationToken));
+
+    [HttpPatch("{id:guid}/archive")]
+    public async Task<ActionResult<LostItemDto>> Archive(Guid id, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.ArchiveAsync(userId, id, cancellationToken));
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { await service.DeleteAsync(userId, id, cancellationToken); return NoContent(); }
+        catch (ReportManagementException ex) { return ManagementError(ex); }
+    }
+
+    private async Task<ActionResult<LostItemDto>> ManageAsync(Func<string, Task<LostItemDto>> operation)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { return Ok(await operation(userId)); } catch (ReportManagementException ex) { return ManagementError(ex); }
+    }
+    private ActionResult ManagementError(ReportManagementException ex) => ex.Failure switch { ReportManagementFailure.NotFound => NotFound(), ReportManagementFailure.Forbidden => Forbid(), ReportManagementFailure.Conflict => Conflict(new { message = ex.Message }), _ => BadRequest() };
 }

@@ -266,8 +266,9 @@ public class SemanticSearchService(
         var foundTask = foundItemRepository.GetAllAsync(ct);
         await Task.WhenAll(lostTask, foundTask);
 
-        var lostItems  = lostTask.Result;
-        var foundItems = foundTask.Result;
+        // Search is discovery, not a historical audit. Do not surface completed or archived reports.
+        var lostItems  = lostTask.Result.Where(item => item.Status == "Open").ToList();
+        var foundItems = foundTask.Result.Where(item => item.Status == "Available").ToList();
 
         // EF Core DbContext is NOT thread-safe — these MUST run sequentially.
         var categories = await dbContext.Categories.AsNoTracking().ToListAsync(ct);
@@ -367,7 +368,7 @@ public class SemanticSearchService(
                     LocationName = item.LocationId.HasValue ? locationMap.GetValueOrDefault(item.LocationId.Value) : null,
                     LocationDetails = item.LocationDetails,
                     Date         = item.FoundAt,
-                    Status       = null,   // FoundItem has no Status column
+                    Status       = item.Status,
                     ImageUrls    = foundImages[item.Id].ToList(),
                     RelevanceScore = Math.Round(score, 1),
                 });

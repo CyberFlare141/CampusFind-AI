@@ -63,7 +63,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
         var repository = new RecordingLostRepository();
-        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new ReferenceDataService(context), new EmptyAudit());
         await service.CreateAsync("student", RequestLost(seed));
         Assert.Equal(seed.AFloor1Location.Id, Assert.Single(repository.Items).LocationId);
     }
@@ -73,7 +73,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
         var repository = new RecordingFoundRepository();
-        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new EmptyClaims(), new ReferenceDataService(context), new EmptyAudit());
         await service.CreateAsync("student", RequestFound(seed));
         Assert.Equal(seed.AFloor1Location.Id, Assert.Single(repository.Items).LocationId);
     }
@@ -82,7 +82,7 @@ public sealed class StructuredCampusLocationTests
     public async Task LostItemCreation_RejectsFloorFromAnotherBlock()
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
-        var service = new LostItemService(new RecordingLostRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new LostItemService(new RecordingLostRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new ReferenceDataService(context), new EmptyAudit());
         var request = RequestLost(seed); request.FloorId = seed.BFloor1.Id; request.LocationId = seed.BFloor1Location.Id;
         var error = await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync("student", request));
         Assert.Contains("floor does not belong", error.Message);
@@ -92,7 +92,7 @@ public sealed class StructuredCampusLocationTests
     public async Task FoundItemCreation_RejectsFloorFromAnotherBlock()
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
-        var service = new FoundItemService(new RecordingFoundRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new FoundItemService(new RecordingFoundRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new EmptyClaims(), new ReferenceDataService(context), new EmptyAudit());
         var request = RequestFound(seed); request.FloorId = seed.BFloor1.Id; request.LocationId = seed.BFloor1Location.Id;
         var error = await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync("student", request));
         Assert.Contains("floor does not belong", error.Message);
@@ -102,7 +102,7 @@ public sealed class StructuredCampusLocationTests
     public async Task LostItemCreation_RejectsLocationFromAnotherFloor()
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
-        var service = new LostItemService(new RecordingLostRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new LostItemService(new RecordingLostRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new ReferenceDataService(context), new EmptyAudit());
         var request = RequestLost(seed); request.LocationId = seed.AFloor2Location.Id;
         var error = await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync("student", request));
         Assert.Contains("location does not belong", error.Message);
@@ -112,7 +112,7 @@ public sealed class StructuredCampusLocationTests
     public async Task FoundItemCreation_RejectsLocationFromAnotherFloor()
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
-        var service = new FoundItemService(new RecordingFoundRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new FoundItemService(new RecordingFoundRepository(), new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new EmptyClaims(), new ReferenceDataService(context), new EmptyAudit());
         var request = RequestFound(seed); request.LocationId = seed.AFloor2Location.Id;
         var error = await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync("student", request));
         Assert.Contains("location does not belong", error.Message);
@@ -123,7 +123,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
         var repository = new RecordingLostRepository();
-        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new ReferenceDataService(context), new EmptyAudit());
         await service.CreateAsync("student", RequestLost(seed));
         Assert.Equal("Near the lift", Assert.Single(repository.Items).LocationDetails);
     }
@@ -133,7 +133,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext(); var seed = await SeedCampusAsync(context);
         var repository = new RecordingFoundRepository();
-        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new EmptyClaims(), new ReferenceDataService(context), new EmptyAudit());
         await service.CreateAsync("student", RequestFound(seed));
         Assert.Equal("Near the lift", Assert.Single(repository.Items).LocationDetails);
     }
@@ -143,7 +143,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext();
         var repository = new RecordingLostRepository();
-        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new LostItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new ReferenceDataService(context), new EmptyAudit());
 
         await service.CreateAsync("student", new CreateLostItemDto
         {
@@ -161,7 +161,7 @@ public sealed class StructuredCampusLocationTests
     {
         await using var context = CreateContext();
         var repository = new RecordingFoundRepository();
-        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new ReferenceDataService(context));
+        var service = new FoundItemService(repository, new EmptyImages(), new EmptyStorage(), new EmptyMatchService(), new MemoryMatchRepository(), new EmptyClaims(), new ReferenceDataService(context), new EmptyAudit());
 
         await service.CreateAsync("student", new CreateFoundItemDto
         {
@@ -237,6 +237,8 @@ public sealed class StructuredCampusLocationTests
     private sealed class EmptyStorage : IReportImageStorage { public void Validate(IReadOnlyCollection<Microsoft.AspNetCore.Http.IFormFile>? files) { } public Task<IReadOnlyList<Image>> SaveAsync(Guid? lostId, Guid? foundId, IReadOnlyCollection<Microsoft.AspNetCore.Http.IFormFile>? files, CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<Image>)[]); }
     private sealed class EmptyMatchService : IMatchService { public Task<IReadOnlyList<MatchDto>> GetSuggestedMatchesAsync(CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<MatchDto>)[]); public Task RefreshForLostItemAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask; public Task RefreshForFoundItemAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask; public Task<IReadOnlyList<MatchDto>> GetMyMatchesAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<MatchDto>)[]); }
     private sealed class MemoryMatchRepository : IMatchRepository { public Task AddAsync(Match match, CancellationToken cancellationToken = default) => Task.CompletedTask; public Task<bool> ExistsAsync(Guid lostItemId, Guid foundItemId, CancellationToken cancellationToken = default) => Task.FromResult(false); public Task<IReadOnlyList<Match>> GetAllAsync(CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<Match>)[]); public Task<IReadOnlyList<Match>> GetByFoundItemIdAsync(Guid foundItemId, CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<Match>)[]); public Task<IReadOnlyList<Match>> GetByLostItemUserIdAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<Match>)[]); public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask; }
+    private sealed class EmptyClaims : IClaimRepository { public Task AddAsync(Claim item, CancellationToken ct = default) => Task.CompletedTask; public Task<Claim?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult<Claim?>(null); public Task<Claim?> GetReviewByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult<Claim?>(null); public Task<IReadOnlyList<Claim>> GetAllAsync(CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Claim>)[]); public Task<IReadOnlyList<Claim>> GetByStatusAsync(string status, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Claim>)[]); public Task<IReadOnlyList<Claim>> GetByClaimantIdAsync(string userId, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Claim>)[]); public Task<IReadOnlyList<Claim>> GetByFoundItemIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Claim>)[]); public void Update(Claim item) { } public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask; }
+    private sealed class EmptyAudit : IAuditLogService { public Task LogAsync(string? userId, string action, string? details = null, CancellationToken ct = default) => Task.CompletedTask; public Task<IReadOnlyList<LoginHistoryEntryDto>> GetLoginHistoryAsync(string userId, int take = 20, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<LoginHistoryEntryDto>)[]); public Task<LoginHistoryEntryDto?> GetLoginDetailAsync(string userId, Guid auditLogId, CancellationToken ct = default) => Task.FromResult<LoginHistoryEntryDto?>(null); }
     private sealed class EmptyNotifications : INotificationService { public Task CreateAsync(string userId, string message, CancellationToken cancellationToken = default) => Task.CompletedTask; }
     private sealed class EmptySimilarity : IImageSimilarityService { public Task<decimal?> GetBestSimilarityAsync(IReadOnlyCollection<string> lostImageUrls, IReadOnlyCollection<string> foundImageUrls, CancellationToken cancellationToken = default) => Task.FromResult<decimal?>(null); }
 }

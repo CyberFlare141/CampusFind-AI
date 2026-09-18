@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAllFoundItems, getMyFoundItems } from '../../api/foundItems';
+import ReportManagementActions from '../../components/ReportManagementActions';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, EmptyState, SkeletonGrid, ItemCard } from '../../components/Ui';
 
@@ -17,6 +18,8 @@ export default function FoundItemsListPage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const reload = async () => { try { setItems(tab === 'mine' ? await getMyFoundItems() : await getAllFoundItems()); } catch (err) { setError(err.message); } };
 
   useEffect(() => {
     const urlQuery = searchParams.get('search');
@@ -205,6 +208,7 @@ export default function FoundItemsListPage() {
               transition={{ delay: Math.min(i * 0.04, 0.28), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               <ItemCard item={item} type="found" isMine={item.userId === user?.id} />
+              {tab === 'mine' && item.userId === user?.id && <ReportManagementActions item={item} type="found" onChanged={reload} />}
             </motion.div>
           ))}
         </div>

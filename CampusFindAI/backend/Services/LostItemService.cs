@@ -4,54 +4,33 @@ using CampusFindAI.Api.Repositories;
 
 namespace CampusFindAI.Api.Services;
 
-public class LostItemService(ILostItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage, IMatchService matchService, IReferenceDataService referenceDataService) : ILostItemService
+public class LostItemService(ILostItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage, IMatchService matchService, IMatchRepository matchRepository, IReferenceDataService referenceDataService, IAuditLogService auditLogService) : ILostItemService
 {
-    public async Task<LostItemDto> CreateAsync(string userId, CreateLostItemDto request, CancellationToken cancellationToken = default)
+    public async Task<LostItemDto> CreateAsync(string userId, CreateLostItemDto request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(request.Title)) throw new ArgumentException("Title is required.");
-        ValidateReportedTime(request.LostAt, "lost");
-        if (request.LocationDetails?.Trim().Length > 200) throw new ArgumentException("Additional location details cannot exceed 200 characters.");
-        await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, cancellationToken);
-        imageStorage.Validate(request.Images);
+        Validate(request.Title, request.LostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
         var item = new LostItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), LostAt = request.LostAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Open", CreatedAt = DateTime.UtcNow };
-        await repository.AddAsync(item, cancellationToken);
-        var images = await imageStorage.SaveAsync(item.Id, null, request.Images, cancellationToken);
-        await imageRepository.AddRangeAsync(images, cancellationToken);
-        await matchService.RefreshForLostItemAsync(item.Id, cancellationToken);
-        return MapToDto(item, images);
+        await repository.AddAsync(item, ct); var images = await imageStorage.SaveAsync(item.Id, null, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForLostItemAsync(item.Id, ct); return MapToDto(item, images);
     }
-    public async Task<IReadOnlyList<LostItemDto>> GetAllAsync(CancellationToken cancellationToken = default) => await MapManyAsync(await repository.GetAllAsync(cancellationToken), cancellationToken);
-    public async Task<IReadOnlyList<LostItemDto>> GetMyItemsAsync(string userId, CancellationToken cancellationToken = default) => await MapManyAsync(await repository.GetByUserIdAsync(userId, cancellationToken), cancellationToken);
-    public async Task<LostItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<LostItemDto>> GetAllAsync(CancellationToken ct = default) => await MapManyAsync((await repository.GetAllAsync(ct)).Where(x => x.Status == "Open").ToList(), ct);
+    public async Task<IReadOnlyList<LostItemDto>> GetMyItemsAsync(string userId, CancellationToken ct = default) => await MapManyAsync(await repository.GetByUserIdAsync(userId, ct), ct);
+    public async Task<LostItemDto?> GetByIdAsync(Guid id, CancellationToken ct = default) { var item = await repository.GetByIdAsync(id, ct); return item is null ? null : await MapWithReferenceAsync(item, await imageRepository.GetByLostItemIdsAsync([id], ct), ct); }
+    public async Task<LostItemDto> UpdateAsync(string userId, Guid id, UpdateLostItemDto request, CancellationToken ct = default)
     {
-        var item = await repository.GetByIdAsync(id, cancellationToken); if (item is null) return null;
-        return await MapWithReferenceAsync(item, await imageRepository.GetByLostItemIdsAsync([id], cancellationToken), cancellationToken);
+        var item = await GetOwnedAsync(userId, id, ct); if (item.Status != "Open") throw Conflict("Only an open lost-item report can be edited."); Validate(request.Title, request.LostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
+        item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.LostAt = request.LostAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim();
+        await repository.UpdateAsync(item, ct); var images = await imageStorage.SaveAsync(item.Id, null, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForLostItemAsync(item.Id, ct); await AuditAsync(userId, "LostReportEdited", id, ct); return (await GetByIdAsync(id, ct))!;
     }
-    private async Task<IReadOnlyList<LostItemDto>> MapManyAsync(IReadOnlyList<LostItem> items, CancellationToken cancellationToken)
-    {
-        var images = await imageRepository.GetByLostItemIdsAsync(items.Select(x => x.Id).ToArray(), cancellationToken);
-        var byItem = images.Where(x => x.LostItemId.HasValue).GroupBy(x => x.LostItemId!.Value).ToDictionary(x => x.Key, x => (IReadOnlyList<Image>)x.ToList());
-        var categories = await referenceDataService.GetCategoriesAsync(cancellationToken);
-        var locations = await referenceDataService.GetLocationsAsync(cancellationToken);
-        return items.Select(x => MapToDto(x, byItem.GetValueOrDefault(x.Id, []),
-            categories.FirstOrDefault(category => category.Id == x.CategoryId)?.Name,
-            locations.FirstOrDefault(location => location.Id == x.LocationId))).ToList();
-    }
-    private async Task<LostItemDto> MapWithReferenceAsync(LostItem item, IReadOnlyList<Image> images, CancellationToken cancellationToken)
-    {
-        var categories = await referenceDataService.GetCategoriesAsync(cancellationToken);
-        var locations = await referenceDataService.GetLocationsAsync(cancellationToken);
-        return MapToDto(item, images, categories.FirstOrDefault(category => category.Id == item.CategoryId)?.Name,
-            locations.FirstOrDefault(location => location.Id == item.LocationId));
-    }
+    public Task<LostItemDto> ResolveAsync(string userId, Guid id, CancellationToken ct = default) => ChangeStatusAsync(userId, id, "Open", "Resolved", "LostReportResolved", ct);
+    public async Task<LostItemDto> ArchiveAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status is not ("Open" or "Resolved")) throw Conflict("This lost-item report cannot be archived in its current state."); await repository.UpdateStatusAsync(id, "Archived", ct); await AuditAsync(userId, "LostReportArchived", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task<LostItemDto> ReopenAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status is not ("Resolved" or "Archived")) throw Conflict("Only resolved or archived lost-item reports can be reopened."); await repository.UpdateStatusAsync(id, "Open", ct); await matchService.RefreshForLostItemAsync(id, ct); await AuditAsync(userId, "LostReportReopened", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task DeleteAsync(string userId, Guid id, CancellationToken ct = default) { await GetOwnedAsync(userId, id, ct); if ((await matchRepository.GetAllAsync(ct)).Any(x => x.LostItemId == id)) throw Conflict("This report has match history and cannot be deleted. Archive it instead."); await repository.DeleteAsync(id, ct); await AuditAsync(userId, "LostReportDeleted", id, ct); }
+    private async Task<LostItemDto> ChangeStatusAsync(string userId, Guid id, string from, string to, string action, CancellationToken ct) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status != from) throw Conflict($"Only {from.ToLowerInvariant()} lost-item reports can be {to.ToLowerInvariant()}."); await repository.UpdateStatusAsync(id, to, ct); await AuditAsync(userId, action, id, ct); return (await GetByIdAsync(id, ct))!; }
+    private async Task<LostItem> GetOwnedAsync(string userId, Guid id, CancellationToken ct) { var item = await repository.GetByIdAsync(id, ct) ?? throw new ReportManagementException(ReportManagementFailure.NotFound, "Report not found."); if (item.UserId != userId) throw new ReportManagementException(ReportManagementFailure.Forbidden, "You cannot manage this report."); return item; }
+    private static ReportManagementException Conflict(string message) => new(ReportManagementFailure.Conflict, message);
+    private Task AuditAsync(string userId, string action, Guid id, CancellationToken ct) => auditLogService.LogAsync(userId, action, $"ReportType=Lost; ReportId={id}", ct);
+    private static void Validate(string title, DateTime? date, string? location) { if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title is required."); if (title.Trim().Length > 150) throw new ArgumentException("Title cannot exceed 150 characters."); if (date.HasValue && date.Value.ToUniversalTime() > DateTime.UtcNow.AddMinutes(1)) throw new ArgumentException("The date lost cannot be in the future."); if (date.HasValue && date.Value.ToUniversalTime() < DateTime.UtcNow.AddMonths(-6)) throw new ArgumentException("Only items lost within the last six months can be reported."); if (location?.Trim().Length > 200) throw new ArgumentException("Additional location details cannot exceed 200 characters."); }
+    private async Task<IReadOnlyList<LostItemDto>> MapManyAsync(IReadOnlyList<LostItem> items, CancellationToken ct) { var images = await imageRepository.GetByLostItemIdsAsync(items.Select(x => x.Id).ToArray(), ct); var byItem = images.Where(x => x.LostItemId.HasValue).GroupBy(x => x.LostItemId!.Value).ToDictionary(x => x.Key, x => (IReadOnlyList<Image>)x.ToList()); var categories = await referenceDataService.GetCategoriesAsync(ct); var locations = await referenceDataService.GetLocationsAsync(ct); return items.Select(x => MapToDto(x, byItem.GetValueOrDefault(x.Id, []), categories.FirstOrDefault(c => c.Id == x.CategoryId)?.Name, locations.FirstOrDefault(l => l.Id == x.LocationId))).ToList(); }
+    private async Task<LostItemDto> MapWithReferenceAsync(LostItem item, IReadOnlyList<Image> images, CancellationToken ct) { var categories = await referenceDataService.GetCategoriesAsync(ct); var locations = await referenceDataService.GetLocationsAsync(ct); return MapToDto(item, images, categories.FirstOrDefault(c => c.Id == item.CategoryId)?.Name, locations.FirstOrDefault(l => l.Id == item.LocationId)); }
     private static LostItemDto MapToDto(LostItem item, IReadOnlyList<Image> images, string? categoryName = null, ReferenceLocationDto? location = null) => new() { Id = item.Id, UserId = item.UserId, Title = item.Title, Description = item.Description, LostAt = item.LostAt, CategoryId = item.CategoryId, CategoryName = categoryName ?? item.Category?.Name, LocationId = item.LocationId, LocationName = location?.Name ?? item.Location?.Name, BuildingName = location?.BuildingName ?? item.Location?.Building?.Name, FloorName = location?.FloorName, LocationDetails = item.LocationDetails, Status = item.Status, CreatedAt = item.CreatedAt, ImageUrls = images.Select(x => x.Url).ToList() };
-
-    private static void ValidateReportedTime(DateTime? reportedAt, string verb)
-    {
-        if (!reportedAt.HasValue) return;
-        if (reportedAt.Value.ToUniversalTime() > DateTime.UtcNow.AddMinutes(1))
-            throw new ArgumentException($"The date {verb} cannot be in the future.");
-        if (reportedAt.Value.ToUniversalTime() < DateTime.UtcNow.AddMonths(-6))
-            throw new ArgumentException($"Only items {verb} within the last six months can be reported.");
-    }
 }

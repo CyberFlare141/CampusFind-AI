@@ -17,6 +17,7 @@ import LostItemDetailPage from './pages/LostItems/LostItemDetailPage';
 import FoundItemsListPage from './pages/FoundItems/FoundItemsListPage';
 import FoundItemFormPage from './pages/FoundItems/FoundItemFormPage';
 import FoundItemDetailPage from './pages/FoundItems/FoundItemDetailPage';
+import ReportEditPage from './pages/ReportEditPage';
 
 import MyClaimsPage from './pages/Claims/MyClaimsPage';
 import SemanticSearchPage from './pages/Search/SemanticSearchPage';
@@ -69,10 +70,12 @@ export default function App() {
 
             <Route path="/lost-items" element={<LostItemsListPage />} />
             <Route path="/lost-items/new" element={<LostItemFormPage />} />
+            <Route path="/lost-items/:id/edit" element={<ReportEditPage type="lost" />} />
             <Route path="/lost-items/:id" element={<LostItemDetailPage />} />
 
             <Route path="/found-items" element={<FoundItemsListPage />} />
             <Route path="/found-items/new" element={<FoundItemFormPage />} />
+            <Route path="/found-items/:id/edit" element={<ReportEditPage type="found" />} />
             <Route path="/found-items/:id" element={<FoundItemDetailPage />} />
 
             <Route path="/my-claims" element={<MyClaimsPage />} />
