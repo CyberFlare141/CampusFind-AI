@@ -206,9 +206,18 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -217,8 +226,21 @@ namespace CampusFindAI.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
+                    b.HasIndex("ConversationId", "CreatedAt");
 
                     b.ToTable("ChatHistories");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatConversation", b =>
+                {
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uniqueidentifier");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2");
+                    b.Property<string>("Title").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<DateTime>("UpdatedAt").HasColumnType("datetime2");
+                    b.Property<string>("UserId").IsRequired().HasColumnType("nvarchar(450)");
+                    b.HasKey("Id");
+                    b.HasIndex("UserId", "UpdatedAt");
+                    b.ToTable("ChatConversations");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.Claim", b =>
@@ -925,12 +947,30 @@ namespace CampusFindAI.Api.Migrations
 
             modelBuilder.Entity("CampusFindAI.Api.Models.ChatHistory", b =>
                 {
+                    b.HasOne("CampusFindAI.Api.Models.ChatConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("User");
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatConversation", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                    b.Navigation("Messages");
                     b.Navigation("User");
                 });
 

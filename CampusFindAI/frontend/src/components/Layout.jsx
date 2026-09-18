@@ -109,6 +109,7 @@ const LogoMark = () => (
 /* ── Nav Links ───────────────────────────────────────────────── */
 const STUDENT_LINKS = [
   { to: '/',            label: 'Dashboard',    icon: 'home',   end: true },
+  { to: '/assistant',   label: 'Assistant',    icon: 'matches' },
   { to: '/search',      label: '✦ AI Search',  icon: 'search' },
   { to: '/lost-items',  label: 'Lost Items',   icon: 'lost' },
   { to: '/found-items', label: 'Found Items',  icon: 'found' },

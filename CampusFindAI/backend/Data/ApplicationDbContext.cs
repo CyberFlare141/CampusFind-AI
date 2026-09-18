@@ -23,6 +23,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Badge> Badges => Set<Badge>();
     public DbSet<Reputation> Reputations => Set<Reputation>();
     public DbSet<ChatHistory> ChatHistories => Set<ChatHistory>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<AIRequest> AIRequests => Set<AIRequest>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
     public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
@@ -120,6 +121,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ChatHistory>().Property(x => x.Role).HasMaxLength(16);
+        builder.Entity<ChatHistory>().Property(x => x.Message).HasMaxLength(4000);
+        builder.Entity<ChatHistory>().HasIndex(x => new { x.ConversationId, x.CreatedAt });
+        builder.Entity<ChatHistory>()
+            .HasOne(x => x.Conversation)
+            .WithMany(x => x.Messages)
+            .HasForeignKey(x => x.ConversationId)
+            // User -> conversation and user -> message already cascade. Restrict avoids
+            // SQL Server's multiple-cascade-path restriction; the service deletes messages first.
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<ChatConversation>()
+            .HasOne(x => x.User)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ChatConversation>().Property(x => x.Title).HasMaxLength(120);
+        builder.Entity<ChatConversation>().HasIndex(x => new { x.UserId, x.UpdatedAt });
 
         builder.Entity<AIRequest>()
             .HasOne(x => x.User)

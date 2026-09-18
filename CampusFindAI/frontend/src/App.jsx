@@ -31,6 +31,7 @@ import SecurityLoginHistoryPage from './pages/Security/SecurityLoginHistoryPage'
 import SecurityOwnershipReviewsPage from './pages/Security/SecurityOwnershipReviewsPage';
 import SecurityOfficerRequestPage from './pages/SecurityOfficerRequestPage';
 import AdminSecurityOfficerRequestsPage from './pages/AdminSecurityOfficerRequestsPage';
+import CampusFindAssistantPage from './pages/CampusFindAssistantPage';
 
 export default function App() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
             <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/matches/:matchId/verify" element={<OwnershipVerificationPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />
+            <Route path="/assistant" element={<CampusFindAssistantPage />} />
             <Route path="/security-officer-request" element={<SecurityOfficerRequestPage />} />
           </Route>
 

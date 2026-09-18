@@ -64,6 +64,18 @@ export default function FoundItemFormPage() {
   earliest.setMonth(earliest.getMonth() - 6);
   const earliestDate = toDateTimeLocal(earliest);
   useEffect(() => { getCategories().then(setCategories).catch(err => setFormError(err.message)); }, []);
+  useEffect(() => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem('campusfind.chatReportDraft') || 'null');
+      if (draft?.reportType === 'found') {
+        setTitle(current => current || draft.title || '');
+        setDescription(current => current || draft.description || '');
+        setLocationText(current => current || draft.locationDetails || '');
+        if (draft.occurredAt) setFoundAt(toDateTimeLocal(new Date(draft.occurredAt)));
+        sessionStorage.removeItem('campusfind.chatReportDraft');
+      }
+    } catch { sessionStorage.removeItem('campusfind.chatReportDraft'); }
+  }, []);
 
   function validateStep0() {
     const errors = {};
