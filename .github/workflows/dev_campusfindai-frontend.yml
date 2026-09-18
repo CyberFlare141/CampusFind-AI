@@ -1,0 +1,68 @@
+name: Build and deploy Node.js app to Azure Web App - CampusFindAI-Frontend
+
+on:
+  push:
+    branches:
+      - Dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: CampusFindAI/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: CampusFindAI/frontend
+        run: npm ci
+
+      - name: Build React application
+        working-directory: CampusFindAI/frontend
+        run: npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: campusfindai-frontend
+          path: CampusFindAI/frontend
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: campusfindai-frontend
+          path: ./frontend
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_77F67F9FB7C44D73818FCC4E0C9ECB70 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_74EF53CED0C0425EB3BCEBB0BF338918 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AE9ECB2544034F5CB14789A470FEF0F1 }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'CampusFindAI-Frontend'
+          slot-name: 'Production'
+          package: ./frontend

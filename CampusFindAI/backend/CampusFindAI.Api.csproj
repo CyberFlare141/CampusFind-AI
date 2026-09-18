@@ -7,6 +7,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Keep generated and ad-hoc build output from being treated as application source. -->
+		<Compile Remove="obj\**\*.cs" />
+		<Compile Remove="artifacts\**\*.cs" />
+		<EmbeddedResource Remove="artifacts\**\*" />
+		<None Remove="artifacts\**\*" />
+
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.6" />

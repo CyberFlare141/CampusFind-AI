@@ -12,7 +12,7 @@ const STATUS_STEPS = ['Submitted', 'Verification', 'Approved', 'Handover'];
 function ClaimTimeline({ status, verificationStatus }) {
   const isRejected = status === 'Rejected';
   let currentStep = 0;
-  if (verificationStatus === 'Completed') currentStep = 1;
+  if (['PendingSecurityReview', 'Approved'].includes(verificationStatus)) currentStep = 1;
   if (status === 'Approved') currentStep = 2;
   if (status === 'Handover' || status === 'Returned') currentStep = 3;
 
@@ -84,6 +84,7 @@ function HandoverQrCard({ claim }) {
       <div style={{ flex: 1, minWidth: 220 }}>
         <strong style={{ display: 'block', marginBottom: 5, color: 'var(--success)' }}>Claim approved</strong>
         <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>Show this QR code at the Security Desk. The officer will scan and confirm the handover before the item is marked returned.</p>
+        {qr?.expiresAt && <p className="text-xs" style={{ marginTop: 8 }}>This QR code expires at {new Date(qr.expiresAt).toLocaleTimeString()}.</p>}
         {error && <p className="text-xs" style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
       </div>
     </div>
@@ -290,7 +291,7 @@ export default function MyClaimsPage() {
 
               {/* ── Ownership Verification Status / Prompt ──────── */}
               {claim.status === 'Pending' && (
-                claim.verificationStatus === 'Completed' ? (
+                ['PendingSecurityReview', 'Approved'].includes(claim.verificationStatus) ? (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -306,7 +307,7 @@ export default function MyClaimsPage() {
                   }}>
                     <span>✓</span> AI Ownership Verification Submitted — Campus Security is reviewing your answers.
                   </div>
-                ) : claim.verificationStatus === 'Locked' ? (
+                ) : ['AttemptsExhausted', 'Locked'].includes(claim.verificationStatus) ? (
                   <div style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
