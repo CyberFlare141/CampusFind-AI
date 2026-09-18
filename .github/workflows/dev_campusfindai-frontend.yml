@@ -22,21 +22,21 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: CampusFindAI/frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: CampusFindAI/frontend
         run: npm ci
 
       - name: Build React application
-        working-directory: frontend
+        working-directory: CampusFindAI/frontend
         run: npm run build
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
           name: campusfindai-frontend
-          path: frontend
+          path: CampusFindAI/frontend
 
   deploy:
     runs-on: ubuntu-latest
