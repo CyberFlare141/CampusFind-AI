@@ -53,13 +53,14 @@ public static class IdentityExtensions
                 ValidAudience = audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
             };
-            // A JWT issued before a password change must not remain usable until its expiry.
+
             options.Events = new JwtBearerEvents
             {
                 OnTokenValidated = async context =>
                 {
                     var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                     var tokenStamp = context.Principal?.FindFirst("security_stamp")?.Value;
+
                     if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(tokenStamp))
                     {
                         context.Fail("Invalid token.");
@@ -67,10 +68,12 @@ public static class IdentityExtensions
                     }
 
                     var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+
                     var currentStamp = await db.Users.AsNoTracking()
                         .Where(user => user.Id == userId)
                         .Select(user => user.SecurityStamp)
                         .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+
                     if (currentStamp is null || !string.Equals(currentStamp, tokenStamp, StringComparison.Ordinal))
                     {
                         context.Fail("Token is no longer valid.");
@@ -80,12 +83,20 @@ public static class IdentityExtensions
         });
 
         services.AddAuthorization();
+
         return services;
     }
 
     public static async Task SeedIdentityAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
+
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        // Create/update the database tables, including ASP.NET Identity tables.
+        await dbContext.Database.MigrateAsync();
+
+        // Run the application's custom database initialization and seeding.
         await DbInitializer.SeedAsync(scope.ServiceProvider);
     }
 }
