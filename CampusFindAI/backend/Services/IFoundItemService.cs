@@ -19,4 +19,9 @@ public interface IFoundItemService
     Task<FoundItemDto?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<FoundItemDto> UpdateAsync(string userId, Guid id, UpdateFoundItemDto request, CancellationToken cancellationToken = default);
+    Task<FoundItemDto> ArchiveAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task<FoundItemDto> ReopenAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string userId, Guid id, CancellationToken cancellationToken = default);
 }

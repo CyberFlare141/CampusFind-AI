@@ -31,3 +31,19 @@ export function createFoundItem({ title, description, privateVerificationDetails
     body,
   });
 }
+
+// PrivateVerificationDetails is intentionally not accepted here: it is never returned to the browser
+// and ordinary report edits must not alter the ownership-verification secret.
+export function updateFoundItem(id, { title, description, foundAt, categoryId, locationDetails, images = [] }) {
+  const body = new FormData();
+  body.append('title', title);
+  if (description) body.append('description', description);
+  if (foundAt) body.append('foundAt', foundAt);
+  if (categoryId) body.append('categoryId', categoryId);
+  if (locationDetails) body.append('locationDetails', locationDetails);
+  images.forEach(image => body.append('images', image));
+  return apiRequest(`/founditems/${id}`, { method: 'PUT', body });
+}
+export const archiveFoundItem = id => apiRequest(`/founditems/${id}/archive`, { method: 'PATCH' });
+export const reopenFoundItem = id => apiRequest(`/founditems/${id}/reopen`, { method: 'PATCH' });
+export const deleteFoundItem = id => apiRequest(`/founditems/${id}`, { method: 'DELETE' });

@@ -4,56 +4,23 @@ using CampusFindAI.Api.Repositories;
 
 namespace CampusFindAI.Api.Services;
 
-public class FoundItemService(IFoundItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage, IMatchService matchService, IReferenceDataService referenceDataService) : IFoundItemService
+public class FoundItemService(IFoundItemRepository repository, IImageRepository imageRepository, IReportImageStorage imageStorage, IMatchService matchService, IMatchRepository matchRepository, IClaimRepository claimRepository, IReferenceDataService referenceDataService, IAuditLogService auditLogService) : IFoundItemService
 {
-    public async Task<FoundItemDto> CreateAsync(string userId, CreateFoundItemDto request, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(request.Title)) throw new ArgumentException("Title is required.");
-        if (string.IsNullOrWhiteSpace(request.PrivateVerificationDetails)) throw new ArgumentException("Private ownership verification details are required.");
-        ValidateReportedTime(request.FoundAt, "found");
-        if (request.LocationDetails?.Trim().Length > 200) throw new ArgumentException("Additional location details cannot exceed 200 characters.");
-        if (request.PrivateVerificationDetails?.Trim().Length > 1000) throw new ArgumentException("Private verification details cannot exceed 1000 characters.");
-        await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, cancellationToken);
-        imageStorage.Validate(request.Images);
-        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), PrivateVerificationDetails = request.PrivateVerificationDetails?.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow };
-        await repository.AddAsync(item, cancellationToken);
-        var images = await imageStorage.SaveAsync(null, item.Id, request.Images, cancellationToken);
-        await imageRepository.AddRangeAsync(images, cancellationToken);
-        await matchService.RefreshForFoundItemAsync(item.Id, cancellationToken);
-        return MapToDto(item, images);
-    }
-    public async Task<IReadOnlyList<FoundItemDto>> GetAllAsync(CancellationToken cancellationToken = default) => await MapManyAsync(await repository.GetAllAsync(cancellationToken), cancellationToken);
-    public async Task<IReadOnlyList<FoundItemDto>> GetMyItemsAsync(string userId, CancellationToken cancellationToken = default) => await MapManyAsync(await repository.GetByUserIdAsync(userId, cancellationToken), cancellationToken);
-    public async Task<FoundItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        var item = await repository.GetByIdAsync(id, cancellationToken); if (item is null) return null;
-        return await MapWithReferenceAsync(item, await imageRepository.GetByFoundItemIdsAsync([id], cancellationToken), cancellationToken);
-    }
-    private async Task<IReadOnlyList<FoundItemDto>> MapManyAsync(IReadOnlyList<FoundItem> items, CancellationToken cancellationToken)
-    {
-        var images = await imageRepository.GetByFoundItemIdsAsync(items.Select(x => x.Id).ToArray(), cancellationToken);
-        var byItem = images.Where(x => x.FoundItemId.HasValue).GroupBy(x => x.FoundItemId!.Value).ToDictionary(x => x.Key, x => (IReadOnlyList<Image>)x.ToList());
-        var categories = await referenceDataService.GetCategoriesAsync(cancellationToken);
-        var locations = await referenceDataService.GetLocationsAsync(cancellationToken);
-        return items.Select(x => MapToDto(x, byItem.GetValueOrDefault(x.Id, []),
-            categories.FirstOrDefault(category => category.Id == x.CategoryId)?.Name,
-            locations.FirstOrDefault(location => location.Id == x.LocationId))).ToList();
-    }
-    private async Task<FoundItemDto> MapWithReferenceAsync(FoundItem item, IReadOnlyList<Image> images, CancellationToken cancellationToken)
-    {
-        var categories = await referenceDataService.GetCategoriesAsync(cancellationToken);
-        var locations = await referenceDataService.GetLocationsAsync(cancellationToken);
-        return MapToDto(item, images, categories.FirstOrDefault(category => category.Id == item.CategoryId)?.Name,
-            locations.FirstOrDefault(location => location.Id == item.LocationId));
-    }
+    public async Task<FoundItemDto> CreateAsync(string userId, CreateFoundItemDto request, CancellationToken ct = default) { Validate(request.Title, request.FoundAt, request.LocationDetails); if (string.IsNullOrWhiteSpace(request.PrivateVerificationDetails)) throw new ArgumentException("Private ownership verification details are required."); if (request.PrivateVerificationDetails.Trim().Length > 1000) throw new ArgumentException("Private verification details cannot exceed 1000 characters."); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images); var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), PrivateVerificationDetails = request.PrivateVerificationDetails.Trim(), FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow }; await repository.AddAsync(item, ct); var images = await imageStorage.SaveAsync(null, item.Id, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForFoundItemAsync(item.Id, ct); return MapToDto(item, images); }
+    public async Task<IReadOnlyList<FoundItemDto>> GetAllAsync(CancellationToken ct = default) => await MapManyAsync((await repository.GetAllAsync(ct)).Where(x => x.Status == "Available").ToList(), ct);
+    public async Task<IReadOnlyList<FoundItemDto>> GetMyItemsAsync(string userId, CancellationToken ct = default) => await MapManyAsync(await repository.GetByUserIdAsync(userId, ct), ct);
+    public async Task<FoundItemDto?> GetByIdAsync(Guid id, CancellationToken ct = default) { var item = await repository.GetByIdAsync(id, ct); return item is null ? null : await MapWithReferenceAsync(item, await imageRepository.GetByFoundItemIdsAsync([id], ct), ct); }
+    public async Task<FoundItemDto> UpdateAsync(string userId, Guid id, UpdateFoundItemDto request, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); EnsureAvailable(item); await EnsureNoActiveClaimAsync(id, ct); Validate(request.Title, request.FoundAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images); item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.FoundAt = request.FoundAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim(); await repository.UpdateAsync(item, ct); var images = await imageStorage.SaveAsync(null, item.Id, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForFoundItemAsync(id, ct); await AuditAsync(userId, "FoundReportEdited", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task<FoundItemDto> ArchiveAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); EnsureAvailable(item); await EnsureNoActiveClaimAsync(id, ct); await repository.UpdateStatusAsync(id, "Archived", ct); await AuditAsync(userId, "FoundReportArchived", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task<FoundItemDto> ReopenAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status != "Archived") throw Conflict("Only archived found-item reports can be reopened."); await EnsureNoActiveClaimAsync(id, ct); await repository.UpdateStatusAsync(id, "Available", ct); await matchService.RefreshForFoundItemAsync(id, ct); await AuditAsync(userId, "FoundReportReopened", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task DeleteAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status is not ("Available" or "Archived")) throw Conflict("This found-item report is controlled by the claim and handover workflow and cannot be deleted."); await EnsureNoActiveClaimAsync(id, ct); if ((await matchRepository.GetByFoundItemIdAsync(id, ct)).Count > 0) throw Conflict("This report has match history and cannot be deleted. Archive it instead."); await repository.DeleteAsync(id, ct); await AuditAsync(userId, "FoundReportDeleted", id, ct); }
+    private async Task<FoundItem> GetOwnedAsync(string userId, Guid id, CancellationToken ct) { var item = await repository.GetByIdAsync(id, ct) ?? throw new ReportManagementException(ReportManagementFailure.NotFound, "Report not found."); if (item.UserId != userId) throw new ReportManagementException(ReportManagementFailure.Forbidden, "You cannot manage this report."); return item; }
+    private async Task EnsureNoActiveClaimAsync(Guid id, CancellationToken ct) { var claims = await claimRepository.GetByFoundItemIdAsync(id, ct); if (claims.Any(x => x.Status is "Pending" or "Approved" or "Returned")) throw Conflict("This report cannot be changed because it currently has an active ownership claim or completed handover."); }
+    private static void EnsureAvailable(FoundItem item) { if (item.Status != "Available") throw Conflict("Only an available found-item report can be managed this way."); }
+    private static ReportManagementException Conflict(string message) => new(ReportManagementFailure.Conflict, message);
+    private Task AuditAsync(string userId, string action, Guid id, CancellationToken ct) => auditLogService.LogAsync(userId, action, $"ReportType=Found; ReportId={id}", ct);
+    private static void Validate(string title, DateTime? date, string? location) { if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title is required."); if (title.Trim().Length > 150) throw new ArgumentException("Title cannot exceed 150 characters."); if (date.HasValue && date.Value.ToUniversalTime() > DateTime.UtcNow.AddMinutes(1)) throw new ArgumentException("The date found cannot be in the future."); if (date.HasValue && date.Value.ToUniversalTime() < DateTime.UtcNow.AddMonths(-6)) throw new ArgumentException("Only items found within the last six months can be reported."); if (location?.Trim().Length > 200) throw new ArgumentException("Additional location details cannot exceed 200 characters."); }
+    private async Task<IReadOnlyList<FoundItemDto>> MapManyAsync(IReadOnlyList<FoundItem> items, CancellationToken ct) { var images = await imageRepository.GetByFoundItemIdsAsync(items.Select(x => x.Id).ToArray(), ct); var byItem = images.Where(x => x.FoundItemId.HasValue).GroupBy(x => x.FoundItemId!.Value).ToDictionary(x => x.Key, x => (IReadOnlyList<Image>)x.ToList()); var categories = await referenceDataService.GetCategoriesAsync(ct); var locations = await referenceDataService.GetLocationsAsync(ct); return items.Select(x => MapToDto(x, byItem.GetValueOrDefault(x.Id, []), categories.FirstOrDefault(c => c.Id == x.CategoryId)?.Name, locations.FirstOrDefault(l => l.Id == x.LocationId))).ToList(); }
+    private async Task<FoundItemDto> MapWithReferenceAsync(FoundItem item, IReadOnlyList<Image> images, CancellationToken ct) { var categories = await referenceDataService.GetCategoriesAsync(ct); var locations = await referenceDataService.GetLocationsAsync(ct); return MapToDto(item, images, categories.FirstOrDefault(c => c.Id == item.CategoryId)?.Name, locations.FirstOrDefault(l => l.Id == item.LocationId)); }
     private static FoundItemDto MapToDto(FoundItem item, IReadOnlyList<Image> images, string? categoryName = null, ReferenceLocationDto? location = null) => new() { Id = item.Id, UserId = item.UserId, Title = item.Title, Description = item.Description, FoundAt = item.FoundAt, CategoryId = item.CategoryId, CategoryName = categoryName ?? item.Category?.Name, LocationId = item.LocationId, LocationName = location?.Name ?? item.Location?.Name, BuildingName = location?.BuildingName ?? item.Location?.Building?.Name, FloorName = location?.FloorName, LocationDetails = item.LocationDetails, Status = item.Status, CreatedAt = item.CreatedAt, ImageUrls = images.Select(x => x.Url).ToList() };
-
-    private static void ValidateReportedTime(DateTime? reportedAt, string verb)
-    {
-        if (!reportedAt.HasValue) return;
-        if (reportedAt.Value.ToUniversalTime() > DateTime.UtcNow.AddMinutes(1))
-            throw new ArgumentException($"The date {verb} cannot be in the future.");
-        if (reportedAt.Value.ToUniversalTime() < DateTime.UtcNow.AddMonths(-6))
-            throw new ArgumentException($"Only items {verb} within the last six months can be reported.");
-    }
 }

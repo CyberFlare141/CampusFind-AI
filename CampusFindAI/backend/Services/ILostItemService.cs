@@ -19,4 +19,10 @@ public interface ILostItemService
     Task<LostItemDto?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<LostItemDto> UpdateAsync(string userId, Guid id, UpdateLostItemDto request, CancellationToken cancellationToken = default);
+    Task<LostItemDto> ResolveAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task<LostItemDto> ReopenAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task<LostItemDto> ArchiveAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string userId, Guid id, CancellationToken cancellationToken = default);
 }

@@ -125,6 +125,42 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task UpdateAsync(FoundItem item, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            UPDATE FoundItems SET CategoryId = @CategoryId, LocationId = @LocationId, LocationDetails = @LocationDetails,
+                Title = @Title, Description = @Description, FoundAt = @FoundAt
+            WHERE Id = @Id;
+            """;
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", item.Id);
+        command.Parameters.AddWithValue("@CategoryId", (object?)item.CategoryId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LocationId", (object?)item.LocationId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LocationDetails", (object?)item.LocationDetails ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Title", item.Title);
+        command.Parameters.AddWithValue("@Description", (object?)item.Description ?? DBNull.Value);
+        command.Parameters.AddWithValue("@FoundAt", (object?)item.FoundAt ?? DBNull.Value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM Images WHERE FoundItemId = @Id; DELETE FROM FoundItems WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await using var command = new SqlCommand(sql, connection, transaction);
+            command.Parameters.AddWithValue("@Id", id);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch { await transaction.RollbackAsync(cancellationToken); throw; }
+    }
+
     public async Task UpdatePrivateVerificationDetailsAsync(Guid id, string privateVerificationDetails, CancellationToken cancellationToken = default)
     {
         const string sql = "UPDATE FoundItems SET PrivateVerificationDetails = @PrivateVerificationDetails WHERE Id = @Id;";

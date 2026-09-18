@@ -24,6 +24,11 @@ public interface ILostItemRepository
         string status,
         CancellationToken cancellationToken = default);
 
+    Task UpdateAsync(LostItem item, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support report updates."));
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support report deletion."));
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 }

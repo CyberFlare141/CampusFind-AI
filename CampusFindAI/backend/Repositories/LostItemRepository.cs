@@ -122,6 +122,43 @@ public class LostItemRepository(ISqlConnectionFactory connectionFactory)
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task UpdateAsync(LostItem item, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            UPDATE LostItems SET CategoryId = @CategoryId, LocationId = @LocationId, LocationDetails = @LocationDetails,
+                Title = @Title, Description = @Description, LostAt = @LostAt
+            WHERE Id = @Id;
+            """;
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", item.Id);
+        command.Parameters.AddWithValue("@CategoryId", (object?)item.CategoryId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LocationId", (object?)item.LocationId ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LocationDetails", (object?)item.LocationDetails ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Title", item.Title);
+        command.Parameters.AddWithValue("@Description", (object?)item.Description ?? DBNull.Value);
+        command.Parameters.AddWithValue("@LostAt", (object?)item.LostAt ?? DBNull.Value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // A service has already proved there are no historical matches. Images have no independent value.
+        const string sql = "DELETE FROM Images WHERE LostItemId = @Id; DELETE FROM LostItems WHERE Id = @Id;";
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await using var command = new SqlCommand(sql, connection, transaction);
+            command.Parameters.AddWithValue("@Id", id);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch { await transaction.RollbackAsync(cancellationToken); throw; }
+    }
+
     private async Task<IReadOnlyList<LostItem>> QueryManyAsync(
         string sql,
         Action<SqlCommand>? configure,

@@ -81,4 +81,32 @@ public class FoundItemsController(
 
         return Ok(item);
     }
+
+    [HttpPut("{id:guid}")]
+    [RequestSizeLimit(26 * 1024 * 1024)]
+    public async Task<ActionResult<FoundItemDto>> Update(Guid id, [FromForm] UpdateFoundItemDto request, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.UpdateAsync(userId, id, request, cancellationToken));
+
+    [HttpPatch("{id:guid}/archive")]
+    public async Task<ActionResult<FoundItemDto>> Archive(Guid id, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.ArchiveAsync(userId, id, cancellationToken));
+
+    [HttpPatch("{id:guid}/reopen")]
+    public async Task<ActionResult<FoundItemDto>> Reopen(Guid id, CancellationToken cancellationToken) =>
+        await ManageAsync(userId => service.ReopenAsync(userId, id, cancellationToken));
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { await service.DeleteAsync(userId, id, cancellationToken); return NoContent(); }
+        catch (ReportManagementException ex) { return ManagementError(ex); }
+    }
+
+    private async Task<ActionResult<FoundItemDto>> ManageAsync(Func<string, Task<FoundItemDto>> operation)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { return Ok(await operation(userId)); } catch (ReportManagementException ex) { return ManagementError(ex); }
+    }
+    private ActionResult ManagementError(ReportManagementException ex) => ex.Failure switch { ReportManagementFailure.NotFound => NotFound(), ReportManagementFailure.Forbidden => Forbid(), ReportManagementFailure.Conflict => Conflict(new { message = ex.Message }), _ => BadRequest() };
 }

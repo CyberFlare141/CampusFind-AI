@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAllLostItems, getMyLostItems } from '../../api/lostItems';
+import ReportManagementActions from '../../components/ReportManagementActions';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, EmptyState, SkeletonGrid, ItemCard } from '../../components/Ui';
 
@@ -17,6 +18,8 @@ export default function LostItemsListPage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const reload = async () => { try { setItems(tab === 'mine' ? await getMyLostItems() : await getAllLostItems()); } catch (err) { setError(err.message); } };
 
   // Keep query in sync with URL search query param if set from top bar
   useEffect(() => {
@@ -209,6 +212,7 @@ export default function LostItemsListPage() {
               transition={{ delay: Math.min(i * 0.04, 0.28), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               <ItemCard item={item} type="lost" isMine={item.userId === user?.id} />
+              {tab === 'mine' && item.userId === user?.id && <ReportManagementActions item={item} type="lost" onChanged={reload} />}
             </motion.div>
           ))}
         </div>
