@@ -228,7 +228,7 @@ export default function FoundItemDetailPage() {
                 </div>
 
                 {existingClaim.status === 'Pending' && (
-                  existingClaim.verificationStatus === 'Completed' ? (
+                  ['PendingSecurityReview', 'Approved'].includes(existingClaim.verificationStatus) ? (
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -243,7 +243,7 @@ export default function FoundItemDetailPage() {
                     }}>
                       <span>✓</span> Ownership questions answered. Campus Security is reviewing your claim.
                     </div>
-                  ) : existingClaim.verificationStatus === 'Locked' ? (
+                  ) : ['AttemptsExhausted', 'Locked'].includes(existingClaim.verificationStatus) ? (
                     <div style={{
                       padding: '8px 12px',
                       borderRadius: '8px',
