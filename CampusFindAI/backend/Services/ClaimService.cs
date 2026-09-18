@@ -20,6 +20,7 @@ public class ClaimService(
     private const string StatusPending = "Pending";
     private const string StatusApproved = "Approved";
     private const string StatusRejected = "Rejected";
+    private static readonly TimeSpan HandoverQrLifetime = TimeSpan.FromMinutes(15);
 
     public async Task<ClaimDto> CreateAsync(
         string claimantUserId,
@@ -176,22 +177,23 @@ public class ClaimService(
             }
         }
 
-        claim.Status = request.Approve ? StatusApproved : StatusRejected;
         claim.ReviewedByUserId = officerUserId;
         claim.ReviewedAt = DateTime.UtcNow;
         claim.DecisionNotes = request.DecisionNotes?.Trim();
         if (request.Approve)
         {
-            if (string.IsNullOrWhiteSpace(claim.HandoverQrToken))
-            {
-                claim.HandoverQrToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-                claim.HandoverQrCreatedAt = DateTime.UtcNow;
-            }
-            claim.HandoverQrUsedAt = null;
+            claim.HandoverQrToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            claim.HandoverQrCreatedAt = DateTime.UtcNow;
+            if (!await claimRepository.TryApproveAsync(claim, cancellationToken))
+                throw new InvalidOperationException("This claim can no longer be approved because the item has another completed approval.");
+            claim.Status = StatusApproved;
         }
-
-        claimRepository.Update(claim);
-        await claimRepository.SaveChangesAsync(cancellationToken);
+        else
+        {
+            claim.Status = StatusRejected;
+            claimRepository.Update(claim);
+            await claimRepository.SaveChangesAsync(cancellationToken);
+        }
 
         if (request.Approve)
         {
@@ -231,18 +233,18 @@ public class ClaimService(
             throw new InvalidOperationException("Only an approved claim can be completed as a handover.");
         }
         var scannedToken = NormalizeHandoverToken(request.Token);
-        if (string.IsNullOrWhiteSpace(scannedToken) || claim.HandoverQrUsedAt is not null || !CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(claim.HandoverQrToken ?? string.Empty), System.Text.Encoding.UTF8.GetBytes(scannedToken)))
+        if (string.IsNullOrWhiteSpace(scannedToken) || claim.HandoverQrUsedAt is not null || IsQrExpired(claim) || !CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(claim.HandoverQrToken ?? string.Empty), System.Text.Encoding.UTF8.GetBytes(scannedToken)))
         {
-            throw new InvalidOperationException("This QR code does not match the approved claim or has already been used.");
+            throw new InvalidOperationException("This QR code is invalid, expired, or has already been used.");
         }
 
-        claim.Status = "Returned";
         claim.HandedOverByUserId = officerUserId;
         claim.HandedOverAt = DateTime.UtcNow;
         claim.HandoverNotes = request.HandoverNotes?.Trim();
         claim.HandoverQrUsedAt = DateTime.UtcNow;
-        claimRepository.Update(claim);
-        await claimRepository.SaveChangesAsync(cancellationToken);
+        if (!await claimRepository.TryCompleteHandoverAsync(claim, DateTime.UtcNow, cancellationToken))
+            throw new InvalidOperationException("This QR code is invalid, expired, or has already been used.");
+        claim.Status = "Returned";
         await foundItemRepository.UpdateStatusAsync(claim.FoundItemId, "Returned", cancellationToken);
 
         var linkedMatches = await matchRepository.GetByFoundItemIdAsync(claim.FoundItemId, cancellationToken);
@@ -286,15 +288,17 @@ public class ClaimService(
         if (claim.Status != StatusApproved || claim.HandoverQrUsedAt is not null)
             throw new InvalidOperationException("A handover QR code is not available for this claim.");
 
-        if (string.IsNullOrWhiteSpace(claim.HandoverQrToken))
+        if (string.IsNullOrWhiteSpace(claim.HandoverQrToken) || IsQrExpired(claim))
         {
             claim.HandoverQrToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             claim.HandoverQrCreatedAt = DateTime.UtcNow;
+            claim.HandoverQrUsedAt = null;
             claimRepository.Update(claim);
             await claimRepository.SaveChangesAsync(cancellationToken);
         }
 
-        return new HandoverQrDto { ClaimId = claim.Id, Token = claim.HandoverQrToken, CreatedAt = claim.HandoverQrCreatedAt ?? claim.ReviewedAt ?? DateTime.UtcNow };
+        var createdAt = claim.HandoverQrCreatedAt ?? DateTime.UtcNow;
+        return new HandoverQrDto { ClaimId = claim.Id, Token = claim.HandoverQrToken, CreatedAt = createdAt, ExpiresAt = createdAt.Add(HandoverQrLifetime) };
     }
 
     public async Task<CompleteHandoverResponseDto> ConfirmHandoverQrAsync(Guid claimId, string officerUserId, HandoverQrConfirmationDto request, CancellationToken cancellationToken = default)
@@ -328,6 +332,9 @@ public class ClaimService(
 
         return new string(token.Where(character => !char.IsWhiteSpace(character)).ToArray()).ToUpperInvariant();
     }
+
+    private static bool IsQrExpired(Claim claim) =>
+        !claim.HandoverQrCreatedAt.HasValue || claim.HandoverQrCreatedAt.Value.Add(HandoverQrLifetime) <= DateTime.UtcNow;
 
     private Task CreateNotificationAsync(string userId, string message, string link, string category, CancellationToken cancellationToken) =>
         notificationService.CreateAsync(userId, message, link, category, cancellationToken);

@@ -52,7 +52,7 @@ public class UserService(
             EmailConfirmed = false,
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString(),
-            LockoutEnabled = false,
+            LockoutEnabled = true,
             AccessFailedCount = 0
         };
 
@@ -70,8 +70,14 @@ public class UserService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await userRepository.GetByEmailAsync(request.Email.Trim(), cancellationToken)
+        var user = await dbContext.Users.SingleOrDefaultAsync(
+                candidate => candidate.NormalizedEmail == Normalize(request.Email), cancellationToken)
             ?? throw new UnauthorizedAccessException("Invalid email or password.");
+
+        if (user.LockoutEnabled && user.LockoutEnd is { } lockoutEnd && lockoutEnd > DateTimeOffset.UtcNow)
+        {
+            throw new UnauthorizedAccessException("Invalid email or password.");
+        }
 
         var verification = passwordHasher.VerifyHashedPassword(
             user,
@@ -80,7 +86,21 @@ public class UserService(
 
         if (verification == PasswordVerificationResult.Failed)
         {
+            user.AccessFailedCount++;
+            if (user.LockoutEnabled && user.AccessFailedCount >= identityOptions.Value.Lockout.MaxFailedAccessAttempts)
+            {
+                user.LockoutEnd = DateTimeOffset.UtcNow.Add(identityOptions.Value.Lockout.DefaultLockoutTimeSpan);
+                user.AccessFailedCount = 0;
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
             throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
+        if (user.AccessFailedCount != 0 || user.LockoutEnd is not null)
+        {
+            user.AccessFailedCount = 0;
+            user.LockoutEnd = null;
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         await auditLogService.LogAsync(
@@ -128,11 +148,16 @@ public class UserService(
 
     public async Task ChangePasswordAsync(string userId, ChangePasswordDto request, CancellationToken cancellationToken = default)
     {
-        var user = await RequireUserAsync(userId, cancellationToken);
+        var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Your account could not be found.");
         if (passwordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.CurrentPassword) == PasswordVerificationResult.Failed)
             throw new UnauthorizedAccessException("Current password is incorrect.");
         ValidatePassword(request.NewPassword);
-        await userRepository.UpdatePasswordHashAsync(userId, passwordHasher.HashPassword(user, request.NewPassword), cancellationToken);
+        user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+        user.SecurityStamp = Guid.NewGuid().ToString();
+        user.AccessFailedCount = 0;
+        user.LockoutEnd = null;
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<AuthResponseDto> CreateAuthResponseAsync(
@@ -170,6 +195,7 @@ public class UserService(
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id),
+            new("security_stamp", user.SecurityStamp ?? string.Empty),
             new(System.Security.Claims.ClaimTypes.Role, user.Role.ToString())
         };
 
