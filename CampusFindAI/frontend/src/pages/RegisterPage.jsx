@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
+import { register as registerApi } from '../api/auth';
 import { Alert, ButtonSpinner } from '../components/Ui';
 
 // Mirrors backend password policy in IdentityExtensions.cs
 function validatePassword(password) {
   if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (password.length > 20) return 'Password must be no more than 20 characters.';
   if (!/[0-9]/.test(password)) return 'Password must include at least one digit.';
   if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter.';
   if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter.';
@@ -14,7 +15,6 @@ function validatePassword(password) {
 }
 
 export default function RegisterPage() {
-  const { register } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -26,8 +26,11 @@ export default function RegisterPage() {
 
   function validate() {
     const errors = {};
-    if (!email.trim()) errors.email = 'Email is required.';
-    else if (!/^\S+@\S+\.\S+$/.test(email)) errors.email = 'Enter a valid email address.';
+    if (!email.trim()) {
+      errors.email = 'University email is required.';
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errors.email = 'Enter a valid university email address.';
+    }
     const passwordIssue = validatePassword(password);
     if (passwordIssue) errors.password = passwordIssue;
     if (confirmPassword !== password) errors.confirmPassword = 'Passwords do not match.';
@@ -41,10 +44,21 @@ export default function RegisterPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await register(email.trim(), password);
-      navigate('/', { replace: true });
+      const response = await registerApi({
+        email: email.trim(),
+        password,
+      });
+
+      // Navigate to verification pending screen with masked email
+      navigate('/verification-pending', {
+        state: {
+          email: response?.email || email.trim(),
+          maskedEmail: response?.maskedEmail,
+        },
+        replace: true,
+      });
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.message || 'Registration failed. Please check your details and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +103,7 @@ export default function RegisterPage() {
             {[
               { icon: '✦', text: 'AI cross-references reports with multi-attribute analysis' },
               { icon: '🔒', text: 'Secured ownership proof verification before handover' },
-              { icon: '🏅', text: 'Earn community trust points for returning found property' },
+              { icon: '🏛️', text: 'Official institutional university email verification' },
             ].map((f, i) => (
               <motion.div
                 key={f.text}
@@ -116,27 +130,31 @@ export default function RegisterPage() {
         >
           <span className="eyebrow">Get Started</span>
           <h1 style={{ fontSize: '1.8rem', marginBottom: 6 }}>Create an account</h1>
-          <p className="text-muted text-sm" style={{ marginBottom: 26 }}>
-            Register with your university email to join the CampusFind AI network.
+          <p className="text-muted text-sm" style={{ marginBottom: 20 }}>
+            Register with your university email (e.g. <code>@aust.edu</code>) to join CampusFind AI.
           </p>
 
           <Alert type="error">{formError}</Alert>
 
           <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">
-              <label htmlFor="reg-email">Email Address</label>
+              <label htmlFor="reg-email">University Email Address</label>
               <input
                 id="reg-email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@university.edu"
+                placeholder="student@aust.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={fieldErrors.email ? 'input-error' : ''}
                 aria-describedby={fieldErrors.email ? 'reg-email-error' : undefined}
                 autoFocus
               />
-              {fieldErrors.email && <span id="reg-email-error" className="field-error">{fieldErrors.email}</span>}
+              {fieldErrors.email ? (
+                <span id="reg-email-error" className="field-error">{fieldErrors.email}</span>
+              ) : (
+                <span className="hint">Institutional domain required for verified campus access.</span>
+              )}
             </div>
 
             <div className="form-field">

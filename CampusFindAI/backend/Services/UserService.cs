@@ -6,6 +6,7 @@ using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,55 +14,162 @@ using Microsoft.IdentityModel.Tokens;
 namespace CampusFindAI.Api.Services;
 
 public class UserService(
+    UserManager<ApplicationUser> userManager,
     IUserRepository userRepository,
-    IPasswordHasher<ApplicationUser> passwordHasher,
+    IUniversityDomainValidator domainValidator,
+    IEmailService emailService,
     IOptions<IdentityOptions> identityOptions,
     IConfiguration configuration,
     IAuditLogService auditLogService,
-    ApplicationDbContext dbContext) : IUserService
+    ApplicationDbContext dbContext,
+    ILogger<UserService> logger) : IUserService
 {
     private readonly PasswordOptions _passwordOptions = identityOptions.Value.Password;
 
-    public async Task<AuthResponseDto> RegisterAsync(
+    public async Task<RegisterResponseDto> RegisterAsync(
         RegisterDto request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var email = request.Email.Trim();
-        var existingUser = await userRepository.GetByEmailAsync(email, cancellationToken);
-        if (existingUser is not null)
+
+        // 1. Institutional domain validation
+        if (!domainValidator.IsAllowedDomain(email))
         {
-            throw new InvalidOperationException("A user with this email already exists.");
+            throw new InvalidOperationException("Please register with an authorized university email address (e.g., @aust.edu).");
         }
 
+        // 2. Check if account exists
+        var existingUser = await userManager.FindByEmailAsync(email);
+        if (existingUser is not null)
+        {
+            throw new InvalidOperationException("An account with this email address already exists.");
+        }
+
+        // 3. Validate password complexity
         ValidatePassword(request.Password);
 
-        // Public registration must never be able to grant a privileged role.
-        // Security officers and administrators are provisioned by an authorized operator.
+        // 4. Create unconfirmed student user with lockout enabled
         const UserRole role = UserRole.Student;
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid().ToString(),
             UserName = email,
-            NormalizedUserName = Normalize(email),
             Email = email,
-            NormalizedEmail = Normalize(email),
             Role = role,
-            IsRestricted = !IsEduEmail(email),
+            IsRestricted = false,
             EmailConfirmed = false,
+            LockoutEnabled = true,
             SecurityStamp = Guid.NewGuid().ToString(),
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            LockoutEnabled = false,
-            AccessFailedCount = 0
+            ConcurrencyStamp = Guid.NewGuid().ToString()
         };
 
-        user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
+        var createResult = await userManager.CreateAsync(user, request.Password);
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Could not create account: {errors}");
+        }
 
-        await userRepository.CreateAsync(user, cancellationToken);
+        await userManager.AddToRoleAsync(user, role.ToString());
         await userRepository.AddToRoleAsync(user.Id, role.ToString(), cancellationToken);
 
-        return await CreateAuthResponseAsync(user, cancellationToken);
+        // 5. Generate Identity Email Confirmation Token
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        // 6. Send verification email
+        await emailService.SendEmailConfirmationAsync(user.Email!, user.Id, token, cancellationToken);
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "Register",
+            $"Registration initiated for {user.Email}. Awaiting email confirmation.",
+            cancellationToken);
+
+        return new RegisterResponseDto
+        {
+            RequiresEmailConfirmation = true,
+            Email = user.Email!,
+            MaskedEmail = MaskEmail(user.Email!),
+            Message = "Account created. Please check your university email to verify your account."
+        };
+    }
+
+    public async Task<AuthMessageResponseDto> ConfirmEmailAsync(
+        ConfirmEmailDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null)
+        {
+            throw new InvalidOperationException("The email confirmation link is invalid or has expired.");
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return new AuthMessageResponseDto
+            {
+                Message = "Your email address is already verified. You can sign in to your account."
+            };
+        }
+
+        string decodedToken;
+        try
+        {
+            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+        }
+        catch (Exception)
+        {
+            throw new InvalidOperationException("The email confirmation link is malformed or invalid.");
+        }
+
+        var result = await userManager.ConfirmEmailAsync(user, decodedToken);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException("The email confirmation link is invalid or has expired. Please request a new verification email.");
+        }
+
+        // Ensure user is no longer restricted once verified
+        user.IsRestricted = false;
+        await userManager.UpdateAsync(user);
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "ConfirmEmail",
+            $"Email confirmed for {user.Email}.",
+            cancellationToken);
+
+        return new AuthMessageResponseDto
+        {
+            Message = "Your email has been confirmed successfully! You can now sign in."
+        };
+    }
+
+    public async Task<AuthMessageResponseDto> ResendConfirmationAsync(
+        ResendConfirmationDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        const string genericResponse = "If an unverified account exists for this email, a verification link has been sent.";
+
+        var email = request.Email.Trim();
+        var user = await userManager.FindByEmailAsync(email);
+
+        // Account enumeration protection: return generic response if user doesn't exist or already verified
+        if (user is null || user.EmailConfirmed || await userManager.IsLockedOutAsync(user))
+        {
+            return new AuthMessageResponseDto { Message = genericResponse };
+        }
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        await emailService.SendEmailConfirmationAsync(user.Email!, user.Id, token, cancellationToken);
+
+        logger.LogInformation("Resent email confirmation link for user {UserId}", user.Id);
+        return new AuthMessageResponseDto { Message = genericResponse };
     }
 
     public async Task<AuthResponseDto> LoginAsync(
@@ -70,18 +178,57 @@ public class UserService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await userRepository.GetByEmailAsync(request.Email.Trim(), cancellationToken)
-            ?? throw new UnauthorizedAccessException("Invalid email or password.");
+        var email = request.Email.Trim();
+        var user = await userManager.FindByEmailAsync(email);
 
-        var verification = passwordHasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash ?? string.Empty,
-            request.Password);
-
-        if (verification == PasswordVerificationResult.Failed)
+        // Account enumeration protection
+        if (user is null)
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
+
+        // Check for temporary lockout
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
+            var remainingMinutes = lockoutEnd.HasValue
+                ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes))
+                : 15;
+
+            throw new UnauthorizedAccessException(
+                $"Too many unsuccessful sign-in attempts. Your account is temporarily locked for {remainingMinutes} minute(s). Please try again later or reset your password.");
+        }
+
+        // Check password
+        var passwordValid = await userManager.CheckPasswordAsync(user, request.Password);
+        if (!passwordValid)
+        {
+            await userManager.AccessFailedAsync(user);
+
+            if (await userManager.IsLockedOutAsync(user))
+            {
+                await auditLogService.LogAsync(
+                    user.Id,
+                    "AccountLockedOut",
+                    $"User {user.Email} was locked out due to repeated failed logins.",
+                    cancellationToken);
+
+                throw new UnauthorizedAccessException(
+                    "Too many unsuccessful sign-in attempts. Your account is temporarily locked for 15 minutes. Please try again later or reset your password.");
+            }
+
+            throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
+        // Enforce email confirmation for all non-admin users
+        if (!user.EmailConfirmed && user.Role != UserRole.Administrator)
+        {
+            throw new UnauthorizedAccessException(
+                "Your university email address has not been verified. Please check your inbox or resend the verification link.");
+        }
+
+        // Reset failed attempts on success
+        await userManager.ResetAccessFailedCountAsync(user);
 
         await auditLogService.LogAsync(
             user.Id,
@@ -90,6 +237,77 @@ public class UserService(
             cancellationToken);
 
         return await CreateAuthResponseAsync(user, cancellationToken);
+    }
+
+    public async Task<AuthMessageResponseDto> ForgotPasswordAsync(
+        ForgotPasswordDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        const string genericResponse = "If an account exists for that email, password reset instructions have been sent.";
+
+        var email = request.Email.Trim();
+        var user = await userManager.FindByEmailAsync(email);
+
+        // Generic response to protect against account enumeration
+        if (user is null || !user.EmailConfirmed)
+        {
+            return new AuthMessageResponseDto { Message = genericResponse };
+        }
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        await emailService.SendPasswordResetAsync(user.Email!, user.Id, token, cancellationToken);
+
+        logger.LogInformation("Generated password reset token for user {UserId}", user.Id);
+        return new AuthMessageResponseDto { Message = genericResponse };
+    }
+
+    public async Task<AuthMessageResponseDto> ResetPasswordAsync(
+        ResetPasswordDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ValidatePassword(request.NewPassword);
+
+        var user = await userManager.FindByIdAsync(request.UserId);
+        if (user is null)
+        {
+            throw new InvalidOperationException("Invalid or expired password reset link. Please request a new password reset link.");
+        }
+
+        string decodedToken;
+        try
+        {
+            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+        }
+        catch (Exception)
+        {
+            throw new InvalidOperationException("The password reset link is malformed or invalid.");
+        }
+
+        var result = await userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Could not reset password: {errors}");
+        }
+
+        // Invalidate previous sessions & reset lockout
+        await userManager.UpdateSecurityStampAsync(user);
+        await userManager.ResetAccessFailedCountAsync(user);
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "ResetPassword",
+            $"Password was reset for {user.Email}.",
+            cancellationToken);
+
+        return new AuthMessageResponseDto
+        {
+            Message = "Your password has been reset successfully. You can now sign in with your new password."
+        };
     }
 
     public async Task<ProfileDto> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
@@ -111,13 +329,17 @@ public class UserService(
 
         var phone = Clean(request.Phone);
         ValidatePhone(phone);
+        var department = Clean(request.Department);
+        var semester = Clean(request.Semester);
+        var studentId = Clean(request.StudentId);
+        ValidateAcademicFields(department, semester, studentId);
 
         profile.FullName = Clean(request.FullName);
         profile.University = Clean(request.University);
-        profile.Department = Clean(request.Department);
+        profile.Department = AllowedDepartments.FirstOrDefault(value => string.Equals(value, department, StringComparison.OrdinalIgnoreCase));
         profile.JobTitle = Clean(request.JobTitle);
-        profile.Semester = Clean(request.Semester);
-        profile.StudentId = Clean(request.StudentId);
+        profile.Semester = semester;
+        profile.StudentId = studentId;
         profile.Phone = phone;
         profile.Bio = Clean(request.Bio);
         profile.AvatarUrl = Clean(request.AvatarUrl);
@@ -129,17 +351,29 @@ public class UserService(
     public async Task ChangePasswordAsync(string userId, ChangePasswordDto request, CancellationToken cancellationToken = default)
     {
         var user = await RequireUserAsync(userId, cancellationToken);
-        if (passwordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.CurrentPassword) == PasswordVerificationResult.Failed)
-            throw new UnauthorizedAccessException("Current password is incorrect.");
         ValidatePassword(request.NewPassword);
-        await userRepository.UpdatePasswordHashAsync(userId, passwordHasher.HashPassword(user, request.NewPassword), cancellationToken);
+
+        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var firstError = result.Errors.FirstOrDefault()?.Description ?? "Current password is incorrect.";
+            throw new InvalidOperationException(firstError);
+        }
+
+        await userManager.UpdateSecurityStampAsync(user);
+
+        await auditLogService.LogAsync(
+            userId,
+            "ChangePassword",
+            $"Password changed by user {user.Email}.",
+            cancellationToken);
     }
 
     private async Task<AuthResponseDto> CreateAuthResponseAsync(
         ApplicationUser user,
         CancellationToken cancellationToken)
     {
-        var roles = await userRepository.GetRolesAsync(user.Id, cancellationToken);
+        var roles = await userManager.GetRolesAsync(user);
         var token = GenerateToken(user, roles);
 
         return new AuthResponseDto
@@ -200,6 +434,11 @@ public class UserService(
             errors.Add($"Passwords must be at least {_passwordOptions.RequiredLength} characters.");
         }
 
+        if (password.Length > 20)
+        {
+            errors.Add("Passwords must be no more than 20 characters.");
+        }
+
         if (_passwordOptions.RequireDigit && !password.Any(char.IsDigit))
         {
             errors.Add("Passwords must have at least one digit ('0'-'9').");
@@ -226,16 +465,20 @@ public class UserService(
         }
     }
 
-    private static string Normalize(string value) => value.Trim().ToUpperInvariant();
-
-    private static bool IsEduEmail(string email)
+    private static string MaskEmail(string email)
     {
-        var at = email.LastIndexOf('@');
-        return at >= 0 && email[(at + 1)..].EndsWith(".edu", StringComparison.OrdinalIgnoreCase);
+        var atIndex = email.IndexOf('@');
+        if (atIndex <= 1) return email;
+        var name = email[..atIndex];
+        var domain = email[atIndex..];
+        var maskedName = name.Length <= 2
+            ? name[0] + "*"
+            : name[0] + new string('*', Math.Min(5, name.Length - 1));
+        return maskedName + domain;
     }
 
     private async Task<ApplicationUser> RequireUserAsync(string userId, CancellationToken cancellationToken) =>
-        await userRepository.GetByIdAsync(userId, cancellationToken) ?? throw new UnauthorizedAccessException("Your account could not be found.");
+        await userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Your account could not be found.");
 
     private static ProfileDto ToProfileDto(ApplicationUser user, UserProfile? profile) => new()
     {
@@ -256,10 +499,35 @@ public class UserService(
     private static void ValidatePhone(string? phone)
     {
         if (string.IsNullOrWhiteSpace(phone)) return;
-        var digits = new string(phone.Where(char.IsDigit).ToArray());
-        if (digits.Length < 7 || digits.Length > 15)
+        if (phone.Any(character => !char.IsDigit(character)) || phone.Length < 7 || phone.Length > 15)
+            throw new InvalidOperationException("Phone number must contain only 7 to 15 digits.");
+    }
+
+    private static readonly string[] AllowedDepartments = ["CSE", "EEE", "Civil", "Mechanical", "Textile", "IPE", "Architecture"];
+    private static readonly string[] StandardSemesters = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
+    private static readonly string[] ArchitectureSemesters = [.. StandardSemesters, "5.1", "5.2"];
+
+    private static void ValidateAcademicFields(string? department, string? semester, string? studentId)
+    {
+        if (!string.IsNullOrWhiteSpace(studentId) && (studentId.Any(character => !char.IsDigit(character)) || studentId.Length > 50))
+            throw new InvalidOperationException("Student ID must contain digits only.");
+
+        if (string.IsNullOrWhiteSpace(department) && !string.IsNullOrWhiteSpace(semester))
+            throw new InvalidOperationException("Choose a department before selecting a semester.");
+
+        var canonicalDepartment = AllowedDepartments.FirstOrDefault(value => string.Equals(value, department, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(department) && canonicalDepartment is null)
+            throw new InvalidOperationException("Choose a valid department.");
+
+        if (!string.IsNullOrWhiteSpace(semester))
         {
-            throw new InvalidOperationException("Please enter a valid phone number (e.g. +880 17XXXXXXXX or 017XXXXXXXX).");
+            var allowed = string.Equals(canonicalDepartment, "Architecture", StringComparison.OrdinalIgnoreCase)
+                ? ArchitectureSemesters
+                : StandardSemesters;
+            if (!allowed.Contains(semester, StringComparer.Ordinal))
+                throw new InvalidOperationException(string.Equals(canonicalDepartment, "Architecture", StringComparison.OrdinalIgnoreCase)
+                    ? "Choose a semester from 1.1 to 5.2 for Architecture."
+                    : "Choose a semester from 1.1 to 4.2.");
         }
     }
 
