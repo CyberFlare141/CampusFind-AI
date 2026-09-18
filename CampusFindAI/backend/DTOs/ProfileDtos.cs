@@ -34,5 +34,5 @@ public class UpdateProfileDto
 public class ChangePasswordDto
 {
     [Required] public string CurrentPassword { get; set; } = string.Empty;
-    [Required] public string NewPassword { get; set; } = string.Empty;
+    [Required, StringLength(20)] public string NewPassword { get; set; } = string.Empty;
 }

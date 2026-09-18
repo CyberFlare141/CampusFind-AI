@@ -13,6 +13,7 @@ export function RegisterPage() {
     event.preventDefault();
     if (password !== confirm) { setError('Passwords do not match.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (password.length > 20) { setError('Password must be no more than 20 characters.'); return; }
     setError(''); setLoading(true);
     try { const response = await authService.register({ email: email.trim(), password }); setAuth(response); navigate('/dashboard', { replace: true }); }
     catch (error) { setError(getApiError(error, 'Registration failed. Please try again.')); }
@@ -22,8 +23,8 @@ export function RegisterPage() {
     <p className="eyebrow">CampusFind AI</p><h1>Create your account</h1><p className="muted">Join your campus lost-and-found community.</p>
     <form onSubmit={handleSubmit}>
       <label>Email<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@university.edu" /></label>
-      <label>Password<input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="At least 6 characters" /></label>
-      <label>Confirm password<input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required /></label>
+      <label>Password<input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} maxLength={20} placeholder="6 to 20 characters" /></label>
+      <label>Confirm password<input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required maxLength={20} /></label>
       <button className="button" disabled={loading} type="submit">{loading ? 'Creating account...' : 'Create account'}</button>{error && <Notice>{error}</Notice>}
     </form><p>Already registered? <Link to="/login">Sign in</Link></p>
   </section></main>;

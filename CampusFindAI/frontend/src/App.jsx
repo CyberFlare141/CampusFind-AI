@@ -6,6 +6,11 @@ import Layout from './components/Layout';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerificationPendingPage from './pages/VerificationPendingPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -23,7 +28,6 @@ import MyClaimsPage from './pages/Claims/MyClaimsPage';
 import SemanticSearchPage from './pages/Search/SemanticSearchPage';
 import MyMatchesPage from './pages/Matches/MyMatchesPage';
 import OwnershipVerificationPage from './pages/Matches/OwnershipVerificationPage';
-
 
 import SecurityOverviewPage from './pages/Security/SecurityOverviewPage';
 import SecurityClaimsPage from './pages/Security/SecurityClaimsPage';
@@ -53,6 +57,38 @@ export default function App() {
             element={
               <PublicOnlyRoute>
                 <RegisterPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/verification-pending"
+            element={
+              <PublicOnlyRoute>
+                <VerificationPendingPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <PublicOnlyRoute>
+                <VerifyEmailPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicOnlyRoute>
+                <ForgotPasswordPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicOnlyRoute>
+                <ResetPasswordPage />
               </PublicOnlyRoute>
             }
           />

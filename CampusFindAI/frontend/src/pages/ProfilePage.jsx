@@ -31,6 +31,10 @@ const emptyProfile = {
   isRestricted: false,
 };
 
+const DEPARTMENTS = ['CSE', 'EEE', 'Civil', 'Mechanical', 'Textile', 'IPE', 'Architecture'];
+const STANDARD_SEMESTERS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
+const ARCHITECTURE_SEMESTERS = [...STANDARD_SEMESTERS, '5.1', '5.2'];
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
 
@@ -179,6 +183,10 @@ export default function ProfilePage() {
 
     if (passwords.newPassword.length < 8) {
       setPasswordErrorMsg('Your new password must be at least 8 characters long.');
+      return;
+    }
+    if (passwords.newPassword.length > 20) {
+      setPasswordErrorMsg('Your new password must be no more than 20 characters long.');
       return;
     }
     if (!/[A-Z]/.test(passwords.newPassword) || !/[a-z]/.test(passwords.newPassword) || !/[0-9]/.test(passwords.newPassword)) {
@@ -673,6 +681,7 @@ export default function ProfilePage() {
                   <input
                     id="newPassword"
                     type="password"
+                    maxLength={20}
                     required
                     autoComplete="new-password"
                     value={passwords.newPassword}
@@ -685,6 +694,7 @@ export default function ProfilePage() {
                   <input
                     id="confirmPassword"
                     type="password"
+                    maxLength={20}
                     required
                     autoComplete="new-password"
                     value={passwords.confirmPassword}
@@ -827,14 +837,14 @@ export default function ProfilePage() {
                 <div className="form-row">
                   <div className="form-field">
                     <label htmlFor="edit-department">Department &amp; Faculty</label>
-                    <input
+                    <select
                       id="edit-department"
-                      type="text"
-                      maxLength={120}
                       value={editFormData.department}
-                      onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
-                      placeholder="Ex: Computer Science &amp; Engineering"
-                    />
+                      onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value, semester: e.target.value === 'Architecture' ? editFormData.semester : (STANDARD_SEMESTERS.includes(editFormData.semester) ? editFormData.semester : '') })}
+                    >
+                      <option value="">Choose department</option>
+                      {DEPARTMENTS.map(department => <option key={department} value={department}>{department}</option>)}
+                    </select>
                   </div>
 
                   {isOfficerOrAdmin ? (
@@ -857,8 +867,10 @@ export default function ProfilePage() {
                         type="text"
                         maxLength={50}
                         value={editFormData.studentId}
-                        onChange={(e) => setEditFormData({ ...editFormData, studentId: e.target.value })}
-                        placeholder="Ex: 2026-12345"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        onChange={(e) => setEditFormData({ ...editFormData, studentId: e.target.value.replace(/\D/g, '') })}
+                        placeholder="Digits only"
                       />
                     </div>
                   )}
@@ -869,14 +881,14 @@ export default function ProfilePage() {
                   {!isOfficerOrAdmin && (
                     <div className="form-field">
                       <label htmlFor="edit-semester">Semester / Year</label>
-                      <input
+                      <select
                         id="edit-semester"
-                        type="text"
-                        maxLength={40}
                         value={editFormData.semester}
                         onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
-                        placeholder="Ex: 6th Semester / 3rd Year"
-                      />
+                      >
+                        <option value="">Choose semester</option>
+                        {(editFormData.department === 'Architecture' ? ARCHITECTURE_SEMESTERS : STANDARD_SEMESTERS).map(semester => <option key={semester} value={semester}>{semester}</option>)}
+                      </select>
                     </div>
                   )}
 
@@ -885,10 +897,12 @@ export default function ProfilePage() {
                     <input
                       id="edit-phone"
                       type="tel"
-                      maxLength={30}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={15}
                       value={editFormData.phone}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      placeholder="Ex: +880 17XXXXXXXX"
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value.replace(/\D/g, '') })}
+                      placeholder="Digits only"
                     />
                   </div>
                 </div>
