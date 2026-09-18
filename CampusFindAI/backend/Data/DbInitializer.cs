@@ -217,6 +217,44 @@ public static class DbInitializer
                 FOREIGN KEY (ReviewedByUserId)
                 REFERENCES AspNetUsers (Id);
             END;
+
+            IF OBJECT_ID('ChatConversations', 'U') IS NULL
+            BEGIN
+                CREATE TABLE ChatConversations (
+                    Id uniqueidentifier NOT NULL PRIMARY KEY,
+                    UserId nvarchar(450) NOT NULL,
+                    Title nvarchar(120) NOT NULL,
+                    CreatedAt datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                    UpdatedAt datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                    CONSTRAINT FK_ChatConversations_AspNetUsers_UserId FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE
+                );
+                CREATE INDEX IX_ChatConversations_UserId_UpdatedAt ON ChatConversations (UserId, UpdatedAt);
+            END;
+
+            IF OBJECT_ID('ChatHistories', 'U') IS NULL
+            BEGIN
+                CREATE TABLE ChatHistories (
+                    Id uniqueidentifier NOT NULL PRIMARY KEY,
+                    ConversationId uniqueidentifier NOT NULL,
+                    UserId nvarchar(450) NOT NULL,
+                    Role nvarchar(16) NOT NULL DEFAULT 'user',
+                    Message nvarchar(4000) NOT NULL,
+                    CreatedAt datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                    CONSTRAINT FK_ChatHistories_AspNetUsers_UserId FOREIGN KEY (UserId) REFERENCES AspNetUsers (Id) ON DELETE CASCADE,
+                    CONSTRAINT FK_ChatHistories_ChatConversations_ConversationId FOREIGN KEY (ConversationId) REFERENCES ChatConversations (Id)
+                );
+                CREATE INDEX IX_ChatHistories_ConversationId_CreatedAt ON ChatHistories (ConversationId, CreatedAt);
+            END;
+
+            -- Safe migration: Ensure Administrator and Security Officer accounts are confirmed so they are not locked out
+            UPDATE AspNetUsers
+            SET EmailConfirmed = 1
+            WHERE Role IN ('Administrator', 'SecurityOfficer') AND EmailConfirmed = 0;
+
+            -- Safe migration: Ensure LockoutEnabled is enabled for all accounts
+            UPDATE AspNetUsers
+            SET LockoutEnabled = 1
+            WHERE LockoutEnabled = 0;
             """;
 
         await using var connection = connectionFactory.CreateConnection();

@@ -1,6 +1,9 @@
+using System.Threading.RateLimiting;
 using CampusFindAI.Api.Data;
+using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
 using CampusFindAI.Api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampusFindAI.Api.Extensions;
@@ -16,6 +19,13 @@ public static class ServiceExtensions
 
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
         services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
+
+        // Domain verification & Email service
+        services.Configure<UniversityEmailOptions>(configuration.GetSection(UniversityEmailOptions.SectionName));
+        services.AddSingleton<IUniversityDomainValidator, UniversityDomainValidator>();
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.AddScoped<IEmailService, EmailService>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
@@ -60,11 +70,34 @@ public static class ServiceExtensions
             options.AddPolicy("Frontend", policy =>
             {
                 var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-                    ?? ["http://localhost:5173"];
+                    ?? ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"];
 
                 policy.WithOrigins(origins)
                     .AllowAnyHeader()
                     .AllowAnyMethod();
+            });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddRateLimitingPolicies(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("AuthRateLimit", httpContext =>
+            {
+                var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: clientIp,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    });
             });
         });
 

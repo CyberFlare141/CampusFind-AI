@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { resendConfirmation } from '../api/auth';
 import { Alert, ButtonSpinner } from '../components/Ui';
 
 export default function LoginPage() {
@@ -16,6 +17,12 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Unverified email handler state
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState('');
+  const [isLockedOut, setIsLockedOut] = useState(false);
+
   function validate() {
     const errors = {};
     if (!email.trim()) errors.email = 'Email is required.';
@@ -28,6 +35,10 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
+    setIsUnverified(false);
+    setIsLockedOut(false);
+    setResendStatus('');
+
     if (!validate()) return;
     setSubmitting(true);
     try {
@@ -35,9 +46,31 @@ export default function LoginPage() {
       const redirectTo = location.state?.from?.pathname || '/';
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setFormError(err.message);
+      const msg = err.message || 'Invalid email or password.';
+      setFormError(msg);
+
+      if (msg.toLowerCase().includes('not been verified') || msg.toLowerCase().includes('email verification')) {
+        setIsUnverified(true);
+      }
+      if (msg.toLowerCase().includes('locked') || msg.toLowerCase().includes('lockout') || msg.toLowerCase().includes('too many unsuccessful')) {
+        setIsLockedOut(true);
+      }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!email.trim() || resending) return;
+    setResending(true);
+    setResendStatus('');
+    try {
+      const res = await resendConfirmation({ email: email.trim() });
+      setResendStatus(res?.message || 'Verification email dispatched. Please check your inbox.');
+    } catch (err) {
+      setResendStatus(err.message || 'Could not send verification email. Please try again later.');
+    } finally {
+      setResending(false);
     }
   }
 
@@ -125,6 +158,41 @@ export default function LoginPage() {
           </p>
 
           <Alert type="error">{formError}</Alert>
+          {resendStatus && <Alert type="success">{resendStatus}</Alert>}
+
+          {isUnverified && (
+            <div style={{
+              background: 'rgba(200, 169, 107, 0.12)', border: '1px solid rgba(200, 169, 107, 0.35)',
+              borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 18,
+            }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+                Haven&apos;t received your verification link?
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleResendVerification}
+                disabled={resending}
+              >
+                {resending && <ButtonSpinner />}
+                {resending ? 'Sending…' : 'Resend Verification Email'}
+              </button>
+            </div>
+          )}
+
+          {isLockedOut && (
+            <div style={{
+              background: 'rgba(211, 47, 47, 0.08)', border: '1px solid rgba(211, 47, 47, 0.25)',
+              borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 18,
+            }}>
+              <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: 8 }}>
+                You can wait for the lockout period to expire or reset your password now:
+              </div>
+              <Link to="/forgot-password" className="btn btn-secondary btn-sm">
+                Reset Password
+              </Link>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">
@@ -146,7 +214,15 @@ export default function LoginPage() {
             </div>
 
             <div className="form-field">
-              <label htmlFor="password">Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label htmlFor="password" style={{ margin: 0 }}>Password</label>
+                <Link
+                  to="/forgot-password"
+                  style={{ fontSize: '0.82rem', color: 'var(--primary-deep)', fontWeight: 600 }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div style={{ position: 'relative' }}>
                 <input
                   id="password"
