@@ -55,6 +55,12 @@ app.UseAuthentication();  //Look at the incoming request and figure out who the 
 app.UseAuthorization();   // ''    ''    ''        ''          ''
 app.MapControllers();
 
+app.MapGet("/", () => Results.Ok(new
+{
+    message = "CampusFindAI API is running",
+    status = "healthy"
+}));
+
 await app.SeedIdentityAsync();
 
 app.Run();
