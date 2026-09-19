@@ -32,6 +32,7 @@ jobs:
         working-directory: CampusFindAI/frontend
         env:
           VITE_API_BASE_URL: https://campusfindai-a7aqcgcjfddwhyb4.centralindia-01.azurewebsites.net/api
+          VITE_GOOGLE_CLIENT_ID: 165382438900-kptvn4h1m56hvgkscpnabehd0tcub3ma.apps.googleusercontent.com
         run: npm run build
 
       - name: Upload frontend artifact
