@@ -128,6 +128,13 @@ public static class IdentityExtensions
     {
         using var scope = app.Services.CreateScope();
 
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+
+        // Create/update the database tables, including ASP.NET Identity tables.
+        await dbContext.Database.MigrateAsync();
+
+        // Run the application's custom database initialization and seeding.
         await DbInitializer.SeedAsync(scope.ServiceProvider);
     }
 }
