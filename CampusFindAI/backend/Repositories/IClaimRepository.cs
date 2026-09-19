@@ -31,6 +31,15 @@ public interface IClaimRepository
         Guid foundItemId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Claim>> GetByOfficerIdAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Claim>>([]);
+
+    Task<IReadOnlyList<Claim>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Claim>>([]);
+
     /// <summary>Atomically approves a pending claim only when no other claim for the item has been approved or returned.</summary>
     Task<bool> TryApproveAsync(Claim claim, CancellationToken cancellationToken = default)
         => Task.FromResult(false);

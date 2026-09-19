@@ -16,6 +16,13 @@ public interface IClaimService
     Task<IReadOnlyList<ClaimDto>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ClaimDto>> GetOfficerDecisionHistoryAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ClaimDto>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ClaimDto>> GetMyClaimsAsync(
         string userId,
         CancellationToken cancellationToken = default);

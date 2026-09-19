@@ -21,6 +21,14 @@ export function login({ email, password }) {
   });
 }
 
+export function googleLogin({ idToken }) {
+  return apiRequest('/auth/google', {
+    method: 'POST',
+    body: { idToken },
+    auth: false,
+  });
+}
+
 export function confirmEmail({ userId, token }) {
   return apiRequest('/auth/confirm-email', {
     method: 'POST',

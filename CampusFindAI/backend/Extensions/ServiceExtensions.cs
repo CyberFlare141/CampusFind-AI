@@ -26,6 +26,10 @@ public static class ServiceExtensions
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.AddScoped<IEmailService, EmailService>();
 
+        // Google OAuth service
+        services.Configure<GoogleAuthOptions>(configuration.GetSection("Google"));
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();

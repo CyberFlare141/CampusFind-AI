@@ -4,6 +4,9 @@ public class SecurityOverviewDto
 {
     public int PendingClaimsCount { get; set; }
     public int SuggestedMatchesCount { get; set; }
+    public int LostItemsCount { get; set; }
+    public int FoundItemsCount { get; set; }
+    public int DecisionsMadeCount { get; set; }
 }
 
 /// <summary>

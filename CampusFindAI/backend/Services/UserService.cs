@@ -1,3 +1,4 @@
+```csharp
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using SecurityClaim = System.Security.Claims.Claim;
@@ -18,6 +19,7 @@ public class UserService(
     IUserRepository userRepository,
     IUniversityDomainValidator domainValidator,
     IEmailService emailService,
+    IGoogleAuthService googleAuthService,
     IOptions<IdentityOptions> identityOptions,
     IConfiguration configuration,
     IAuditLogService auditLogService,
@@ -34,14 +36,12 @@ public class UserService(
 
         var email = request.Email.Trim();
 
-        // 1. Institutional domain validation
         if (!domainValidator.IsAllowedDomain(email))
         {
             throw new InvalidOperationException(
                 "Please register with an authorized university email address (e.g., @aust.edu).");
         }
 
-        // 2. Check if account exists
         var existingUser = await userManager.FindByEmailAsync(email);
         if (existingUser is not null)
         {
@@ -49,10 +49,8 @@ public class UserService(
                 "An account with this email address already exists.");
         }
 
-        // 3. Validate password complexity
         ValidatePassword(request.Password);
 
-        // 4. Create unconfirmed student user with lockout enabled
         const UserRole role = UserRole.Student;
 
         var user = new ApplicationUser
@@ -88,10 +86,8 @@ public class UserService(
             role.ToString(),
             cancellationToken);
 
-        // 5. Generate Identity Email Confirmation Token
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        // 6. Send verification email
         await emailService.SendEmailConfirmationAsync(
             user.Email!,
             user.Id,
@@ -160,7 +156,6 @@ public class UserService(
                 "The email confirmation link is invalid or has expired. Please request a new verification email.");
         }
 
-        // Ensure user is no longer restricted once verified
         user.IsRestricted = false;
 
         await userManager.UpdateAsync(user);
@@ -191,7 +186,6 @@ public class UserService(
 
         var user = await userManager.FindByEmailAsync(email);
 
-        // Account enumeration protection
         if (user is null ||
             user.EmailConfirmed ||
             await userManager.IsLockedOutAsync(user))
@@ -231,14 +225,12 @@ public class UserService(
 
         var user = await userManager.FindByEmailAsync(email);
 
-        // Account enumeration protection
         if (user is null)
         {
             throw new UnauthorizedAccessException(
                 "Invalid email or password.");
         }
 
-        // Check for temporary lockout
         if (await userManager.IsLockedOutAsync(user))
         {
             var lockoutEnd =
@@ -256,7 +248,6 @@ public class UserService(
                 $"Too many unsuccessful sign-in attempts. Your account is temporarily locked for {remainingMinutes} minute(s). Please try again later or reset your password.");
         }
 
-        // Check password
         var passwordValid =
             await userManager.CheckPasswordAsync(
                 user,
@@ -282,7 +273,6 @@ public class UserService(
                 "Invalid email or password.");
         }
 
-        // Enforce email confirmation for all non-admin users
         if (!user.EmailConfirmed &&
             user.Role != UserRole.Administrator)
         {
@@ -290,13 +280,165 @@ public class UserService(
                 "Your university email address has not been verified. Please check your inbox or resend the verification link.");
         }
 
-        // Reset failed attempts on successful login
         await userManager.ResetAccessFailedCountAsync(user);
 
         await auditLogService.LogAsync(
             user.Id,
             "Login",
             $"Successful login for {user.Email}.",
+            cancellationToken);
+
+        return await CreateAuthResponseAsync(
+            user,
+            cancellationToken);
+    }
+
+    public async Task<AuthResponseDto> GoogleLoginAsync(
+        GoogleAuthDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var payload =
+            await googleAuthService.ValidateIdTokenAsync(
+                request.IdToken,
+                cancellationToken);
+
+        var email = payload.Email.Trim().ToLowerInvariant();
+
+        if (!domainValidator.IsAllowedDomain(email))
+        {
+            throw new InvalidOperationException(
+                "Please sign in with an authorized university Google account (e.g., @aust.edu).");
+        }
+
+        const string provider = "Google";
+        var providerKey = payload.Subject;
+
+        var user = await userManager.FindByLoginAsync(
+            provider,
+            providerKey);
+
+        if (user is null)
+        {
+            user = await userManager.FindByEmailAsync(email);
+
+            if (user is not null)
+            {
+                var addLoginResult = await userManager.AddLoginAsync(
+                    user,
+                    new UserLoginInfo(
+                        provider,
+                        providerKey,
+                        "Google"));
+
+                if (!addLoginResult.Succeeded)
+                {
+                    logger.LogWarning(
+                        "Could not link Google login to existing user {Email}: {Errors}",
+                        email,
+                        string.Join(
+                            "; ",
+                            addLoginResult.Errors.Select(
+                                e => e.Description)));
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    await userManager.UpdateAsync(user);
+                }
+            }
+            else
+            {
+                const UserRole role = UserRole.Student;
+
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserName = email,
+                    Email = email,
+                    Role = role,
+                    IsRestricted = false,
+                    EmailConfirmed = true,
+                    LockoutEnabled = true,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                };
+
+                var createResult = await userManager.CreateAsync(user);
+
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(
+                        "; ",
+                        createResult.Errors.Select(
+                            e => e.Description));
+
+                    throw new InvalidOperationException(
+                        $"Could not create account with Google: {errors}");
+                }
+
+                await userManager.AddToRoleAsync(
+                    user,
+                    role.ToString());
+
+                await userRepository.AddToRoleAsync(
+                    user.Id,
+                    role.ToString(),
+                    cancellationToken);
+
+                await userManager.AddLoginAsync(
+                    user,
+                    new UserLoginInfo(
+                        provider,
+                        providerKey,
+                        "Google"));
+
+                var profile = new UserProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    FullName = Clean(payload.Name),
+                    AvatarUrl = Clean(payload.Picture)
+                };
+
+                dbContext.UserProfiles.Add(profile);
+
+                await dbContext.SaveChangesAsync(
+                    cancellationToken);
+
+                await auditLogService.LogAsync(
+                    user.Id,
+                    "GoogleRegister",
+                    $"User {user.Email} registered via Google OAuth.",
+                    cancellationToken);
+            }
+        }
+
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            var lockoutEnd =
+                await userManager.GetLockoutEndDateAsync(user);
+
+            var remainingMinutes = lockoutEnd.HasValue
+                ? Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        (lockoutEnd.Value - DateTimeOffset.UtcNow)
+                        .TotalMinutes))
+                : 15;
+
+            throw new UnauthorizedAccessException(
+                $"Too many unsuccessful sign-in attempts. Your account is temporarily locked for {remainingMinutes} minute(s). Please try again later.");
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user);
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "GoogleLogin",
+            $"User {user.Email} signed in via Google OAuth.",
             cancellationToken);
 
         return await CreateAuthResponseAsync(
@@ -317,7 +459,6 @@ public class UserService(
 
         var user = await userManager.FindByEmailAsync(email);
 
-        // Generic response to protect against account enumeration
         if (user is null || !user.EmailConfirmed)
         {
             return new AuthMessageResponseDto
@@ -353,7 +494,8 @@ public class UserService(
 
         ValidatePassword(request.NewPassword);
 
-        var user = await userManager.FindByIdAsync(request.UserId);
+        var user =
+            await userManager.FindByIdAsync(request.UserId);
 
         if (user is null)
         {
@@ -383,13 +525,13 @@ public class UserService(
         {
             var errors = string.Join(
                 "; ",
-                result.Errors.Select(e => e.Description));
+                result.Errors.Select(
+                    e => e.Description));
 
             throw new InvalidOperationException(
                 $"Could not reset password: {errors}");
         }
 
-        // Invalidate previous sessions & reset lockout
         await userManager.UpdateSecurityStampAsync(user);
         await userManager.ResetAccessFailedCountAsync(user);
 
@@ -479,7 +621,8 @@ public class UserService(
         profile.Bio = Clean(request.Bio);
         profile.AvatarUrl = Clean(request.AvatarUrl);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return ToProfileDto(user, profile);
     }
@@ -509,7 +652,6 @@ public class UserService(
             throw new InvalidOperationException(firstError);
         }
 
-        // Invalidate previous sessions
         await userManager.UpdateSecurityStampAsync(user);
 
         await auditLogService.LogAsync(
@@ -815,4 +957,4 @@ public class UserService(
             ? null
             : value.Trim();
 }
-
+```

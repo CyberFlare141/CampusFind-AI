@@ -48,3 +48,9 @@ public class AuthMessageResponseDto
     public string Message { get; set; } = string.Empty;
 }
 
+public class GoogleAuthDto
+{
+    [Required]
+    public string IdToken { get; set; } = string.Empty;
+}
+

@@ -150,6 +150,34 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
         return QueryAsync(sql, command => command.Parameters.AddWithValue("@FoundItemId", foundItemId), cancellationToken);
     }
 
+    public Task<IReadOnlyList<Claim>> GetByOfficerIdAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var sql = BaseSelect + """
+
+            WHERE c.ReviewedByUserId = @OfficerUserId AND c.Status IN ('Approved', 'Rejected', 'Returned')
+            ORDER BY c.ReviewedAt DESC;
+            """;
+
+        return QueryAsync(
+            sql,
+            command => command.Parameters.AddWithValue("@OfficerUserId", officerUserId),
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<Claim>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var sql = BaseSelect + """
+
+            WHERE c.Status IN ('Approved', 'Returned')
+            ORDER BY COALESCE(c.ReviewedAt, c.CreatedAt) DESC;
+            """;
+
+        return QueryAsync(sql, null, cancellationToken);
+    }
+
     public async Task<bool> TryApproveAsync(Claim claim, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -315,7 +343,8 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             {
                 Id = reader.GetGuid("FoundItemId"),
                 Title = reader.GetRequiredString("FoundItemTitle"),
-                Description = reader.GetNullableString("FoundItemDescription")
+                Description = reader.GetNullableString("FoundItemDescription"),
+                Status = reader.GetNullableString("FoundItemStatus") ?? "Available"
             },
             ClaimantUser = new ApplicationUser
             {
@@ -390,6 +419,7 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             c.HandoverQrUsedAt,
             fi.Title AS FoundItemTitle,
             fi.Description AS FoundItemDescription,
+            fi.Status AS FoundItemStatus,
             cu.Email AS ClaimantEmail,
             ru.Email AS ReviewedByEmail
         FROM Claims c
@@ -403,7 +433,7 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
             c.Id AS ClaimId, c.FoundItemId, c.ClaimantUserId, c.ClaimantNotes, c.Status, c.CreatedAt,
             c.ReviewedByUserId, c.ReviewedAt, c.DecisionNotes, c.HandedOverByUserId, c.HandedOverAt, c.HandoverNotes,
             c.HandoverQrToken, c.HandoverQrCreatedAt, c.HandoverQrUsedAt,
-            fi.Title AS FoundItemTitle, fi.Description AS FoundItemDescription, fi.UserId AS ReporterUserId, fi.FoundAt,
+            fi.Title AS FoundItemTitle, fi.Description AS FoundItemDescription, fi.Status AS FoundItemStatus, fi.UserId AS ReporterUserId, fi.FoundAt,
             cu.Email AS ClaimantEmail, ru.Email AS ReviewedByEmail,
             cup.FullName AS ClaimantFullName, cup.Department AS ClaimantDepartment, cup.JobTitle AS ClaimantJobTitle,
             cup.Semester AS ClaimantSemester, cup.StudentId AS ClaimantStudentId, cup.Phone AS ClaimantPhone,

@@ -61,6 +61,29 @@ public class ClaimsController(
         return Ok(claims);
     }
 
+    /// <summary>Claims decided (approved/rejected/returned) by this specific security officer.</summary>
+    [HttpGet("my-decisions")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<IReadOnlyList<ClaimDto>>> GetMyDecisions(
+        CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+
+        var claims = await service.GetOfficerDecisionHistoryAsync(officerId, cancellationToken);
+        return Ok(claims);
+    }
+
+    /// <summary>Approved / Returned claims for read-only ownership reference.</summary>
+    [HttpGet("approved")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<IReadOnlyList<ClaimDto>>> GetApproved(
+        CancellationToken cancellationToken)
+    {
+        var claims = await service.GetApprovedClaimsAsync(cancellationToken);
+        return Ok(claims);
+    }
+
     /// <summary>Full claim history (any status), for officers/administrators.</summary>
     [HttpGet]
     [Authorize(Roles = "SecurityOfficer,Administrator")]

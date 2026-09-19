@@ -67,6 +67,24 @@ export function AuthProvider({ children }) {
     [handleAuthSuccess]
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken) => {
+      setLoading(true);
+      setAuthError(null);
+      try {
+        const response = await authApi.googleLogin({ idToken });
+        handleAuthSuccess(response);
+        return response.user;
+      } catch (err) {
+        setAuthError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
   const register = useCallback(
     async (email, password) => {
       setLoading(true);
@@ -100,11 +118,12 @@ export function AuthProvider({ children }) {
       loading,
       authError,
       login,
+      loginWithGoogle,
       register,
       logout,
       clearAuthError: () => setAuthError(null),
     }),
-    [user, isOfficer, loading, authError, login, register, logout]
+    [user, isOfficer, loading, authError, login, loginWithGoogle, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
