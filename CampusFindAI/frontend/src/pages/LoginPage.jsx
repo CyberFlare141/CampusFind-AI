@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { resendConfirmation } from '../api/auth';
 import { Alert, ButtonSpinner } from '../components/Ui';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -57,6 +58,20 @@ export default function LoginPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSuccess(idToken) {
+    setFormError('');
+    setIsUnverified(false);
+    setIsLockedOut(false);
+    setResendStatus('');
+    try {
+      await loginWithGoogle(idToken);
+      const redirectTo = location.state?.from?.pathname || '/';
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      setFormError(err.message || 'Google sign-in failed.');
     }
   }
 
@@ -193,6 +208,31 @@ export default function LoginPage() {
               </Link>
             </div>
           )}
+
+          {/* Google Authentication Option */}
+          <div style={{ marginBottom: 18 }}>
+            <GoogleSignInButton
+              onCredentialReceived={handleGoogleSuccess}
+              onError={(msg) => setFormError(msg)}
+              disabled={submitting}
+              text="Continue with Google"
+            />
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: 20,
+            color: 'var(--text-muted)',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            <span style={{ padding: '0 12px' }}>or continue with email</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          </div>
 
           <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">

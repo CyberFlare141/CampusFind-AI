@@ -31,6 +31,10 @@ public class ClaimDto
     public DateTime? HandedOverAt { get; set; }
     public string? HandoverNotes { get; set; }
 
+    public string? FoundItemStatus { get; set; }
+    public bool IsItemAlreadyClaimed { get; set; }
+    public IReadOnlyList<string> ImageUrls { get; set; } = [];
+
     public string? VerificationStatus { get; set; }
     public decimal? VerificationScore { get; set; }
     public int? VerificationMatchedCount { get; set; }
@@ -79,7 +83,6 @@ public class ClaimReviewDto : ClaimDto
     public ClaimPersonDto Claimant { get; set; } = new();
     public ClaimPersonDto Reporter { get; set; } = new();
     public DateTime? FoundAt { get; set; }
-    public IReadOnlyList<string> ImageUrls { get; set; } = [];
     public OfficerVerificationReviewDto? VerificationReview { get; set; }
 }
 

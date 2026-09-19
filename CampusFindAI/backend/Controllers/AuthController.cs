@@ -32,6 +32,17 @@ public class AuthController(IUserService userService) : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("google")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
+    public async Task<ActionResult<AuthResponseDto>> GoogleLogin(
+        GoogleAuthDto request,
+        CancellationToken cancellationToken)
+    {
+        var response = await userService.GoogleLoginAsync(request, cancellationToken);
+        return Ok(response);
+    }
+
     [HttpPost("confirm-email")]
     [AllowAnonymous]
     [EnableRateLimiting("AuthRateLimit")]

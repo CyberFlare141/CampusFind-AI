@@ -484,6 +484,7 @@ export default function Layout() {
               <span className="nav-icon"><Icon name="user" /></span>
               <span className="nav-label">Profile</span>
             </NavLink>
+
           </nav>
 
           {/* Bottom area: user + logout */}
@@ -577,7 +578,6 @@ export default function Layout() {
                   onClick={() => setDrawerOpen(false)}>
                   <span className="nav-icon"><Icon name={link.icon} /></span>
                   <span className="nav-label">{link.label}</span>
-                  {renderNavIndicator(link)}
                   {renderNavIndicator(link)}
                 </NavLink>
               ))}

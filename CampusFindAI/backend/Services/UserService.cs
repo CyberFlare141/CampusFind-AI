@@ -1,4 +1,3 @@
-```csharp
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using SecurityClaim = System.Security.Claims.Claim;
@@ -19,6 +18,7 @@ public class UserService(
     IUserRepository userRepository,
     IUniversityDomainValidator domainValidator,
     IEmailService emailService,
+    IGoogleAuthService googleAuthService,
     IOptions<IdentityOptions> identityOptions,
     IConfiguration configuration,
     IAuditLogService auditLogService,
@@ -303,6 +303,129 @@ public class UserService(
         return await CreateAuthResponseAsync(
             user,
             cancellationToken);
+    }
+
+    public async Task<AuthResponseDto> GoogleLoginAsync(
+        GoogleAuthDto request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // 1. Verify Google identity cryptographically using Google.Apis.Auth
+        var payload = await googleAuthService.ValidateIdTokenAsync(request.IdToken, cancellationToken);
+        var email = payload.Email.Trim().ToLowerInvariant();
+
+        // 2. Validate institutional domain
+        if (!domainValidator.IsAllowedDomain(email))
+        {
+            throw new InvalidOperationException("Please sign in with an authorized university Google account (e.g., @aust.edu).");
+        }
+
+        const string provider = "Google";
+        var providerKey = payload.Subject; // Google user ID
+
+        // 3. Check if user is already linked via Google external login
+        var user = await userManager.FindByLoginAsync(provider, providerKey);
+
+        if (user is null)
+        {
+            // 4. Check if user already exists by email (Safe Account Linking)
+            user = await userManager.FindByEmailAsync(email);
+
+            if (user is not null)
+            {
+                // Link Google login to existing Identity user
+                var addLoginResult = await userManager.AddLoginAsync(
+                    user,
+                    new UserLoginInfo(provider, providerKey, "Google"));
+
+                if (!addLoginResult.Succeeded)
+                {
+                    logger.LogWarning("Could not link Google login to existing user {Email}: {Errors}",
+                        email, string.Join("; ", addLoginResult.Errors.Select(e => e.Description)));
+                }
+
+                // Since Google has validated this email address, ensure EmailConfirmed is true
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    await userManager.UpdateAsync(user);
+                }
+            }
+            else
+            {
+                // 5. New user: Provision ApplicationUser
+                const UserRole role = UserRole.Student;
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserName = email,
+                    Email = email,
+                    Role = role,
+                    IsRestricted = false,
+                    EmailConfirmed = true, // Verified by Google OAuth
+                    LockoutEnabled = true,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                };
+
+                var createResult = await userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Could not create account with Google: {errors}");
+                }
+
+                await userManager.AddToRoleAsync(user, role.ToString());
+                await userRepository.AddToRoleAsync(user.Id, role.ToString(), cancellationToken);
+
+                // Link external Google login info
+                await userManager.AddLoginAsync(
+                    user,
+                    new UserLoginInfo(provider, providerKey, "Google"));
+
+                // Provision UserProfile with Google Name and Avatar
+                var profile = new UserProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    FullName = Clean(payload.Name),
+                    AvatarUrl = Clean(payload.Picture)
+                };
+                dbContext.UserProfiles.Add(profile);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                await auditLogService.LogAsync(
+                    user.Id,
+                    "GoogleRegister",
+                    $"User {user.Email} registered via Google OAuth.",
+                    cancellationToken);
+            }
+        }
+
+        // 6. Check for account lockout
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
+            var remainingMinutes = lockoutEnd.HasValue
+                ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes))
+                : 15;
+
+            throw new UnauthorizedAccessException(
+                $"Too many unsuccessful sign-in attempts. Your account is temporarily locked for {remainingMinutes} minute(s). Please try again later.");
+        }
+
+        // Reset failed access count on successful Google login
+        await userManager.ResetAccessFailedCountAsync(user);
+
+        await auditLogService.LogAsync(
+            user.Id,
+            "GoogleLogin",
+            $"User {user.Email} signed in via Google OAuth.",
+            cancellationToken);
+
+        // 7. Generate application JWT using existing CreateAuthResponseAsync
+        return await CreateAuthResponseAsync(user, cancellationToken);
     }
 
     public async Task<AuthMessageResponseDto> ForgotPasswordAsync(
@@ -816,4 +939,3 @@ public class UserService(
             ? null
             : value.Trim();
 }
-```

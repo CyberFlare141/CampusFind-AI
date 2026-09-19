@@ -10,6 +10,7 @@ namespace CampusFindAI.Api.Controllers;
 public sealed class SecurityOwnershipVerificationsController(IOwnershipVerificationService service) : ControllerBase
 {
     [HttpGet("pending")] public async Task<ActionResult<IReadOnlyList<OfficerVerificationReviewDto>>> Pending(CancellationToken ct) => Ok(await service.GetPendingSecurityReviewsAsync(ct));
+    [HttpGet("approved")] public async Task<ActionResult<IReadOnlyList<ClaimDto>>> Approved([FromServices] IClaimService claimService, CancellationToken ct) => Ok(await claimService.GetApprovedClaimsAsync(ct));
     [HttpGet("{id:guid}")] public async Task<ActionResult<OfficerVerificationReviewDto>> Get(Guid id, CancellationToken ct) { try { return Ok(await service.GetSecurityReviewAsync(id, ct)); } catch (KeyNotFoundException) { return NotFound(); } }
     [HttpPost("{id:guid}/approve")] public Task<ActionResult<OfficerVerificationReviewDto>> Approve(Guid id, SecurityReviewDecisionDto request, CancellationToken ct) => Decide(id, true, request, ct);
     [HttpPost("{id:guid}/reject")] public Task<ActionResult<OfficerVerificationReviewDto>> Reject(Guid id, SecurityReviewDecisionDto request, CancellationToken ct) => Decide(id, false, request, ct);

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { register as registerApi } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 import { Alert, ButtonSpinner } from '../components/Ui';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 // Mirrors backend password policy in IdentityExtensions.cs
 function validatePassword(password) {
@@ -16,6 +18,7 @@ function validatePassword(password) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,6 +64,16 @@ export default function RegisterPage() {
       setFormError(err.message || 'Registration failed. Please check your details and try again.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSuccess(idToken) {
+    setFormError('');
+    try {
+      await loginWithGoogle(idToken);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setFormError(err.message || 'Google registration failed.');
     }
   }
 
@@ -135,6 +148,31 @@ export default function RegisterPage() {
           </p>
 
           <Alert type="error">{formError}</Alert>
+
+          {/* Google Authentication Option */}
+          <div style={{ marginBottom: 18 }}>
+            <GoogleSignInButton
+              onCredentialReceived={handleGoogleSuccess}
+              onError={(msg) => setFormError(msg)}
+              disabled={submitting}
+              text="Sign up with Google"
+            />
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: 20,
+            color: 'var(--text-muted)',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            <span style={{ padding: '0 12px' }}>or register with email</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          </div>
 
           <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 18 }}>
             <div className="form-field">

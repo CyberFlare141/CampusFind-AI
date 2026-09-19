@@ -80,26 +80,29 @@ public class ClaimService(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetByStatusAsync(StatusPending, cancellationToken);
-        var dtos = new List<ClaimDto>();
-        foreach (var claim in claims)
-        {
-            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
-            dtos.Add(MapToDto(claim, v));
-        }
-        return dtos;
+        return await MapClaimsToDtosAsync(claims, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ClaimDto>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetAllAsync(cancellationToken);
-        var dtos = new List<ClaimDto>();
-        foreach (var claim in claims)
-        {
-            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
-            dtos.Add(MapToDto(claim, v));
-        }
-        return dtos;
+        return await MapClaimsToDtosAsync(claims, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ClaimDto>> GetOfficerDecisionHistoryAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var claims = await claimRepository.GetByOfficerIdAsync(officerUserId, cancellationToken);
+        return await MapClaimsToDtosAsync(claims, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ClaimDto>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var claims = await claimRepository.GetApprovedClaimsAsync(cancellationToken);
+        return await MapClaimsToDtosAsync(claims, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ClaimDto>> GetMyClaimsAsync(
@@ -107,13 +110,7 @@ public class ClaimService(
         CancellationToken cancellationToken = default)
     {
         var claims = await claimRepository.GetByClaimantIdAsync(userId, cancellationToken);
-        var dtos = new List<ClaimDto>();
-        foreach (var claim in claims)
-        {
-            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
-            dtos.Add(MapToDto(claim, v));
-        }
-        return dtos;
+        return await MapClaimsToDtosAsync(claims, cancellationToken);
     }
 
     public async Task<ClaimDto?> GetByIdAsync(
@@ -122,8 +119,9 @@ public class ClaimService(
     {
         var claim = await claimRepository.GetByIdAsync(id, cancellationToken);
         if (claim is null) return null;
+        var images = await imageRepository.GetByFoundItemIdsAsync([claim.FoundItemId], cancellationToken);
         var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
-        return MapToDto(claim, v);
+        return MapToDto(claim, v, images.Select(i => i.Url).ToList());
     }
 
     public async Task<ClaimReviewDto?> GetReviewAsync(Guid id, CancellationToken cancellationToken = default)
@@ -339,14 +337,36 @@ public class ClaimService(
     private Task CreateNotificationAsync(string userId, string message, string link, string category, CancellationToken cancellationToken) =>
         notificationService.CreateAsync(userId, message, link, category, cancellationToken);
 
-    private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null)
+    private async Task<IReadOnlyList<ClaimDto>> MapClaimsToDtosAsync(IReadOnlyList<Claim> claims, CancellationToken cancellationToken)
     {
+        if (claims.Count == 0) return [];
+        var foundItemIds = claims.Select(c => c.FoundItemId).Distinct().ToArray();
+        var allImages = await imageRepository.GetByFoundItemIdsAsync(foundItemIds, cancellationToken);
+        var imagesByItem = allImages.GroupBy(img => img.FoundItemId).ToDictionary(g => g.Key ?? Guid.Empty, g => g.Select(x => x.Url).ToList());
+
+        var dtos = new List<ClaimDto>();
+        foreach (var claim in claims)
+        {
+            var v = await verificationRepository.GetByClaimIdAsync(claim.Id, cancellationToken);
+            imagesByItem.TryGetValue(claim.FoundItemId, out var images);
+            var isItemClaimedOrReturned = claim.FoundItem?.Status is "Claimed" or "Returned";
+            dtos.Add(MapToDto(claim, v, images, isItemClaimedOrReturned));
+        }
+        return dtos;
+    }
+
+    private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null, IReadOnlyList<string>? imageUrls = null, bool? isItemClaimed = null)
+    {
+        var isClaimed = isItemClaimed ?? (claim.FoundItem?.Status is "Claimed" or "Returned");
         return new ClaimDto
         {
             Id = claim.Id,
             FoundItemId = claim.FoundItemId,
             FoundItemTitle = claim.FoundItem?.Title ?? string.Empty,
             FoundItemDescription = claim.FoundItem?.Description,
+            FoundItemStatus = claim.FoundItem?.Status,
+            IsItemAlreadyClaimed = isClaimed,
+            ImageUrls = imageUrls ?? [],
             ClaimantUserId = claim.ClaimantUserId,
             ClaimantEmail = claim.ClaimantUser?.Email ?? string.Empty,
             ClaimantNotes = claim.ClaimantNotes,

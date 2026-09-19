@@ -21,6 +21,16 @@ export function getPendingClaims() {
   return apiRequest('/claims/pending');
 }
 
+/** Security officer / administrator only. Claims reviewed by this officer. */
+export function getOfficerDecisions() {
+  return apiRequest('/claims/my-decisions');
+}
+
+/** Security officer / administrator only. Approved claims for read-only ownership records. */
+export function getApprovedClaims() {
+  return apiRequest('/claims/approved');
+}
+
 /** Security officer / administrator only. */
 export function getAllClaims() {
   return apiRequest('/claims');

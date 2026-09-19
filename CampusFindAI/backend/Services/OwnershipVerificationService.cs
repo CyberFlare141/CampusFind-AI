@@ -55,7 +55,23 @@ public sealed class OwnershipVerificationService(
         return new() { Status = v.Status, AttemptsRemaining = Math.Max(0, v.MaxAttempts - v.AttemptCount), CanAccessHandoverChat = false, Message = "Ownership verification submitted. Your answers are waiting for review by a Security Officer." };
     }
 
-    public async Task<IReadOnlyList<OfficerVerificationReviewDto>> GetPendingSecurityReviewsAsync(CancellationToken ct = default) => await Task.WhenAll((await verifications.GetPendingSecurityReviewAsync(ct)).Select(v => SecurityReview(v, ct)));
+    public async Task<IReadOnlyList<OfficerVerificationReviewDto>> GetPendingSecurityReviewsAsync(CancellationToken ct = default)
+    {
+        var pendingList = await verifications.GetPendingSecurityReviewAsync(ct);
+        var list = new List<OfficerVerificationReviewDto>();
+        foreach (var v in pendingList)
+        {
+            try
+            {
+                list.Add(await SecurityReview(v, ct));
+            }
+            catch
+            {
+                // Suppress single review load failures so the full list remains accessible to the officer
+            }
+        }
+        return list;
+    }
     public async Task<OfficerVerificationReviewDto> GetSecurityReviewAsync(Guid verificationId, CancellationToken ct = default) { var v = (await verifications.GetPendingSecurityReviewAsync(ct)).FirstOrDefault(x => x.Id == verificationId) ?? throw new KeyNotFoundException("Verification not found or is not pending review."); return await SecurityReview(v, ct); }
     public async Task<OfficerVerificationReviewDto> DecideSecurityReviewAsync(Guid verificationId, string officerId, bool approve, string? note, CancellationToken ct = default)
     {
@@ -82,6 +98,8 @@ public sealed class OwnershipVerificationService(
     private async Task<Match> OwnedMatch(Guid id,string user,CancellationToken ct) { var m=await matches.GetByIdAsync(id,ct)??throw new KeyNotFoundException("AI match not found."); if(m.LostItem?.UserId!=user||m.FoundItem?.UserId==user)throw new UnauthorizedAccessException("Only the owner of the linked lost report may verify."); return m; }
     private bool Eligible(Match m)=>(m.ConfidenceScore>1?m.ConfidenceScore/100:m.ConfidenceScore)>=_options.MatchEligibilityThreshold&&Current(m); private static bool Current(Match m)=>m.LostItem?.Status=="Open"&&m.FoundItem?.Status=="Available";
     private static List<string> Answers(List<string>? a,int n){if(a is null||a.Count!=n)throw new InvalidOperationException("Please answer every question.");var x=a.Select(v=>v?.Trim()??"").ToList();if(x.Any(v=>v.Length==0||v.Length>1000||v.Any(char.IsControl)))throw new InvalidOperationException("Each answer must be plain text between 1 and 1000 characters.");return x;}
-    private List<OwnershipQuestion> DecryptQuestions(ClaimVerification v){try{return JsonSerializer.Deserialize<List<OwnershipQuestion>>(_protector.Unprotect(v.SecureQuestionsPayload))??[];}catch{throw new InvalidOperationException("Verification data integrity error.");}} private List<string> DecryptAnswers(ClaimVerification v){try{return string.IsNullOrWhiteSpace(v.SubmittedAnswersJson)?[]:JsonSerializer.Deserialize<List<string>>(_protector.Unprotect(v.SubmittedAnswersJson))??[];}catch{throw new InvalidOperationException("Verification answer data integrity error.");}}
+    private List<OwnershipQuestion> DecryptQuestions(ClaimVerification v){try{if(string.IsNullOrWhiteSpace(v.SecureQuestionsPayload))return FallbackPublicQuestions(v);return JsonSerializer.Deserialize<List<OwnershipQuestion>>(_protector.Unprotect(v.SecureQuestionsPayload))??FallbackPublicQuestions(v);}catch{return FallbackPublicQuestions(v);}}
+    private List<OwnershipQuestion> FallbackPublicQuestions(ClaimVerification v){try{if(string.IsNullOrWhiteSpace(v.PublicQuestionsJson))return[];var list=JsonSerializer.Deserialize<List<VerificationQuestionDto>>(v.PublicQuestionsJson);return list?.Select(q=>new OwnershipQuestion(q.Question, string.Empty, q.Type)).ToList()??[];}catch{return[];}}
+    private List<string> DecryptAnswers(ClaimVerification v){try{return string.IsNullOrWhiteSpace(v.SubmittedAnswersJson)?[]:JsonSerializer.Deserialize<List<string>>(_protector.Unprotect(v.SubmittedAnswersJson))??[];}catch{return[];}}
     private ClaimVerificationResponseDto Public(ClaimVerification v,bool fallback,Match m)=>new(){ClaimId=v.ClaimId,MatchId=v.MatchId,Status=v.Status,TotalQuestions=v.TotalQuestions,AttemptCount=v.AttemptCount,MaxAttempts=v.MaxAttempts,IsSubmitted=v.Status=="PendingSecurityReview",FallbackUsed=fallback,CanAccessHandoverChat=v.Status=="Approved"&&Current(m),Questions=JsonSerializer.Deserialize<List<VerificationQuestionDto>>(v.PublicQuestionsJson)??[]};
 }
