@@ -1,4 +1,3 @@
-```csharp
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using SecurityClaim = System.Security.Claims.Claim;
@@ -957,4 +956,4 @@ public class UserService(
             ? null
             : value.Trim();
 }
-```
+
