@@ -143,6 +143,20 @@ export async function apiRequest(path, { method = 'GET', body, auth = true, sign
 
 export { API_BASE_URL };
 
+export function formatBangladeshDate(value, options = {}) {
+  if (!value) return '—';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  const defaultOptions = {
+    timeZone: 'Asia/Dhaka',
+    ...options,
+  };
+
+  return new Intl.DateTimeFormat('en-BD', defaultOptions).format(date);
+}
+
 export function publicAssetUrl(path) {
   if (!path || /^https?:\/\//i.test(path)) return path;
   return `${API_BASE_URL.replace(/\/api\/?$/, '')}/${path.replace(/^\//, '')}`;

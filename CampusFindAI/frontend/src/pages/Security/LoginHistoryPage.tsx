@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SecurityNav } from '../../components/SecurityNav';
+import { formatBangladeshDate } from '../../api/client';
 import { getLoginHistory, getLoginHistoryDetail } from '../../services/securityService';
 import type { LoginHistoryEntry } from '../../types/security';
 
@@ -46,7 +47,7 @@ export function LoginHistoryPage() {
           <h2>Login Event</h2>
           <p>
             <strong>When:</strong>{' '}
-            {new Date(selected.createdAt).toLocaleString()}
+            {formatBangladeshDate(selected.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
           </p>
           <p>
             <strong>Action:</strong> {selected.action}
@@ -76,7 +77,7 @@ export function LoginHistoryPage() {
           <tbody>
             {entries.map((entry) => (
               <tr key={entry.id}>
-                <td>{new Date(entry.createdAt).toLocaleString()}</td>
+                <td>{formatBangladeshDate(entry.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</td>
                 <td>{entry.details || '—'}</td>
                 <td>
                   <button type="button" onClick={() => selectEntry(entry.id)}>

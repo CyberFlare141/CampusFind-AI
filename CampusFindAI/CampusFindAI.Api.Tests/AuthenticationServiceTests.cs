@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -115,6 +117,49 @@ public sealed class AuthenticationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SeedLocalDevelopmentAccounts_CreatesRequestedAccountsWithRoles()
+    {
+        var environment = new FakeDevelopmentEnvironment();
+
+        await DbInitializer.SeedLocalDevelopmentAccountsAsync(
+            _userManager,
+            new FakeUserRepository(),
+            _dbContext,
+            environment);
+
+        var student1 = await _userManager.FindByEmailAsync("samiul.cse.20230104141@aust.edu");
+        var student2 = await _userManager.FindByEmailAsync("sazid.cse.20230104140@aust.edu");
+        var admin = await _userManager.FindByEmailAsync("mahi.cse.20230104130@aust.edu");
+        var officer = await _userManager.FindByEmailAsync("masrafi.cse.20230104141@aust.edu");
+
+        Assert.NotNull(student1);
+        Assert.NotNull(student2);
+        Assert.NotNull(admin);
+        Assert.NotNull(officer);
+
+        Assert.Equal(UserRole.Student, student1!.Role);
+        Assert.Equal(UserRole.Student, student2!.Role);
+        Assert.Equal(UserRole.Administrator, admin!.Role);
+        Assert.Equal(UserRole.SecurityOfficer, officer!.Role);
+
+        Assert.True(student1.EmailConfirmed);
+        Assert.True(admin.EmailConfirmed);
+        Assert.True(officer.EmailConfirmed);
+
+        Assert.True(await _userManager.CheckPasswordAsync(student1, "123456Aa"));
+        Assert.True(await _userManager.CheckPasswordAsync(admin, "123456Aa"));
+        Assert.True(await _userManager.CheckPasswordAsync(officer, "123456Aa"));
+    }
+
+    private sealed class FakeDevelopmentEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "CampusFindAI.Api";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+
+    [Fact]
     public async Task Register_WithValidUniversityDomain_CreatesUnconfirmedUser_AndSendsEmail()
     {
         var request = new RegisterDto
@@ -151,6 +196,33 @@ public sealed class AuthenticationServiceTests : IDisposable
             () => _userService.RegisterAsync(request));
 
         Assert.Contains("authorized university email", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePassword_WhenUserHasNoLocalPassword_ThrowsHelpfulException()
+    {
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = "googleuser@aust.edu",
+            Email = "googleuser@aust.edu",
+            Role = UserRole.Student,
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            PasswordHash = null
+        };
+
+        await _userManager.CreateAsync(user);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _userService.ChangePasswordAsync(user.Id, new ChangePasswordDto
+            {
+                CurrentPassword = "OldPassword123",
+                NewPassword = "NewPassword456"
+            }));
+
+        Assert.Contains("local password", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

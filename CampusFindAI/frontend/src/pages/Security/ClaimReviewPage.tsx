@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SecurityNav } from '../../components/SecurityNav';
+import { formatBangladeshDate } from '../../api/client';
 import { decideClaim, getClaimById } from '../../services/claimService';
 import type { Claim } from '../../types/security';
 
@@ -105,7 +106,7 @@ export function ClaimReviewPage() {
 
         <p>
           <strong>Submitted:</strong>{' '}
-          {new Date(claim.createdAt).toLocaleString()}
+          {formatBangladeshDate(claim.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
         </p>
 
         <p>
@@ -119,7 +120,7 @@ export function ClaimReviewPage() {
             <p>
               <strong>Reviewed by:</strong> {claim.reviewedByEmail}{' '}
               {claim.reviewedAt &&
-                `on ${new Date(claim.reviewedAt).toLocaleString()}`}
+                `on ${formatBangladeshDate(claim.reviewedAt, { dateStyle: 'medium', timeStyle: 'short' })}`}
             </p>
             <p>
               <strong>Decision notes:</strong>{' '}

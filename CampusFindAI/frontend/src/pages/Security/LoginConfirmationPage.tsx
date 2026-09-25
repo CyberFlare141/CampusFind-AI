@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SecurityNav } from '../../components/SecurityNav';
+import { formatBangladeshDate } from '../../api/client';
 import { getLoginConfirmation } from '../../services/securityService';
 import type { LoginConfirmation } from '../../types/security';
 
@@ -37,12 +38,12 @@ export function LoginConfirmationPage() {
           </p>
           <p>
             <strong>Session confirmed:</strong>{' '}
-            {new Date(confirmation.confirmedAt).toLocaleString()}
+            {formatBangladeshDate(confirmation.confirmedAt, { dateStyle: 'medium', timeStyle: 'short' })}
           </p>
           <p>
             <strong>Previous login:</strong>{' '}
             {confirmation.lastLoginAt
-              ? new Date(confirmation.lastLoginAt).toLocaleString()
+              ? formatBangladeshDate(confirmation.lastLoginAt, { dateStyle: 'medium', timeStyle: 'short' })
               : 'This is your first recorded login.'}
           </p>
         </div>

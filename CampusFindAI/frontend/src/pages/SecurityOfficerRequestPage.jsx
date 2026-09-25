@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, PageLoading } from '../components/Ui';
+import { formatBangladeshDate } from '../api/client';
 import { getMySecurityOfficerRequest, submitSecurityOfficerRequest } from '../api/securityOfficerRequests';
 
 export default function SecurityOfficerRequestPage() {
@@ -45,7 +46,7 @@ export default function SecurityOfficerRequestPage() {
         <section className="card" style={{ maxWidth: 720 }}>
           <span className="eyebrow">Request status</span>
           <h2>{request.status}</h2>
-          <p className="text-muted">Submitted {new Date(request.submittedAt).toLocaleString()}</p>
+          <p className="text-muted">Submitted {formatBangladeshDate(request.submittedAt, { dateStyle: 'medium', timeStyle: 'short' })}</p>
           <p><strong>Reason:</strong> {request.reason}</p>
           <p><strong>Additional information:</strong> {request.additionalInformation}</p>
           {request.adminNotes && <p><strong>Administrator notes:</strong> {request.adminNotes}</p>}

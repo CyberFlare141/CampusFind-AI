@@ -5,6 +5,7 @@ import { createFoundItem, getOwnershipVerificationQuestions } from '../../api/fo
 import { getCategories } from '../../api/reference';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, SuccessCheck } from '../../components/Ui';
+import { formatBangladeshDate } from '../../api/client';
 
 function toDateTimeLocal(date) {
   const offset = date.getTimezoneOffset() * 60_000;
@@ -382,7 +383,7 @@ export default function FoundItemFormPage() {
                     { label: 'Description', value: description || 'Not provided' },
                     { label: 'Ownership verification', value: founderAnswers.every(answer => answer.trim()) ? 'All 3 private answers recorded' : 'Incomplete' },
                     { label: 'Where Found', value: locationText || 'Not provided' },
-                    { label: 'Date Found', value: foundAt ? new Date(foundAt).toLocaleString() : 'Not specified' },
+                    { label: 'Date Found', value: foundAt ? formatBangladeshDate(foundAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Dhaka' }) : 'Not specified' },
                     { label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },
                   ].map(({ label, value }) => (
                     <div key={label} style={{

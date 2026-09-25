@@ -1,7 +1,9 @@
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace CampusFindAI.Api.Data;
 
@@ -21,9 +23,122 @@ public static class DbInitializer
         }
 
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var environment = services.GetRequiredService<IHostEnvironment>();
         var configuration = services.GetRequiredService<IConfiguration>();
+
+        await SeedLocalDevelopmentAccountsAsync(userManager, userRepository, dbContext, environment);
         await SeedReferenceDataAsync(dbContext, configuration);
     }
+
+    public static async Task SeedLocalDevelopmentAccountsAsync(
+        UserManager<ApplicationUser> userManager,
+        IUserRepository userRepository,
+        ApplicationDbContext dbContext,
+        IHostEnvironment environment)
+    {
+        if (!environment.IsDevelopment())
+        {
+            return;
+        }
+
+        var localAccounts = new[]
+        {
+            new LocalDevelopmentAccount("samiul.cse.20230104141@aust.edu", UserRole.Student, "123456Aa"),
+            new LocalDevelopmentAccount("sazid.cse.20230104140@aust.edu", UserRole.Student, "123456Aa"),
+            new LocalDevelopmentAccount("mahi.cse.20230104130@aust.edu", UserRole.Administrator, "123456Aa"),
+            new LocalDevelopmentAccount("masrafi.cse.20230104141@aust.edu", UserRole.SecurityOfficer, "123456Aa")
+        };
+
+        foreach (var account in localAccounts)
+        {
+            var user = await userManager.FindByEmailAsync(account.Email);
+            if (user is null)
+            {
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserName = account.Email,
+                    Email = account.Email,
+                    Role = account.Role,
+                    IsRestricted = false,
+                    EmailConfirmed = true,
+                    LockoutEnabled = true,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    AccessFailedCount = 0
+                };
+
+                var createResult = await userManager.CreateAsync(user, account.Password);
+                if (!createResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Could not create local development account {account.Email}: {string.Join("; ", createResult.Errors.Select(error => error.Description))}");
+                }
+            }
+            else
+            {
+                user.UserName ??= account.Email;
+                user.Email = account.Email;
+                user.Role = account.Role;
+                user.IsRestricted = false;
+                user.EmailConfirmed = true;
+                user.LockoutEnabled = true;
+                user.AccessFailedCount = 0;
+
+                var updateResult = await userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Could not update local development account {account.Email}: {string.Join("; ", updateResult.Errors.Select(error => error.Description))}");
+                }
+
+                var passwordResult = await userManager.RemovePasswordAsync(user);
+                if (!passwordResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Could not clear password for local development account {account.Email}: {string.Join("; ", passwordResult.Errors.Select(error => error.Description))}");
+                }
+
+                var setPasswordResult = await userManager.AddPasswordAsync(user, account.Password);
+                if (!setPasswordResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Could not set password for local development account {account.Email}: {string.Join("; ", setPasswordResult.Errors.Select(error => error.Description))}");
+                }
+            }
+
+            var roleName = account.Role.ToString();
+            await userRepository.EnsureRoleExistsAsync(roleName);
+            var existingRoles = await userManager.GetRolesAsync(user);
+            if (!existingRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase))
+            {
+                var addRoleResult = await userManager.AddToRoleAsync(user, roleName);
+                if (!addRoleResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Could not assign role {roleName} to {account.Email}: {string.Join("; ", addRoleResult.Errors.Select(error => error.Description))}");
+                }
+            }
+
+            await userRepository.AddToRoleAsync(user.Id, roleName);
+
+            user.Role = account.Role;
+            await userManager.UpdateAsync(user);
+
+            var profile = await dbContext.UserProfiles.FirstOrDefaultAsync(x => x.UserId == user.Id);
+            if (profile is null)
+            {
+                dbContext.UserProfiles.Add(new UserProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    FullName = account.Email.Split('@')[0].Replace('.', ' '),
+                    University = "AUST",
+                    Department = "CSE"
+                });
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private sealed record LocalDevelopmentAccount(string Email, UserRole Role, string Password);
 
     private static async Task SeedReferenceDataAsync(ApplicationDbContext dbContext, IConfiguration configuration)
     {

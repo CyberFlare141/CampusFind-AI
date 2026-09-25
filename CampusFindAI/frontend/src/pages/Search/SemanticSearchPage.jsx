@@ -11,7 +11,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { semanticSearch } from '../../api/search';
-import { publicAssetUrl } from '../../api/client';
+import { formatBangladeshDate, publicAssetUrl } from '../../api/client';
 import { formatDate } from '../../components/Ui';
 
 /* ── Constants ────────────────────────────────────────────────── */
@@ -45,7 +45,7 @@ function buildChips(q) {
   if (q.location) chips.push({ key: 'location', label: `📍 ${q.location}` });
   if (q.dateFrom || q.dateTo) {
     const d = q.dateFrom
-      ? new Date(q.dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      ? formatBangladeshDate(q.dateFrom, { month: 'short', day: 'numeric', timeZone: 'Asia/Dhaka' })
       : null;
     chips.push({ key: 'date', label: `📅 ${d ?? 'date range'}` });
   }

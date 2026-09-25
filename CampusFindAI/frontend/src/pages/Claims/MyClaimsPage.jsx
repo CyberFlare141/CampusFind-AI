@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getAllFoundItems } from '../../api/foundItems';
 import { Alert, EmptyState, PageLoading, SkeletonGrid, ItemCard, StatusBadge, formatDate } from '../../components/Ui';
 import VerificationModal from '../../components/VerificationModal';
+import { formatBangladeshDate } from '../../api/client';
 import { openClaimChat } from '../../api/claimChat';
 
 const STATUS_STEPS = ['Submitted', 'Verification', 'Approved', 'Handover'];
@@ -85,7 +86,7 @@ function HandoverQrCard({ claim }) {
       <div style={{ flex: 1, minWidth: 220 }}>
         <strong style={{ display: 'block', marginBottom: 5, color: 'var(--success)' }}>Claim approved</strong>
         <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>Show this QR code at the Security Desk. The officer will scan and confirm the handover before the item is marked returned.</p>
-        {qr?.expiresAt && <p className="text-xs" style={{ marginTop: 8 }}>This QR code expires at {new Date(qr.expiresAt).toLocaleTimeString()}.</p>}
+        {qr?.expiresAt && <p className="text-xs" style={{ marginTop: 8 }}>This QR code expires at {formatBangladeshDate(qr.expiresAt, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' })}.</p>}
         {error && <p className="text-xs" style={{ color: 'var(--danger)', marginTop: 8 }}>{error}</p>}
       </div>
     </div>

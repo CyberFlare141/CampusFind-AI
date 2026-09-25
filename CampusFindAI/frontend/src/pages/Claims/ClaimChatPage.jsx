@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Alert, ButtonSpinner, PageLoading } from '../../components/Ui';
-import { API_BASE_URL, getToken } from '../../api/client';
+import { API_BASE_URL, formatBangladeshDate, getToken } from '../../api/client';
 import { getClaimChatMessages, markClaimChatRead, sendClaimChatMessage } from '../../api/claimChat';
 
 const hubUrl = `${API_BASE_URL.replace(/\/api\/?$/, '')}/hubs/claim-chat`;
-const formatTime = value => new Date(value).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const formatTime = value => formatBangladeshDate(value, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' });
 
 export default function ClaimChatPage() {
   const { claimId } = useParams();

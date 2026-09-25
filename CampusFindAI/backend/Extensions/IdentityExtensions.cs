@@ -51,15 +51,16 @@ public static class IdentityExtensions
         var audience = configuration["Jwt:Audience"]
             ?? throw new InvalidOperationException("Jwt:Audience is missing.");
 
-        services.AddAuthentication(options =>
+        var authenticationBuilder = services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme =
                 JwtBearerDefaults.AuthenticationScheme;
 
             options.DefaultChallengeScheme =
                 JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
+        });
+
+        authenticationBuilder.AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -124,6 +125,20 @@ public static class IdentityExtensions
                 }
             };
         });
+
+        var googleClientId = configuration["Authentication:Google:ClientId"] ?? configuration["Google:ClientId"];
+        var googleClientSecret = configuration["Authentication:Google:ClientSecret"] ?? configuration["Google:ClientSecret"];
+
+        if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+        {
+            authenticationBuilder.AddGoogle(options =>
+            {
+                options.ClientId = googleClientId;
+                options.ClientSecret = googleClientSecret;
+                options.CallbackPath = "/signin-google";
+                options.SaveTokens = true;
+            });
+        }
 
         services.AddAuthorization();
 
