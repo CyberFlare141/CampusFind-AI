@@ -46,6 +46,7 @@ public static class ServiceExtensions
         services.AddSingleton<IReportImageStorage, ReportImageStorage>();
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IClaimService, ClaimService>();
+        services.AddScoped<IReputationService, ReputationService>();
         services.AddScoped<IClaimVerificationRepository, ClaimVerificationRepository>();
         services.AddOptions<OwnershipVerificationOptions>()
             .Bind(configuration.GetSection(OwnershipVerificationOptions.SectionName))

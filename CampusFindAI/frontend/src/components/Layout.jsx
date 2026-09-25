@@ -96,6 +96,7 @@ const Icon = ({ name }) => {
       </svg>
     ),
   };
+  if (name === 'map') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15m6-12v15"/></svg>;
   return icons[name] || null;
 };
 
@@ -111,6 +112,7 @@ const LogoMark = () => (
 /* ── Nav Links ───────────────────────────────────────────────── */
 const STUDENT_LINKS = [
   { to: '/',            label: 'Dashboard',    icon: 'home',   end: true },
+  { to: '/campus-map',  label: 'Campus Map',   icon: 'map' },
   { to: '/assistant',   label: 'Assistant',    icon: 'matches' },
   { to: '/search',      label: '✦ AI Search',  icon: 'search' },
   { to: '/lost-items',  label: 'Lost Items',   icon: 'lost' },
@@ -506,6 +508,7 @@ export default function Layout() {
               </>
             )}
 
+            {user?.role === 'Administrator' && <NavLink to="/admin/analytics" className={navClass}><span className="nav-icon"><Icon name="history" /></span><span className="nav-label">Analytics</span></NavLink>}
             {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass}>
               <span className="nav-icon"><Icon name="shield" /></span>
               <span className="nav-label">Officer Requests</span>
@@ -620,6 +623,7 @@ export default function Layout() {
               ))}
             </>
           )}
+          {user?.role === 'Administrator' && <NavLink to="/admin/analytics" className={navClass} onClick={() => setDrawerOpen(false)}><span className="nav-icon"><Icon name="history" /></span><span className="nav-label">Analytics</span></NavLink>}
           {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass} onClick={() => setDrawerOpen(false)}>
             <span className="nav-icon"><Icon name="shield" /></span><span className="nav-label">Officer Requests</span>
             {hasUnreadFor('/admin/security-officer-requests') && <span className="nav-unread-dot" aria-label="Unread update" />}

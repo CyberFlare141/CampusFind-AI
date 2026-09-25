@@ -15,7 +15,8 @@ public class ClaimService(
     IClaimVerificationRepository verificationRepository,
     INotificationService notificationService,
     ILostItemRepository lostItemRepository,
-    IMatchRepository matchRepository) : IClaimService
+    IMatchRepository matchRepository,
+    IReputationService reputationService) : IClaimService
 {
     private const string StatusPending = "Pending";
     private const string StatusApproved = "Approved";
@@ -242,6 +243,10 @@ public class ClaimService(
         claim.HandoverQrUsedAt = DateTime.UtcNow;
         if (!await claimRepository.TryCompleteHandoverAsync(claim, DateTime.UtcNow, cancellationToken))
             throw new InvalidOperationException("This QR code is invalid, expired, or has already been used.");
+        await reputationService.AwardPointsAsync(claim.ClaimantUserId, 10, "Item returned to owner", "Claim", claim.Id, cancellationToken);
+        var finder = await foundItemRepository.GetByIdAsync(claim.FoundItemId, cancellationToken);
+        if (finder is not null)
+            await reputationService.AwardPointsAsync(finder.UserId, 5, "Found item returned to owner", "Claim", claim.Id, cancellationToken);
         claim.Status = "Returned";
         await foundItemRepository.UpdateStatusAsync(claim.FoundItemId, "Returned", cancellationToken);
 

@@ -7,6 +7,7 @@ import { getProfile, updateProfile, changePassword, uploadProfileAvatar } from '
 import { getMyLostItems } from '../api/lostItems';
 import { getMyFoundItems } from '../api/foundItems';
 import { getMyClaims } from '../api/claims';
+import { getMyReputation } from '../api/reputation';
 import { Alert, RoleBadge, AnimatedNumber, ButtonSpinner, PageLoading } from '../components/Ui';
 
 /**
@@ -68,7 +69,8 @@ export default function ProfilePage() {
     lostCount: 0,
     foundCount: 0,
     claimsCount: 0,
-    trustPoints: 100,
+    trustPoints: 0,
+    trustLevel: 'New',
     loading: true,
   });
 
@@ -81,11 +83,12 @@ export default function ProfilePage() {
       setPageError('');
 
       try {
-        const [profileRes, lostRes, foundRes, claimsRes] = await Promise.allSettled([
+        const [profileRes, lostRes, foundRes, claimsRes, reputationRes] = await Promise.allSettled([
           getProfile(),
           getMyLostItems(),
           getMyFoundItems(),
           getMyClaims(),
+          getMyReputation(),
         ]);
 
         if (cancelled) return;
@@ -99,13 +102,14 @@ export default function ProfilePage() {
         const lostCount = lostRes.status === 'fulfilled' && Array.isArray(lostRes.value) ? lostRes.value.length : 0;
         const foundCount = foundRes.status === 'fulfilled' && Array.isArray(foundRes.value) ? foundRes.value.length : 0;
         const claimsCount = claimsRes.status === 'fulfilled' && Array.isArray(claimsRes.value) ? claimsRes.value.length : 0;
-        const calculatedPoints = 100 + (foundCount * 25) + (claimsCount * 15);
+        const reputation = reputationRes.status === 'fulfilled' ? reputationRes.value : { points: 0, level: 'New' };
 
         setActivityStats({
           lostCount,
           foundCount,
           claimsCount,
-          trustPoints: calculatedPoints,
+          trustPoints: reputation.points,
+          trustLevel: reputation.level,
           loading: false,
         });
       } catch (err) {
@@ -504,6 +508,12 @@ export default function ProfilePage() {
                 <span className="stat-link">Track status →</span>
               </motion.div>
             </Link>
+          </div>
+
+          <div className="card card-pad-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div><h3 style={{ marginBottom: 4 }}>Reputation</h3><p className="text-sm text-muted">Earned by helping return items to their owners.</p></div>
+            <div style={{ textAlign: 'right' }}><strong style={{ fontSize: 26 }}>{activityStats.trustPoints}</strong><div className="text-sm">{activityStats.trustLevel}</div></div>
+            <Link className="btn btn-secondary btn-sm" to="/reputation">View history</Link>
           </div>
 
           {/* Structured Academic & Personal Information */}

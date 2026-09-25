@@ -38,6 +38,9 @@ import SecurityOwnershipReviewsPage from './pages/Security/SecurityOwnershipRevi
 import SecurityOfficerRequestPage from './pages/SecurityOfficerRequestPage';
 import AdminSecurityOfficerRequestsPage from './pages/AdminSecurityOfficerRequestsPage';
 import CampusFindAssistantPage from './pages/CampusFindAssistantPage';
+import CampusMapPage from './pages/CampusMapPage';
+import ReputationHistoryPage from './pages/ReputationHistoryPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 
 export default function App() {
   return (
@@ -104,6 +107,8 @@ export default function App() {
           >
             <Route path="/" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/campus-map" element={<CampusMapPage />} />
+            <Route path="/reputation" element={<ReputationHistoryPage />} />
 
             <Route path="/lost-items" element={<LostItemsListPage />} />
             <Route path="/lost-items/new" element={<LostItemFormPage />} />
@@ -141,6 +146,7 @@ export default function App() {
 
           <Route element={<ProtectedRoute requireAdministrator><Layout /></ProtectedRoute>}>
             <Route path="/admin/security-officer-requests" element={<AdminSecurityOfficerRequestsPage />} />
+            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
