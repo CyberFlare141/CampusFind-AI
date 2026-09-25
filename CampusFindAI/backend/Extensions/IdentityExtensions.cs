@@ -84,7 +84,7 @@ public static class IdentityExtensions
                 OnMessageReceived = context =>
                 {
                     var accessToken = context.Request.Query["access_token"];
-                    if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hubs/claim-chat")) context.Token = accessToken;
+                    if (!string.IsNullOrEmpty(accessToken) && (context.HttpContext.Request.Path.StartsWithSegments("/hubs/claim-chat") || context.HttpContext.Request.Path.StartsWithSegments("/hubs/notifications"))) context.Token = accessToken;
                     return Task.CompletedTask;
                 },
                 OnTokenValidated = async context =>

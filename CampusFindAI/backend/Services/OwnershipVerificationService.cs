@@ -113,7 +113,7 @@ public sealed class OwnershipVerificationService(
         await verifications.UpdateAsync(verification, ct);
         await audit.LogAsync(userId, "VerificationSubmitted", $"Ownership verification submitted for Security review for match {matchId}.", ct);
         foreach (var officer in (await users.GetByRoleAsync(UserRole.SecurityOfficer, ct)).Concat(await users.GetByRoleAsync(UserRole.Administrator, ct)).DistinctBy(x => x.Id))
-            await notifications.CreateAsync(officer.Id, $"Ownership verification requires review for Claim #{verification.ClaimId.ToString("N")[..8].ToUpperInvariant()}.", "/security/ownership-verifications", "verification-review", ct);
+            await notifications.CreateAsync(officer.Id, $"Ownership verification requires review for Claim #{verification.ClaimId.ToString("N")[..8].ToUpperInvariant()}.", "/security/ownership-verifications", "CLAIM_UNDER_REVIEW", ct);
         return new() { Status = verification.Status, AttemptsRemaining = Math.Max(0, verification.MaxAttempts - verification.AttemptCount), CanAccessHandoverChat = false, Message = "Ownership verification submitted. Your answers are waiting for review by a Security Officer." };
     }
 
@@ -164,10 +164,11 @@ public sealed class OwnershipVerificationService(
         verification.SecurityReviewNote = note?.Trim();
         await verifications.UpdateAsync(verification, ct);
         await audit.LogAsync(officerId, approve ? "VerificationSecurityApproved" : "VerificationSecurityRejected", $"Security reviewed ownership verification {verification.Id}; approved={approve}.", ct);
-        await notifications.CreateAsync(match.LostItem!.UserId, approve ? $"Your claim for {claim.FoundItem?.Title ?? "the found item"} was approved. You can now contact the finder to arrange handover." : "Ownership verification was not approved by Security.", "/my-claims", approve ? "verification-approved" : "verification-rejected", ct);
+        await notifications.CreateAsync(match.LostItem!.UserId, approve ? "Your ownership claim has been approved. You can now contact the finder to arrange the handover." : "Your ownership claim was not approved.", "/my-claims", approve ? "CLAIM_APPROVED" : "CLAIM_REJECTED", ct);
         if (approve)
         {
-            await notifications.CreateAsync(match.FoundItem!.UserId, $"An ownership claim for {claim.FoundItem?.Title ?? "your found item"} was approved. You can now contact the owner to arrange handover.", $"/found-items/{claim.FoundItemId}", "verification-approved", ct);
+            await notifications.CreateAsync(match.FoundItem!.UserId, "An ownership claim for an item you found has been approved. You can now contact the owner to arrange the handover.", $"/claims/{claim.Id}/chat", "CLAIM_APPROVED", ct);
+            await notifications.CreateAsync(match.LostItem.UserId, "Your approved claim is ready for secure handover at the Security Desk.", "/my-claims", "HANDOVER_READY", ct);
             await audit.LogAsync(officerId, "HandoverChatUnlocked", $"Handover chat eligibility unlocked for match {match.Id}.", ct);
         }
         return await SecurityReview(verification, ct);
