@@ -38,6 +38,21 @@ token to `POST /api/auth/google`. For local development, the browser origin is
 client used by `VITE_GOOGLE_CLIENT_ID`. The backend only needs the matching
 `Google:ClientId` value and does not use a Google client secret or redirect URI.
 
+### Azure App Service
+
+The frontend supports Azure App Service runtime settings through `server.cjs`.
+Set these Application settings on the frontend App Service:
+
+```
+VITE_API_BASE_URL=https://<backend-app-service>.azurewebsites.net/api
+VITE_GOOGLE_CLIENT_ID=<the same Google web client ID>
+```
+
+Deploy and run the frontend as the Node application using `npm start`. The
+server exposes `/config.js`, so changing these settings and restarting the
+App Service updates the browser configuration without rebuilding the bundle.
+The backend App Service should set `Google__ClientId` to the same client ID.
+
 If you run the backend on its `https` profile instead (`https://localhost:7001`),
 update `VITE_API_BASE_URL` accordingly — you may need to accept the local dev
 HTTPS certificate in your browser first.
