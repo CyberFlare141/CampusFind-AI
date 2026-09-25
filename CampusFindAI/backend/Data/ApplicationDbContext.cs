@@ -22,6 +22,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Badge> Badges => Set<Badge>();
     public DbSet<Reputation> Reputations => Set<Reputation>();
+    public DbSet<ReputationHistory> ReputationHistories => Set<ReputationHistory>();
     public DbSet<ChatHistory> ChatHistories => Set<ChatHistory>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<ClaimChatConversation> ClaimChatConversations => Set<ClaimChatConversation>();
@@ -60,6 +61,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(x => x.Reputation)
             .HasForeignKey<Reputation>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Reputation>().Property(x => x.Level).HasMaxLength(30).HasDefaultValue("New");
+        builder.Entity<Reputation>().Property(x => x.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+        builder.Entity<ReputationHistory>()
+            .HasOne(x => x.User)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Idempotency: one reputation event per (user, entity, reason) combination.
+        builder.Entity<ReputationHistory>()
+            .HasIndex(x => new { x.UserId, x.RelatedEntityType, x.RelatedEntityId, x.Reason })
+            .IsUnique()
+            .HasFilter("[RelatedEntityType] IS NOT NULL AND [RelatedEntityId] IS NOT NULL");
+
+        builder.Entity<ReputationHistory>().Property(x => x.Reason).HasMaxLength(200);
+        builder.Entity<ReputationHistory>().Property(x => x.RelatedEntityType).HasMaxLength(50);
 
         builder.Entity<LostItem>()
             .HasOne(x => x.User)
