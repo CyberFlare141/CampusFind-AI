@@ -69,7 +69,7 @@ async function parseErrorResponse(response) {
   error.status = response.status;
 
   if (body && typeof body === 'object') {
-    if (body.message) {
+    if (body.message && isSafeUserMessage(body.message) && response.status < 500) {
       // GlobalExceptionHandlerMiddleware shape: { status, message }
       error.message = body.message;
     } else if (body.errors) {
@@ -85,13 +85,22 @@ async function parseErrorResponse(response) {
   }
 
   if (!error.message) {
-    if (response.status === 401) error.message = 'You need to sign in to do that.';
+    if (response.status === 400) error.message = 'Please check the submitted information and try again.';
+    else if (response.status === 401) error.message = 'Your session has expired. Please sign in again.';
     else if (response.status === 403) error.message = "You don't have permission to do that.";
-    else if (response.status === 404) error.message = 'We couldn\u2019t find what you were looking for.';
+    else if (response.status === 404) error.message = 'This item could not be found. It may have been removed.';
+    else if (response.status === 409) error.message = 'This action has already been completed or the item has changed.';
+    else if (response.status === 429) error.message = 'Too many requests. Please wait a moment and try again.';
+    else if (response.status >= 500) error.message = "CampusFind couldn't complete this request right now. Please try again.";
     else error.message = 'Something went wrong. Please try again.';
   }
 
   return error;
+}
+
+function isSafeUserMessage(message) {
+  if (typeof message !== 'string' || !message.trim()) return false;
+  return !/(stack trace|exception|sql|database|entity framework|at\s+\S+\(|[a-z]:\\|\/var\/|connection string|inner exception)/i.test(message);
 }
 
 let onUnauthorized = null;
@@ -121,9 +130,10 @@ export async function apiRequest(path, { method = 'GET', body, auth = true, sign
       signal,
     });
   } catch (networkErr) {
-    const err = new Error(
-      `Could not reach the CampusFind AI server at ${API_BASE_URL}. Make sure the backend is running.`
-    );
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const err = new Error(offline
+      ? "You're offline. Check your internet connection and try again."
+      : "CampusFind couldn't reach the server. Please try again.");
     err.status = 0;
     err.cause = networkErr;
     throw err;

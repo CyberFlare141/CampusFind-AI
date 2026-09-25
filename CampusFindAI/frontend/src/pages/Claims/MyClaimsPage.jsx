@@ -19,13 +19,13 @@ function ClaimTimeline({ status, verificationStatus }) {
   if (status === 'Handover' || status === 'Returned') currentStep = 3;
 
   return (
-    <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+    <div className="claim-timeline" style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+      <div className="claim-timeline-steps" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
         {STATUS_STEPS.map((step, i) => {
           const isDone = !isRejected && (i < currentStep || (currentStep === -1 && i === 0));
           const isCurrent = !isRejected && i === currentStep;
           return (
-            <div key={step} style={{ display: 'flex', alignItems: 'center', flex: i < STATUS_STEPS.length - 1 ? 1 : 0 }}>
+            <div key={step} className="claim-timeline-step" style={{ display: 'flex', alignItems: 'center', flex: i < STATUS_STEPS.length - 1 ? 1 : 0 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: '50%',
                 background: isCurrent ? 'var(--primary)' : isDone ? 'var(--primary-deep)' : 'var(--surface-tinted)',
@@ -81,9 +81,9 @@ function HandoverQrCard({ claim }) {
   }, [claim.id, claim.status]);
   if (claim.status !== 'Approved') return null;
   return (
-    <div style={{ marginBottom: 14, padding: 16, borderRadius: 12, background: 'var(--success-bg)', border: '1px solid var(--success)', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="claim-handover-qr" style={{ marginBottom: 14, padding: 16, borderRadius: 12, background: 'var(--success-bg)', border: '1px solid var(--success)', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
       {qr ? <QRCodeSVG value={qr.token} size={150} bgColor="#ffffff" includeMargin /> : <div style={{ width: 150, height: 150, display: 'grid', placeItems: 'center', background: '#fff' }}>{error ? 'QR unavailable' : 'Loading QR…'}</div>}
-      <div style={{ flex: 1, minWidth: 220 }}>
+      <div className="claim-handover-details" style={{ flex: 1, minWidth: 0 }}>
         <strong style={{ display: 'block', marginBottom: 5, color: 'var(--success)' }}>Claim approved</strong>
         <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>Show this QR code at the Security Desk. The officer will scan and confirm the handover before the item is marked returned.</p>
         {qr?.expiresAt && <p className="text-xs" style={{ marginTop: 8 }}>This QR code expires at {formatBangladeshDate(qr.expiresAt, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' })}.</p>}
@@ -216,12 +216,12 @@ export default function MyClaimsPage() {
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             )}
-            title="No active claims filed yet"
-            message="Ownership verification can be started only from an eligible match in My AI Matches."
+            title="No claims yet"
+            message="Ownership claims you submit from My AI Matches will appear here."
             action={(
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Link to="/found-items" className="btn btn-primary btn-lg">
-                  ⚖️ Browse All Found Items <span className="btn-arrow">→</span>
+                <Link to="/my-matches" className="btn btn-primary btn-lg">
+                  View AI Matches <span className="btn-arrow">→</span>
                 </Link>
                 <Link to="/search" className="btn btn-secondary btn-lg">
                   🔍 AI Semantic Search

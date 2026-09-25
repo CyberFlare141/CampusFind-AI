@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { getFoundItemById, getFounderVerification, saveFounderVerification } from '../../api/foundItems';
 import { getFounderClaimChats } from '../../api/claimChat';
 import { useAuth } from '../../context/AuthContext';
-import { Alert, ButtonSpinner, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
+import { Alert, ButtonSpinner, FadeImage, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
 export default function FoundItemDetailPage() {
@@ -66,7 +66,7 @@ export default function FoundItemDetailPage() {
   return <div className="page-container-detail">
     <Link to="/found-items" className="back-link">← Back to Found Items</Link>
     <motion.article className="card card-pad-lg" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      {item.imageUrls?.[0] && <img src={publicAssetUrl(item.imageUrls[0])} alt={item.title} style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-xl)', marginBottom: 24 }} />}
+      {item.imageUrls?.[0] && <div style={{ width: '100%', height: 340, maxHeight: '60vw', borderRadius: 'var(--radius-xl)', marginBottom: 24, overflow: 'hidden' }}><FadeImage src={publicAssetUrl(item.imageUrls[0])} alt={`${item.title} found-item photo`} /></div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><span className="eyebrow">Found item</span><h1>{item.title}</h1></div><StatusBadge status={item.status} /></div>
       <p className="text-secondary">{item.description || 'No public description provided.'}</p>
       <dl className="detail-list"><div><dt>Location</dt><dd>{item.locationName || item.locationDetails || 'Not specified'}</dd></div><div><dt>Date Found</dt><dd>{formatDate(item.foundAt)}</dd></div>{item.categoryName && <div><dt>Category</dt><dd>{item.categoryName}</dd></div>}</dl>

@@ -75,8 +75,18 @@ export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = ''
 /* ── Fade-In Image with Fallback ─────────────────────────────── */
 export function FadeImage({ src, alt, className, style, placeholder }) {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  if (!src) return placeholder || null;
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [src]);
+
+  if (!src || failed) return placeholder || (
+    <div className="item-image-fallback" role="img" aria-label={alt || 'No image available'}>
+      <span aria-hidden="true">▧</span><span>No image available</span>
+    </div>
+  );
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -95,6 +105,7 @@ export function FadeImage({ src, alt, className, style, placeholder }) {
         animate={{ opacity: loaded ? 1 : 0 }}
         transition={{ duration: 0.28, ease: 'easeOut' }}
         onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
         loading="lazy"
       />
     </div>
@@ -522,7 +533,9 @@ export function SectionHeader({ title, linkTo, linkLabel = 'View all', children 
 
 /* ── Staggered List Entrance ─────────────────────────────────── */
 export function StaggerList({ children, stagger = 0.05 }) {
-  const items = Array.isArray(children) ? children : [children];
+  // Conditional JSX can leave `false` placeholders in a grid. Do not render
+  // animation wrappers for those placeholders, or they become empty grid cells.
+  const items = (Array.isArray(children) ? children : [children]).filter(Boolean);
   return (
     <>
       {items.map((child, i) => (

@@ -6,6 +6,7 @@ import { getCategories } from '../../api/reference';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, SuccessCheck } from '../../components/Ui';
 import { formatBangladeshDate } from '../../api/client';
+import { REPORT_IMAGE_ACCEPT, validateReportImages } from '../../utils/imageValidation';
 
 function toDateTimeLocal(date) {
   const offset = date.getTimezoneOffset() * 60_000;
@@ -112,9 +113,12 @@ export default function FoundItemFormPage() {
   function prevStep() { setFieldErrors({}); setStep(s => s - 1); }
 
   function handleFiles(files) {
-    const selected = Array.from(files).slice(0, 4);
+    const { files: selected, error } = validateReportImages(files);
+    if (error) { setFormError(error); return; }
+    previews.forEach(URL.revokeObjectURL);
     setImages(selected);
     setPreviews(selected.map(f => URL.createObjectURL(f)));
+    setFormError('');
   }
 
   async function handleSubmit() {
@@ -325,11 +329,11 @@ export default function FoundItemFormPage() {
                   <p className="font-semibold text-secondary" style={{ marginBottom: 4 }}>
                     Click to select photos or drag &amp; drop
                   </p>
-                  <p className="text-xs text-muted">PNG, JPG, WebP · Max 4 photos</p>
+                  <p className="text-xs text-muted">PNG, JPG, WebP · Up to 5 photos · 5 MB each</p>
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="image/*"
+                    accept={REPORT_IMAGE_ACCEPT}
                     multiple
                     onChange={(e) => handleFiles(e.target.files)}
                     style={{ display: 'none' }}

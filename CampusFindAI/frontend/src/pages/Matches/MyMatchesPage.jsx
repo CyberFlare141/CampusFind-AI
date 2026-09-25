@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getMyMatches } from '../../api/matches';
 import { getOwnershipVerificationStatus } from '../../api/ownershipVerification';
 import { publicAssetUrl } from '../../api/client';
-import { AIBadge, Alert, ConfidenceBar, EmptyState, PageLoading } from '../../components/Ui';
+import { AIBadge, Alert, ConfidenceBar, EmptyState, FadeImage, PageLoading } from '../../components/Ui';
 
 function MatchItem({ match, verification }) {
   const score = Math.round(match.confidenceScore);
@@ -23,7 +23,7 @@ function MatchItem({ match, verification }) {
         <section className="match-confidence-panel"><span className="match-panel-label">AI confidence</span><strong>{score}%</strong><span>{level}</span><div className="match-confidence-line" aria-hidden="true" /></section>
         <section className="match-item-panel match-item-panel-found">
           <span className="match-panel-label">Found item</span>
-          <div className="match-item-visual">{match.foundImageUrl ? <img src={publicAssetUrl(match.foundImageUrl)} alt={'Found item: ' + match.foundItemTitle} /> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0 2 2h16a2 2 0 0 0 2 2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/></svg>}</div>
+          <div className="match-item-visual">{match.foundImageUrl ? <FadeImage src={publicAssetUrl(match.foundImageUrl)} alt={'Found item: ' + match.foundItemTitle} /> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0 2 2h16a2 2 0 0 0 2 2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/></svg>}</div>
           <h3>{match.foundItemTitle}</h3><p>{match.foundCategoryName || 'Uncategorized'}</p><div className="match-location">{match.foundLocationName || 'Campus location not specified'}</div>
         </section>
       </div>
@@ -47,6 +47,6 @@ export default function MyMatchesPage() {
   return <div className="page-container-wide matches-page">
     <div className="page-header"><div><AIBadge label="Student discovery" /><h1>My AI Matches</h1><p>Potential matches for your open lost-item reports. Review each suggestion before making a claim.</p></div></div>
     <Alert type="error">{error}</Alert>
-    {!error && matches.length === 0 ? <EmptyState title="No suggested matches yet" message="When a compatible found-item report is submitted, it will appear here automatically." action={<Link className="btn btn-primary" to="/found-items">Browse found items</Link>} /> : <div className="match-comparison-list">{matches.map(match => <MatchItem key={match.id} match={match} verification={verificationByMatch[match.id]} />)}</div>}
+    {!error && matches.length === 0 ? <EmptyState title="No potential matches yet" message="CampusFind is still checking found-item reports for possible matches." action={<Link className="btn btn-primary" to="/lost-items">View My Lost Items</Link>} /> : <div className="match-comparison-list">{matches.map(match => <MatchItem key={match.id} match={match} verification={verificationByMatch[match.id]} />)}</div>}
   </div>;
 }

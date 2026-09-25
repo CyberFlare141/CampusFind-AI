@@ -28,7 +28,7 @@ export default function SecurityMatchesPage() {
   }, []);
 
   return (
-    <div className="page-container-wide">
+    <div className="page-container-wide security-matches-page">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
@@ -83,7 +83,7 @@ export default function SecurityMatchesPage() {
                   </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'center', marginBottom: 18 }}>
+                <div className="security-match-comparison" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'center', marginBottom: 18 }}>
                   {/* Lost item */}
                   <div style={{
                     padding: '16px 20px',
