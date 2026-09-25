@@ -126,20 +126,6 @@ public static class IdentityExtensions
             };
         });
 
-        var googleClientId = configuration["Authentication:Google:ClientId"] ?? configuration["Google:ClientId"];
-        var googleClientSecret = configuration["Authentication:Google:ClientSecret"] ?? configuration["Google:ClientSecret"];
-
-        if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
-        {
-            authenticationBuilder.AddGoogle(options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.CallbackPath = "/signin-google";
-                options.SaveTokens = true;
-            });
-        }
-
         services.AddAuthorization();
 
         return services;

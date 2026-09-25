@@ -175,6 +175,7 @@ export default function ProfilePage() {
     try {
       const updated = await uploadProfileAvatar(avatarFile);
       setProfile(prev => ({ ...prev, ...updated }));
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
       setAvatarPreview('');
       setAvatarFile(null);
       setProfileSuccessMsg('Profile photo updated successfully.');
