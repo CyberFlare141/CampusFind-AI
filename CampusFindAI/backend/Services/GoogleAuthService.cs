@@ -19,14 +19,17 @@ public class GoogleAuthService(
             throw new InvalidOperationException("Google ID token is required.");
         }
 
+        if (string.IsNullOrWhiteSpace(_options.ClientId))
+        {
+            throw new InvalidOperationException("Google authentication is not configured. Set Google:ClientId in configuration.");
+        }
+
         try
         {
-            var settings = new GoogleJsonWebSignature.ValidationSettings();
-
-            if (!string.IsNullOrWhiteSpace(_options.ClientId))
+            var settings = new GoogleJsonWebSignature.ValidationSettings
             {
-                settings.Audience = [_options.ClientId.Trim()];
-            }
+                Audience = [_options.ClientId.Trim()]
+            };
 
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             if (payload is null)

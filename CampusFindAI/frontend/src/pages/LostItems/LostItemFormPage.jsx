@@ -5,6 +5,7 @@ import { createLostItem } from '../../api/lostItems';
 import { getCategories } from '../../api/reference';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, SuccessCheck } from '../../components/Ui';
+import { formatBangladeshDate } from '../../api/client';
 
 function toDateTimeLocal(date) {
   const offset = date.getTimezoneOffset() * 60_000;
@@ -391,7 +392,7 @@ export default function LostItemFormPage() {
                     { label: 'Item Title', value: title || '—' },
                     { label: 'Description', value: description || 'Not provided' },
                     { label: 'Where Lost', value: locationText || 'Not provided' },
-                    { label: 'Date Lost', value: lostAt ? new Date(lostAt).toLocaleString() : 'Not specified' },
+                    { label: 'Date Lost', value: lostAt ? formatBangladeshDate(lostAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Dhaka' }) : 'Not specified' },
                     { label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },
                   ].map(({ label, value }) => (
                     <div key={label} style={{

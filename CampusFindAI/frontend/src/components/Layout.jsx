@@ -402,7 +402,7 @@ export default function Layout() {
                       >
                         <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: notification.isRead ? 400 : 650, lineHeight: 1.4 }}>{notification.message}</span>
                         <span className="text-xs text-muted" style={{ display: 'block', marginTop: 5 }}>
-                          {new Date(notification.createdAt).toLocaleString()}
+                          {formatBangladeshDate(notification.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
                       </button>
                     ))}

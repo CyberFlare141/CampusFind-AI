@@ -635,6 +635,12 @@ public class UserService(
             userId,
             cancellationToken);
 
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            throw new InvalidOperationException(
+                "This account does not have a local password set. Sign in with Google or reset your password from the sign-in flow.");
+        }
+
         ValidatePassword(request.NewPassword);
 
         var result = await userManager.ChangePasswordAsync(

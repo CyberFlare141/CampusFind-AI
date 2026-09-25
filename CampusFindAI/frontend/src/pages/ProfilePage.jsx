@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getProfile, updateProfile, changePassword } from '../api/profile';
+import { publicAssetUrl } from '../api/client';
+import { getProfile, updateProfile, changePassword, uploadProfileAvatar } from '../api/profile';
 import { getMyLostItems } from '../api/lostItems';
 import { getMyFoundItems } from '../api/foundItems';
 import { getMyClaims } from '../api/claims';
@@ -52,6 +53,9 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [profileErrorMsg, setProfileErrorMsg] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   // Change Password state
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -142,6 +146,44 @@ export default function ProfilePage() {
     });
     setProfileErrorMsg('');
     setIsEditModalOpen(true);
+  }
+
+  async function handleAvatarChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setProfileErrorMsg('Only JPG, PNG, and WebP photos are supported.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileErrorMsg('Profile photo must be 5 MB or smaller.');
+      return;
+    }
+
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setProfileErrorMsg('');
+  }
+
+  async function handleAvatarUpload() {
+    if (!avatarFile) return;
+
+    setSavingAvatar(true);
+    try {
+      const updated = await uploadProfileAvatar(avatarFile);
+      setProfile(prev => ({ ...prev, ...updated }));
+      setAvatarPreview('');
+      setAvatarFile(null);
+      setProfileSuccessMsg('Profile photo updated successfully.');
+      setTimeout(() => setProfileSuccessMsg(''), 4000);
+    } catch (err) {
+      setProfileErrorMsg(err.message || 'Could not upload profile photo.');
+    } finally {
+      setSavingAvatar(false);
+    }
   }
 
   // Save profile to database via backend API
@@ -276,8 +318,15 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', zIndex: 1 }}>
           {/* Avatar Component */}
           <div className="profile-avatar-wrap" title={displayName}>
-            <div className="profile-avatar">
-              <span>{initials}</span>
+            <div
+              className="profile-avatar"
+              style={{
+                backgroundImage: profile.avatarUrl ? `url(${publicAssetUrl(profile.avatarUrl)})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              {!profile.avatarUrl && <span>{initials}</span>}
             </div>
           </div>
 
@@ -290,6 +339,20 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               {!isRestrictedUser && <><span>🏛️ {profile.university || 'Affiliated Campus'}</span><span>·</span></>}
               <span>Account Status: Active</span>
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                Choose photo
+              </label>
+              {avatarFile && (
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleAvatarUpload} disabled={savingAvatar}>
+                  {savingAvatar ? 'Uploading…' : 'Upload photo'}
+                </button>
+              )}
+              {avatarPreview && (
+                <img src={avatarPreview} alt="Preview" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.8)' }} />
+              )}
             </div>
           </div>
         </div>

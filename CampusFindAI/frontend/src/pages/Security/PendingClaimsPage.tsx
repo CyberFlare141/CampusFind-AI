@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SecurityNav } from '../../components/SecurityNav';
+import { formatBangladeshDate } from '../../api/client';
 import { getPendingClaims } from '../../services/claimService';
 import type { Claim } from '../../types/security';
 
@@ -52,7 +53,7 @@ export function PendingClaimsPage() {
               <tr key={claim.id}>
                 <td>{claim.foundItemTitle}</td>
                 <td>{claim.claimantEmail}</td>
-                <td>{new Date(claim.createdAt).toLocaleString()}</td>
+                <td>{formatBangladeshDate(claim.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</td>
                 <td>{claim.claimantNotes || '—'}</td>
                 <td>
                   <Link to={`/security/claims/${claim.id}`}>Review</Link>

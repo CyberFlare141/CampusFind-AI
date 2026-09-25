@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { publicAssetUrl } from '../api/client';
+import { formatBangladeshDate, publicAssetUrl } from '../api/client';
 
 /* ── Motion Variants & Constants ─────────────────────────────── */
 export const MOTION = {
@@ -464,10 +464,10 @@ export function formatDate(value) {
   const now = new Date();
   const diffMs = now - d;
   const diffDays = Math.floor(diffMs / 86400000);
-  if (diffDays === 0) return `Today, ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-  if (diffDays === 1) return `Yesterday, ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-  if (diffDays < 7)  return `${diffDays} days ago`;
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  if (diffDays === 0) return `Today, ${formatBangladeshDate(d, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' })}`;
+  if (diffDays === 1) return `Yesterday, ${formatBangladeshDate(d, { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' })}`;
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return formatBangladeshDate(d, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Dhaka' });
 }
 
 /* ── Success Checkmark ───────────────────────────────────────── */
