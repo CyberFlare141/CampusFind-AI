@@ -9,3 +9,14 @@ public class NotificationDto
     public bool IsRead { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class NotificationPageDto
+{
+    public IReadOnlyList<NotificationDto> Items { get; set; } = [];
+    public DateTime? NextBefore { get; set; }
+}
+
+public class NotificationUnreadCountDto
+{
+    public int Count { get; set; }
+}

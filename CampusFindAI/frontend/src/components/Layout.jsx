@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from '../context/AuthContext';
 import { getProfile } from '../api/profile';
-import { publicAssetUrl } from '../api/client';
-import { getNotifications, markNotificationRead } from '../api/notifications';
+import { API_BASE_URL, formatBangladeshDate, getToken, publicAssetUrl } from '../api/client';
+import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead } from '../api/notifications';
 import './layout.css';
+
+const notificationHubUrl = `${API_BASE_URL.replace(/\/api\/?$/, '')}/hubs/notifications`;
 
 /* ── Inline SVG Icon System ─────────────────────────────────── */
 const Icon = ({ name }) => {
@@ -165,9 +168,26 @@ export default function Layout() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
   const [toastNotification, setToastNotification] = useState(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const notificationIds = useRef(new Set());
   const notificationBaselineReady = useRef(false);
+
+  const refreshNotifications = async (showToast = false) => {
+    const [page, unread] = await Promise.all([getNotifications(), getUnreadNotificationCount()]);
+    const next = page.items || [];
+    const newUnread = showToast && notificationBaselineReady.current
+      ? next.find(item => !item.isRead && !notificationIds.current.has(item.id))
+      : null;
+    notificationIds.current = new Set(next.map(item => item.id));
+    notificationBaselineReady.current = true;
+    setNotifications(next);
+    setUnreadNotifications(unread.count || 0);
+    if (newUnread && location.pathname !== newUnread.link) {
+      setToastNotification(newUnread);
+      window.setTimeout(() => setToastNotification(current => current?.id === newUnread.id ? null : current), 6000);
+    }
+  };
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -239,7 +259,7 @@ export default function Layout() {
     setNotificationsLoading(true);
     setNotificationsError('');
     try {
-      setNotifications(await getNotifications());
+      await refreshNotifications();
     } catch (err) {
       setNotificationsError(err.message || 'Could not load notifications.');
     } finally {
@@ -254,6 +274,7 @@ export default function Layout() {
         item.id === notification.id ? { ...item, isRead: true } : item
       ));
       setNotificationsOpen(false);
+      if (!notification.isRead) setUnreadNotifications(count => Math.max(0, count - 1));
       if (notification.link) navigate(notification.link);
     } catch (err) {
       setNotificationsError(err.message || 'Could not mark the notification as read.');
@@ -276,25 +297,37 @@ export default function Layout() {
     return `mobile-nav-btn ${isActive ? 'active' : ''}`;
   }
 
-  const unreadNotifications = notifications.filter(notification => !notification.isRead).length;
+  useEffect(() => {
+    if (!user) return undefined;
+    refreshNotifications(false).catch(() => {});
+    const interval = window.setInterval(() => refreshNotifications(true).catch(() => {}), 60_000);
+    return () => window.clearInterval(interval);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return undefined;
-    const refresh = () => getNotifications().then(next => {
-      const newUnread = notificationBaselineReady.current
-        ? next.find(item => !item.isRead && !notificationIds.current.has(item.id))
-        : null;
-      notificationIds.current = new Set(next.map(item => item.id));
-      notificationBaselineReady.current = true;
-      setNotifications(next);
-      if (newUnread) {
-        setToastNotification(newUnread);
-        window.setTimeout(() => setToastNotification(current => current?.id === newUnread.id ? null : current), 6000);
+    const connection = new HubConnectionBuilder().withUrl(notificationHubUrl, { accessTokenFactory: getToken }).withAutomaticReconnect().configureLogging(LogLevel.Warning).build();
+    connection.on('NotificationReceived', notification => {
+      if (notificationIds.current.has(notification.id)) return;
+      notificationIds.current.add(notification.id);
+      setNotifications(current => [notification, ...current.filter(item => item.id !== notification.id)].slice(0, 20));
+      if (!notification.isRead) setUnreadNotifications(count => count + 1);
+      if (location.pathname !== notification.link) {
+        setToastNotification(notification);
+        window.setTimeout(() => setToastNotification(current => current?.id === notification.id ? null : current), 6000);
       }
-    }).catch(() => {});
-    refresh();
-    const interval = window.setInterval(refresh, 25_000);
-    return () => window.clearInterval(interval);
+    });
+    connection.on('NotificationRead', id => {
+      setNotifications(current => current.map(item => item.id === id ? { ...item, isRead: true } : item));
+      refreshNotifications(false).catch(() => {});
+    });
+    connection.on('NotificationsRead', () => {
+      setNotifications(current => current.map(item => ({ ...item, isRead: true })));
+      setUnreadNotifications(0);
+    });
+    connection.onreconnected(() => refreshNotifications(false).catch(() => {}));
+    connection.start().catch(() => {});
+    return () => { connection.stop(); };
   }, [user?.id]);
 
   useEffect(() => {
@@ -302,7 +335,16 @@ export default function Layout() {
     if (matchingUnread.length === 0) return;
     matchingUnread.forEach(item => markNotificationRead(item.id).catch(() => {}));
     setNotifications(current => current.map(item => matchingUnread.some(match => match.id === item.id) ? { ...item, isRead: true } : item));
+    setUnreadNotifications(count => Math.max(0, count - matchingUnread.length));
   }, [location.pathname, notifications]);
+
+  async function handleMarkAllRead() {
+    try {
+      await markAllNotificationsRead();
+      setNotifications(current => current.map(item => ({ ...item, isRead: true })));
+      setUnreadNotifications(0);
+    } catch (err) { setNotificationsError(err.message || 'Could not mark notifications as read.'); }
+  }
 
   function hasUnreadFor(link) {
     return notifications.some(notification => !notification.isRead && notification.link === link);
@@ -409,7 +451,7 @@ export default function Layout() {
                   boxShadow: 'var(--shadow-elevated)', overflow: 'hidden', zIndex: 30,
                 }}
               >
-                <div className="notification-panel-header">Notifications <span>{unreadNotifications ? unreadNotifications + ' unread' : 'All caught up'}</span></div>
+                <div className="notification-panel-header"><span>Notifications <small>{unreadNotifications ? `${unreadNotifications} unread` : 'All caught up'}</small></span>{unreadNotifications > 0 && <button type="button" className="btn btn-secondary btn-sm" onClick={handleMarkAllRead}>Mark all read</button>}</div>
                 {notificationsLoading ? (
                   <p className="text-sm text-muted" style={{ padding: 16 }}>Loading notifications…</p>
                 ) : notificationsError ? (
@@ -438,6 +480,7 @@ export default function Layout() {
                     ))}
                   </div>
                 )}
+                <Link to="/notifications" onClick={() => setNotificationsOpen(false)} className="text-sm font-semibold" style={{ display: 'block', padding: '13px 16px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>View all notifications</Link>
               </motion.div>
             )}
           </AnimatePresence>

@@ -42,7 +42,8 @@ public sealed class ClaimChatService(ApplicationDbContext db, INotificationServi
         db.ClaimChatMessages.Add(message);
         await db.SaveChangesAsync(ct);
         var otherUserId = context.Conversation.OwnerUserId == userId ? context.Conversation.FounderUserId : context.Conversation.OwnerUserId;
-        await notifications.CreateAsync(otherUserId, $"New handover message about {context.Claim.FoundItem!.Title}.", $"/claims/{claimId}/chat", "claim-chat-message", ct);
+        var recipientRole = context.Conversation.OwnerUserId == otherUserId ? "owner" : "finder";
+        await notifications.CreateAsync(otherUserId, $"You received a new message from the {recipientRole}.", $"/claims/{claimId}/chat", "NEW_CLAIM_MESSAGE", ct);
         return ToMessageDto(message, userId, context.Claim);
     }
 
