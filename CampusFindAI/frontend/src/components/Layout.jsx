@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { getProfile } from '../api/profile';
+import { publicAssetUrl } from '../api/client';
 import { getNotifications, markNotificationRead } from '../api/notifications';
 import './layout.css';
 
@@ -159,6 +161,7 @@ export default function Layout() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
   const [toastNotification, setToastNotification] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const notificationIds = useRef(new Set());
   const notificationBaselineReady = useRef(false);
 
@@ -168,6 +171,28 @@ export default function Layout() {
   const displayName = user?.email?.split('@')[0] ?? 'User';
   const canReportItems = !user?.isRestricted && user?.role !== 'Administrator';
   const canAccessSecurityOffice = user?.role === 'SecurityOfficer';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getProfile()
+      .then(profile => {
+        if (!cancelled) setAvatarUrl(profile?.avatarUrl || null);
+      })
+      .catch(() => {
+        if (!cancelled) setAvatarUrl(null);
+      });
+
+    function handleProfileUpdated(event) {
+      setAvatarUrl(event.detail?.avatarUrl || null);
+    }
+
+    window.addEventListener('profile-updated', handleProfileUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('profile-updated', handleProfileUpdated);
+    };
+  }, []);
 
   const studentLinks = user?.role === 'Administrator'
     ? STUDENT_LINKS.filter(l => !['/search', '/my-claims', '/my-matches'].includes(l.to))
@@ -364,6 +389,7 @@ export default function Layout() {
             <Icon name="bell" />
             {unreadNotifications > 0 && <span className="topbar-notif-dot" />}
           </button>
+
           <AnimatePresence>
             {notificationsOpen && (
               <motion.div
@@ -411,6 +437,15 @@ export default function Layout() {
               </motion.div>
             )}
           </AnimatePresence>
+          <Link
+            to="/profile"
+            className="topbar-avatar"
+            aria-label="Profile"
+            title={displayName}
+            style={avatarUrl ? { backgroundImage: `url(${publicAssetUrl(avatarUrl)})` } : undefined}
+          >
+            {!avatarUrl && initials}
+          </Link>
           <AnimatePresence>
             {toastNotification && (
               <motion.button
@@ -426,9 +461,6 @@ export default function Layout() {
               </motion.button>
             )}
           </AnimatePresence>
-          <Link to="/profile" className="topbar-avatar" aria-label="Profile" title={displayName}>
-            {initials}
-          </Link>
         </div>
       </header>
 
@@ -491,7 +523,12 @@ export default function Layout() {
           <div className="sidebar-bottom">
             <div style={{ marginBottom: 6 }}>
               <Link to="/profile" className="sidebar-user">
-                <span className="sidebar-avatar">{initials}</span>
+                <span
+                  className="sidebar-avatar"
+                  style={avatarUrl ? { backgroundImage: `url(${publicAssetUrl(avatarUrl)})` } : undefined}
+                >
+                  {!avatarUrl && initials}
+                </span>
                 <span className="sidebar-user-info">
                   <span className="sidebar-user-name">{displayName}</span>
                   <span className="sidebar-user-role">
@@ -596,7 +633,12 @@ export default function Layout() {
 
         <div className="sidebar-bottom">
           <Link to="/profile" className="sidebar-user" onClick={() => setDrawerOpen(false)}>
-            <span className="sidebar-avatar">{initials}</span>
+            <span
+              className="sidebar-avatar"
+              style={avatarUrl ? { backgroundImage: `url(${publicAssetUrl(avatarUrl)})` } : undefined}
+            >
+              {!avatarUrl && initials}
+            </span>
             <span className="sidebar-user-info">
               <span className="sidebar-user-name">{displayName}</span>
               <span className="sidebar-user-role">

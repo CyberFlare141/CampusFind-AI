@@ -225,6 +225,9 @@
   width: 36px; height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   display: grid;
   place-items: center;
   font-size: 0.82rem;
@@ -480,6 +483,9 @@
   width: 40px; height: 40px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   display: grid;
   place-items: center;
   font-size: 0.85rem;

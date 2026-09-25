@@ -29,7 +29,14 @@ Configure the API URL if needed. `.env` already points at the backend's
 
 ```
 VITE_API_BASE_URL=http://localhost:5001/api
+VITE_GOOGLE_CLIENT_ID=165382438900-kptvn4h1m56hvgkscpnabehd0tcub3ma.apps.googleusercontent.com
 ```
+
+Google sign-in uses Google Identity Services in the browser and sends its ID
+token to `POST /api/auth/google`. For local development, the browser origin is
+`http://localhost:5173`; configure that exact origin on the same Google web
+client used by `VITE_GOOGLE_CLIENT_ID`. The backend only needs the matching
+`Google:ClientId` value and does not use a Google client secret or redirect URI.
 
 If you run the backend on its `https` profile instead (`https://localhost:7001`),
 update `VITE_API_BASE_URL` accordingly — you may need to accept the local dev
