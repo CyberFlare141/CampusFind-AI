@@ -8,7 +8,9 @@
 //   - Validation failures (invalid ModelState) come back as the default
 //     ASP.NET Core ProblemDetails shape: { title, errors: { Field: [...] } }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+import { runtimeConfig } from '../config/runtimeConfig';
+
+const API_BASE_URL = runtimeConfig.apiBaseUrl;
 
 const TOKEN_KEY = 'campusfind.token';
 const USER_KEY = 'campusfind.user';

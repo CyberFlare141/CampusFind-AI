@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ButtonSpinner } from './Ui';
+import { runtimeConfig } from '../config/runtimeConfig';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = runtimeConfig.googleClientId;
 
 /**
  * Google Sign-In button integrating Google Identity Services (GIS).
