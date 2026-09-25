@@ -65,7 +65,7 @@ export default function SecurityClaimsPage() {
   }
 
   return (
-    <div className="page-container-wide">
+    <div className="page-container-wide security-claims-page">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
@@ -250,10 +250,10 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
   const primaryImage = claim.imageUrls && claim.imageUrls.length > 0 ? claim.imageUrls[0] : null;
 
   return (
-    <div className="card card-pad-lg" style={{ position: 'relative' }}>
+    <div className="card card-pad-lg security-claim-card" style={{ position: 'relative' }}>
       {/* ── Claim Header & Primary Details ─────────────────────── */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 260 }}>
+      <div className="security-claim-header" style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div className="security-claim-summary" style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
           {primaryImage && (
             <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
               <FadeImage src={publicAssetUrl(primaryImage)} alt={claim.foundItemTitle} />
@@ -565,7 +565,7 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
       </AnimatePresence>
 
       {/* ── Action Buttons Bar ───────────────────────────────── */}
-      <div
+      <div className="security-claim-actions"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -653,7 +653,7 @@ function ClaimEvidence({ review }) {
         borderTop: '1px solid var(--border)',
       }}
     >
-      <div
+      <div className="security-evidence-people"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -691,7 +691,7 @@ function ClaimEvidence({ review }) {
           {review.ownershipVerification.questions.map((question, index) => (
             <article key={question.id} style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface-card-alt)' }}>
               <strong style={{ display: 'block', marginBottom: 12 }}>Question {index + 1}: {question.question}</strong>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+              <div className="security-answer-comparison" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 12 }}>
                 <div><span className="text-xs text-muted">Founder answer</span><p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{question.founderAnswer || 'Not available'}</p></div>
                 <div><span className="text-xs text-muted">Owner answer</span><p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{question.ownerAnswer || 'Not available'}</p></div>
               </div>

@@ -627,7 +627,8 @@
   position: fixed;
   inset: 0;
   background: rgba(37, 44, 34, 0.45);
-  z-index: 60;
+  /* Leaflet controls/panes use z-index values up to 1000. */
+  z-index: 2000;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -637,7 +638,7 @@
   top: 0; left: 0; bottom: 0;
   width: 290px;
   background: var(--surface-card);
-  z-index: 61;
+  z-index: 2001;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -776,4 +777,7 @@
   .mobile-topbar     { display: flex; }
   .app-body          { margin-left: 0; }
   .app-content       { padding-bottom: 72px; overflow: visible; }
+  .mobile-topbar-actions { display: flex; align-items: center; gap: 6px; }
+  .mobile-topbar-actions .topbar-action-btn { position: relative; min-width: 44px; min-height: 44px; }
+  .notification-toast { position: fixed; top: auto; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom) + 12px); width: min(320px, calc(100vw - 32px)); max-width: calc(100vw - 32px); overflow-wrap: anywhere; }
 }

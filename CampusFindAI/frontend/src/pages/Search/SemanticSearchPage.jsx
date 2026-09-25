@@ -12,7 +12,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { semanticSearch } from '../../api/search';
 import { formatBangladeshDate, publicAssetUrl } from '../../api/client';
-import { formatDate } from '../../components/Ui';
+import { FadeImage, formatDate } from '../../components/Ui';
 
 /* ── Constants ────────────────────────────────────────────────── */
 const EXAMPLE_QUERIES = [
@@ -155,7 +155,7 @@ function SearchResultCard({ item, index }) {
         {/* Image */}
         <div className="item-card-image">
           {image ? (
-            <img src={publicAssetUrl(image)} alt={item.title} loading="lazy" />
+            <FadeImage src={publicAssetUrl(image)} alt={`${item.title} ${isLost ? 'lost-item' : 'found-item'} photo`} />
           ) : (
             <div className="item-card-image-placeholder">
               {isLost ? <LostIcon /> : <FoundIcon />}
@@ -303,7 +303,7 @@ export default function SemanticSearchPage() {
       if (err.name === 'AbortError') return;
 
       // Distinguish network/AI unavailable from other errors
-      if (err.status === 0) {
+      if (err.status === 0 || err.status >= 500) {
         setState('ai-unavailable');
       } else {
         setState('no-results');

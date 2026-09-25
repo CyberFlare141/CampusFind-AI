@@ -110,8 +110,8 @@ export default function LostItemsListPage() {
       </div>
 
       {/* ── Search & Filter Controls ────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+      <div className="responsive-filter-bar">
+        <div className="responsive-filter-search" style={{ position: 'relative', flex: 1 }}>
           <span style={{ position: 'absolute', left: '1.1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary-deep)', fontSize: '1rem', pointerEvents: 'none' }}>
             ✦
           </span>
@@ -129,7 +129,8 @@ export default function LostItemsListPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            style={{ width: 'auto', minWidth: 170, borderRadius: 'var(--radius-full)', paddingRight: '2.2rem' }}
+            className="responsive-filter-select"
+            style={{ width: 'auto', borderRadius: 'var(--radius-full)', paddingRight: '2.2rem' }}
           >
             <option value="all">All Statuses</option>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}

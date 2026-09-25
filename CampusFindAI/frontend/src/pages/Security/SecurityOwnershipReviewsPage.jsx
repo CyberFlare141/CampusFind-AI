@@ -88,7 +88,7 @@ export default function SecurityOwnershipReviewsPage() {
   }
 
   return (
-    <div className="page-container-wide">
+    <div className="page-container-wide security-ownership-page">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         className="page-header"
@@ -116,7 +116,7 @@ export default function SecurityOwnershipReviewsPage() {
       </motion.div>
 
       {/* ── Search & Filter Bar ───────────────────────────────── */}
-      <div style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div className="security-ownership-filter" style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <input
             type="search"
@@ -174,7 +174,7 @@ export default function SecurityOwnershipReviewsPage() {
                 transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.3 }}
               >
                 {/* ── Top Summary Row ───────────────────────────────── */}
-                <div
+                <div className="security-ownership-summary"
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -184,7 +184,7 @@ export default function SecurityOwnershipReviewsPage() {
                     marginBottom: 14,
                   }}
                 >
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 260 }}>
+                  <div className="security-ownership-summary-details" style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
                     {primaryImage && (
                       <div
                         style={{
@@ -225,7 +225,7 @@ export default function SecurityOwnershipReviewsPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
                     gap: 12,
                     marginBottom: 14,
                   }}

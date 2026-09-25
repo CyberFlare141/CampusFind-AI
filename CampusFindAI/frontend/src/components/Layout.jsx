@@ -364,9 +364,7 @@ export default function Layout() {
           </span>
           <span className="mobile-topbar-logo-name">CampusFind AI</span>
         </Link>
-        <button className="topbar-action-btn" aria-label="Open menu" onClick={() => setDrawerOpen(true)}>
-          <Icon name="menu" />
-        </button>
+        <div className="mobile-topbar-actions"><button className="topbar-action-btn" aria-label="Notifications" onClick={() => navigate('/notifications')}><Icon name="bell" />{unreadNotifications > 0 && <span className="topbar-notif-dot" />}</button><button className="topbar-action-btn" aria-label="Open menu" onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button></div>
       </header>
 
       {/* ── Desktop Top Bar ─────────────────────────────────────── */}
