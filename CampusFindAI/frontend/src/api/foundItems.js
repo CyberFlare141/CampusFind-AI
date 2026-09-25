@@ -17,11 +17,23 @@ export function getFoundItemById(id) {
   return apiRequest(`/founditems/${id}`);
 }
 
-export function createFoundItem({ title, description, privateVerificationDetails, foundAt, categoryId, locationDetails, images = [] }) {
+export function getOwnershipVerificationQuestions() {
+  return apiRequest('/founditems/ownership-verification/questions');
+}
+
+export function getFounderVerification(id) {
+  return apiRequest(`/founditems/${id}/ownership-verification`);
+}
+
+export function saveFounderVerification(id, answers) {
+  return apiRequest(`/founditems/${id}/ownership-verification`, { method: 'PUT', body: { answers } });
+}
+
+export function createFoundItem({ title, description, founderVerificationAnswers, foundAt, categoryId, locationDetails, images = [] }) {
   const body = new FormData();
   body.append('title', title);
   if (description) body.append('description', description);
-  if (privateVerificationDetails) body.append('privateVerificationDetails', privateVerificationDetails);
+  (founderVerificationAnswers || []).forEach((answer, index) => body.append(`founderVerificationAnswers[${index}]`, answer));
   if (foundAt) body.append('foundAt', foundAt);
   if (categoryId) body.append('categoryId', categoryId);
   if (locationDetails) body.append('locationDetails', locationDetails);
@@ -32,8 +44,8 @@ export function createFoundItem({ title, description, privateVerificationDetails
   });
 }
 
-// PrivateVerificationDetails is intentionally not accepted here: it is never returned to the browser
-// and ordinary report edits must not alter the ownership-verification secret.
+// Founder answers are intentionally omitted from ordinary report edits. The dedicated protected
+// endpoint rejects changes once an active claim exists.
 export function updateFoundItem(id, { title, description, foundAt, categoryId, locationDetails, images = [] }) {
   const body = new FormData();
   body.append('title', title);

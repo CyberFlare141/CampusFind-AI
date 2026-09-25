@@ -12,8 +12,7 @@ export default function ItemCard({ kind, item, mine }) {
   const dateValue   = isLost ? item.lostAt : item.foundAt;
   const basePath    = isLost ? '/lost-items' : '/found-items';
   const image       = item.imageUrls?.[0];
-  const canClaim    = !isLost && !mine && item.status === 'Available';
-  const linkTo      = `${basePath}/${item.id}${canClaim ? '?claim=1' : ''}`;
+  const linkTo      = `${basePath}/${item.id}`;
 
   return (
     <Link to={linkTo} className="item-card" aria-label={item.title}>
@@ -67,27 +66,7 @@ export default function ItemCard({ kind, item, mine }) {
 
       <div className="item-card-footer">
         <StatusBadge status={item.status} />
-        {canClaim ? (
-          <span
-            className="btn btn-xs btn-primary"
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              background: 'var(--primary)',
-              color: 'white',
-              borderRadius: 'var(--radius-full)',
-              boxShadow: 'var(--shadow-xs)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            ⚖️ Claim Item →
-          </span>
-        ) : (
-          <span className="text-xs font-semibold" style={{ color: 'var(--primary-deep)' }}>Details →</span>
-        )}
+        <span className="text-xs font-semibold" style={{ color: 'var(--primary-deep)' }}>View details →</span>
       </div>
     </Link>
   );

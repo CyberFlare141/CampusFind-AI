@@ -63,6 +63,7 @@ public static class ServiceExtensions
         services.AddHttpClient("Gemini");
         services.AddScoped<ISemanticSearchService, SemanticSearchService>();
         services.AddScoped<IChatbotService, ChatbotService>();
+        services.AddScoped<IClaimChatService, ClaimChatService>();
 
         return services;
     }

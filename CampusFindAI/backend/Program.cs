@@ -3,6 +3,7 @@ using CampusFindAI.Api.Middleware;
 using Microsoft.OpenApi;
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
+using CampusFindAI.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddIdentityAndJwt(builder.Configuration);   // This calls the e
 builder.Services.AddCorsPolicy(builder.Configuration);
 builder.Services.AddRateLimitingPolicies();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -54,6 +56,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();  //Look at the incoming request and figure out who the user is
 app.UseAuthorization();   // ''    ''    ''        ''          ''
 app.MapControllers();
+app.MapHub<ClaimChatHub>("/hubs/claim-chat");
 
 app.MapGet("/", () => Results.Ok(new
 {

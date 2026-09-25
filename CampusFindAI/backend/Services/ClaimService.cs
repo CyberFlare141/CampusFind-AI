@@ -352,7 +352,17 @@ public class ClaimService(
             var isItemClaimedOrReturned = claim.FoundItem?.Status is "Claimed" or "Returned";
             dtos.Add(MapToDto(claim, v, images, isItemClaimedOrReturned));
         }
-        return dtos;
+        // A claimant may have an obsolete pre-match claim from an earlier version
+        // of the app plus the current match-bound claim for the same found item.
+        // Present one claim journey, preferring the secured match-bound record.
+        return dtos
+            .GroupBy(dto => new { dto.ClaimantUserId, dto.FoundItemId })
+            .Select(group => group
+                .OrderByDescending(dto => dto.VerificationMatchId.HasValue)
+                .ThenByDescending(dto => dto.CreatedAt)
+                .First())
+            .OrderByDescending(dto => dto.CreatedAt)
+            .ToList();
     }
 
     private static ClaimDto MapToDto(Claim claim, ClaimVerification? verification = null, IReadOnlyList<string>? imageUrls = null, bool? isItemClaimed = null)

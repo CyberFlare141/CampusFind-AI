@@ -25,6 +25,7 @@ import FoundItemDetailPage from './pages/FoundItems/FoundItemDetailPage';
 import ReportEditPage from './pages/ReportEditPage';
 
 import MyClaimsPage from './pages/Claims/MyClaimsPage';
+import ClaimChatPage from './pages/Claims/ClaimChatPage';
 import SemanticSearchPage from './pages/Search/SemanticSearchPage';
 import MyMatchesPage from './pages/Matches/MyMatchesPage';
 import OwnershipVerificationPage from './pages/Matches/OwnershipVerificationPage';
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/found-items/:id" element={<FoundItemDetailPage />} />
 
             <Route path="/my-claims" element={<MyClaimsPage />} />
+            <Route path="/claims/:claimId/chat" element={<ClaimChatPage />} />
             <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/matches/:matchId/verify" element={<OwnershipVerificationPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />

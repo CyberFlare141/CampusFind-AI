@@ -29,7 +29,7 @@ public interface IFoundItemRepository
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromException(new NotSupportedException("This repository does not support report deletion."));
 
-    Task UpdatePrivateVerificationDetailsAsync(Guid id, string privateVerificationDetails, CancellationToken cancellationToken = default)
+    Task UpdateFounderVerificationAnswersAsync(Guid id, string founderVerificationAnswersJson, CancellationToken cancellationToken = default)
         => Task.FromException(new NotSupportedException("This repository does not support private verification detail updates."));
 
     Task SaveChangesAsync(

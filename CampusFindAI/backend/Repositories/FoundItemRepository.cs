@@ -19,6 +19,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 LocationId,
                 LocationDetails,
                 PrivateVerificationDetails,
+                FounderVerificationAnswersJson,
                 Title,
                 Description,
                 FoundAt,
@@ -32,6 +33,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
                 @LocationId,
                 @LocationDetails,
                 @PrivateVerificationDetails,
+                @FounderVerificationAnswersJson,
                 @Title,
                 @Description,
                 @FoundAt,
@@ -50,6 +52,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         command.Parameters.AddWithValue("@LocationId", (object?)item.LocationId ?? DBNull.Value);
         command.Parameters.AddWithValue("@LocationDetails", (object?)item.LocationDetails ?? DBNull.Value);
         command.Parameters.AddWithValue("@PrivateVerificationDetails", (object?)item.PrivateVerificationDetails ?? DBNull.Value);
+        command.Parameters.AddWithValue("@FounderVerificationAnswersJson", (object?)item.FounderVerificationAnswersJson ?? DBNull.Value);
         command.Parameters.AddWithValue("@Title", item.Title);
         command.Parameters.AddWithValue("@Description", (object?)item.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("@FoundAt", (object?)item.FoundAt ?? DBNull.Value);
@@ -64,7 +67,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, FounderVerificationAnswersJson, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE Id = @Id;
             """;
@@ -83,7 +86,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, FounderVerificationAnswersJson, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             ORDER BY CreatedAt DESC;
             """;
@@ -96,7 +99,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, Title, Description, FoundAt, Status, CreatedAt
+            SELECT Id, UserId, CategoryId, LocationId, LocationDetails, PrivateVerificationDetails, FounderVerificationAnswersJson, Title, Description, FoundAt, Status, CreatedAt
             FROM FoundItems
             WHERE UserId = @UserId
             ORDER BY CreatedAt DESC;
@@ -161,14 +164,14 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
         catch { await transaction.RollbackAsync(cancellationToken); throw; }
     }
 
-    public async Task UpdatePrivateVerificationDetailsAsync(Guid id, string privateVerificationDetails, CancellationToken cancellationToken = default)
+    public async Task UpdateFounderVerificationAnswersAsync(Guid id, string founderVerificationAnswersJson, CancellationToken cancellationToken = default)
     {
-        const string sql = "UPDATE FoundItems SET PrivateVerificationDetails = @PrivateVerificationDetails WHERE Id = @Id;";
+        const string sql = "UPDATE FoundItems SET FounderVerificationAnswersJson = @FounderVerificationAnswersJson WHERE Id = @Id;";
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
         command.Parameters.AddWithValue("@Id", id);
-        command.Parameters.AddWithValue("@PrivateVerificationDetails", privateVerificationDetails);
+        command.Parameters.AddWithValue("@FounderVerificationAnswersJson", founderVerificationAnswersJson);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
@@ -204,6 +207,7 @@ public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
             LocationId = reader.GetNullableGuid("LocationId"),
             LocationDetails = reader.GetNullableString("LocationDetails"),
             PrivateVerificationDetails = reader.GetNullableString("PrivateVerificationDetails"),
+            FounderVerificationAnswersJson = reader.GetNullableString("FounderVerificationAnswersJson"),
             Title = reader.GetRequiredString("Title"),
             Description = reader.GetNullableString("Description"),
             FoundAt = reader.GetNullableDateTime("FoundAt"),

@@ -20,6 +20,10 @@ public interface IFoundItemService
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<VerificationQuestionDto>> GetOwnershipVerificationQuestionsAsync(CancellationToken cancellationToken = default);
+    Task<FounderVerificationResponseDto> GetFounderVerificationAsync(string userId, Guid id, CancellationToken cancellationToken = default);
+    Task<FounderVerificationResponseDto> SaveFounderVerificationAsync(string userId, Guid id, SaveFounderVerificationAnswersDto request, CancellationToken cancellationToken = default);
+
     Task<FoundItemDto> UpdateAsync(string userId, Guid id, UpdateFoundItemDto request, CancellationToken cancellationToken = default);
     Task<FoundItemDto> ArchiveAsync(string userId, Guid id, CancellationToken cancellationToken = default);
     Task<FoundItemDto> ReopenAsync(string userId, Guid id, CancellationToken cancellationToken = default);

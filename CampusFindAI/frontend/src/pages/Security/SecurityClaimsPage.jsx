@@ -6,7 +6,9 @@ import {
   decideClaim,
   confirmHandoverQr,
   getClaimReview,
+  getOfficerVerificationReview,
 } from '../../api/claims';
+import { approveOwnershipReview, rejectOwnershipReview } from '../../api/securityOwnershipVerifications';
 import {
   Alert,
   ButtonSpinner,
@@ -181,14 +183,21 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
 
   async function submitDecision(e) {
     e.preventDefault();
+    if (claim.verificationMatchId && !review?.ownershipVerification?.verificationId) {
+      setRowError('Open the ownership evidence comparison before recording a decision.');
+      return;
+    }
     setSubmitting(true);
     setRowError('');
     try {
-      const updated = await decideClaim(claim.id, {
-        approve: decisionAction === 'approve',
-        decisionNotes: decisionNotes.trim() || undefined,
-      });
-      onDecided(updated);
+      if (claim.verificationMatchId) {
+        const updated = decisionAction === 'approve'
+          ? await approveOwnershipReview(review.ownershipVerification.verificationId, decisionNotes.trim() || undefined)
+          : await rejectOwnershipReview(review.ownershipVerification.verificationId, decisionNotes.trim() || undefined);
+        onDecided({ ...claim, verificationStatus: updated.status });
+      } else {
+        onDecided(await decideClaim(claim.id, { approve: decisionAction === 'approve', decisionNotes: decisionNotes.trim() || undefined }));
+      }
       setShowDecisionForm(false);
     } catch (err) {
       setRowError(err.message || 'Failed to submit decision.');
@@ -205,8 +214,8 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
     setReviewLoading(true);
     setRowError('');
     try {
-      const data = await getClaimReview(claim.id);
-      setReview(data);
+      const [claimReview, verificationReview] = await Promise.all([getClaimReview(claim.id), getOfficerVerificationReview(claim.id)]);
+      setReview({ ...claimReview, ownershipVerification: verificationReview });
       setReviewOpen(true);
     } catch (err) {
       setRowError(err.message || 'Failed to load claim evidence.');
@@ -672,6 +681,24 @@ function ClaimEvidence({ review }) {
         <EvidencePerson title="Claimant Profile" person={review.claimant} />
         <EvidencePerson title="Finder / Reporter Profile" person={review.reporter} />
       </div>
+
+      {review.ownershipVerification?.questions?.length > 0 && (
+        <section style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+          <div>
+            <span className="eyebrow">Ownership verification</span>
+            <h4 style={{ margin: '2px 0 0', fontSize: '1rem' }}>Founder and owner answer comparison</h4>
+          </div>
+          {review.ownershipVerification.questions.map((question, index) => (
+            <article key={question.id} style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface-card-alt)' }}>
+              <strong style={{ display: 'block', marginBottom: 12 }}>Question {index + 1}: {question.question}</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                <div><span className="text-xs text-muted">Founder answer</span><p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{question.founderAnswer || 'Not available'}</p></div>
+                <div><span className="text-xs text-muted">Owner answer</span><p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{question.ownerAnswer || 'Not available'}</p></div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
       <div
         style={{

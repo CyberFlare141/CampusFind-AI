@@ -1,399 +1,91 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getFoundItemById } from '../../api/foundItems';
-import { createClaim, getMyClaims } from '../../api/claims';
+import { Link, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { getFoundItemById, getFounderVerification, saveFounderVerification } from '../../api/foundItems';
+import { getFounderClaimChats } from '../../api/claimChat';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
-import VerificationModal from '../../components/VerificationModal';
 
 export default function FoundItemDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
-  const location = useLocation();
-
   const [item, setItem] = useState(null);
+  const [verification, setVerification] = useState(null);
+  const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedImage, setSelectedImage] = useState(0);
-
-  const [existingClaim, setExistingClaim] = useState(null);
-  const [claimNotes, setClaimNotes] = useState('');
-  const [showClaimForm, setShowClaimForm] = useState(false);
-  const [claimSubmitting, setClaimSubmitting] = useState(false);
-  const [claimError, setClaimError] = useState('');
-  const [claimSuccess, setClaimSuccess] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [claimChats, setClaimChats] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      setError('');
       try {
-        const [itemData, myClaims] = await Promise.all([getFoundItemById(id), getMyClaims()]);
+        const found = await getFoundItemById(id);
         if (cancelled) return;
-        setItem(itemData);
-        const mine = myClaims.find(c => c.foundItemId === id);
-        setExistingClaim(mine || null);
-
-        const params = new URLSearchParams(location.search);
-        if (params.get('claim') === '1' && !mine) {
-          setShowClaimForm(true);
+        setItem(found);
+        if (found.userId === user?.id) {
+          const founderVerification = await getFounderVerification(id);
+          if (cancelled) return;
+          setVerification(founderVerification);
+          setAnswers(founderVerification.questions.map(question => question.answer || ''));
+          setClaimChats(await getFounderClaimChats(id));
         }
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+      } catch (requestError) {
+        if (!cancelled) setError(requestError.message);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, user?.id]);
 
-  async function handleClaimSubmit(e) {
-    e.preventDefault();
-    setClaimError('');
-    setClaimSubmitting(true);
+  async function saveVerification() {
+    setSaveMessage('');
+    setSaving(true);
     try {
-      const claim = await createClaim({ foundItemId: id, claimantNotes: claimNotes.trim() || undefined });
-      setExistingClaim(claim);
-      setClaimSuccess(true);
-      setShowClaimForm(false);
-      setShowVerificationModal(true);
-    } catch (err) {
-      setClaimError(err.message);
+      const updated = await saveFounderVerification(id, answers.map(answer => answer.trim()));
+      setVerification(updated);
+      setAnswers(updated.questions.map(question => question.answer || ''));
+      setSaveMessage('Your private ownership-verification answers are ready for matched claims.');
+    } catch (requestError) {
+      setSaveMessage(requestError.message);
     } finally {
-      setClaimSubmitting(false);
+      setSaving(false);
     }
   }
 
   if (loading) return <div className="page-container-detail"><PageLoading label="Loading item details…" /></div>;
-  if (error) return (
-    <div className="page-container-detail">
-      <Alert type="error">{error}</Alert>
-      <Link to="/found-items" className="btn btn-secondary">← Back to Found Items</Link>
-    </div>
-  );
-  if (!item) return null;
-
+  if (error || !item) return <div className="page-container-detail"><Alert type="error">{error || 'Found item not found.'}</Alert><Link to="/found-items" className="btn btn-secondary">Back to Found Items</Link></div>;
   const isMine = item.userId === user?.id;
-  const canClaimItems = !user?.isRestricted && user?.role !== 'Administrator';
-  const images = item.imageUrls ?? [];
 
-  return (
-    <div className="page-container-detail">
-      <Link to="/found-items" className="back-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-        </svg>
-        Back to Found Items
-      </Link>
+  return <div className="page-container-detail">
+    <Link to="/found-items" className="back-link">← Back to Found Items</Link>
+    <motion.article className="card card-pad-lg" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      {item.imageUrls?.[0] && <img src={publicAssetUrl(item.imageUrls[0])} alt={item.title} style={{ width: '100%', maxHeight: 340, objectFit: 'cover', borderRadius: 'var(--radius-xl)', marginBottom: 24 }} />}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><span className="eyebrow">Found item</span><h1>{item.title}</h1></div><StatusBadge status={item.status} /></div>
+      <p className="text-secondary">{item.description || 'No public description provided.'}</p>
+      <dl className="detail-list"><div><dt>Location</dt><dd>{item.locationName || item.locationDetails || 'Not specified'}</dd></div><div><dt>Date Found</dt><dd>{formatDate(item.foundAt)}</dd></div>{item.categoryName && <div><dt>Category</dt><dd>{item.categoryName}</dd></div>}</dl>
+      {!isMine && <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}><p className="text-secondary">Ownership claims can only be started from a matching lost-item report in <Link to="/my-matches">My AI Matches</Link>.</p></div>}
+    </motion.article>
 
-      {location.state?.justCreated && (
-        <Alert type="success">Thank you — your found item report has been logged in the campus directory.</Alert>
-      )}
-      {claimSuccess && (
-        <Alert type="success">Your ownership claim has been submitted. Campus Security will verify the details and notify you.</Alert>
-      )}
-      {user?.isRestricted && (
-        <Alert type="info">Restricted accounts can browse this item, but institutional access is required to submit an ownership claim. Use Officer Request from the navigation to apply.</Alert>
-      )}
+    {isMine && claimChats.length > 0 && <section className="card card-pad-lg" style={{ marginTop: 20 }}>
+      <span className="eyebrow">Approved ownership claim</span><h2>Owner Verified ✓</h2>
+      <p className="text-secondary">A Security Officer approved this ownership claim. Use private chat only to arrange the face-to-face handover.</p>
+      {claimChats.map(chat => <div key={chat.claimId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingTop: 12, flexWrap: 'wrap' }}><span className="text-sm">Verified owner: {chat.ownerName}</span><Link className="btn btn-primary" to={`/claims/${chat.claimId}/chat`}>💬 Chat with Owner{chat.unreadCount ? ` (${chat.unreadCount})` : ''}</Link></div>)}
+    </section>}
 
-      <motion.div
-        className="card card-pad-lg"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {/* ── Photo Gallery ─────────────────────────────────────── */}
-        {images.length > 0 && (
-          <div style={{ marginBottom: 28 }}>
-            <div style={{
-              width: '100%',
-              height: 340,
-              borderRadius: 'var(--radius-xl)',
-              overflow: 'hidden',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-sm)',
-            }}>
-              <motion.img
-                key={selectedImage}
-                src={publicAssetUrl(images[selectedImage])}
-                alt={`${item.title} — photo ${selectedImage + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-            {images.length > 1 && (
-              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                {images.map((img, i) => (
-                  <button
-                    key={img}
-                    type="button"
-                    onClick={() => setSelectedImage(i)}
-                    style={{
-                      width: 68, height: 68, padding: 0, borderRadius: 'var(--radius-md)',
-                      border: `2px solid ${i === selectedImage ? 'var(--primary)' : 'var(--border)'}`,
-                      overflow: 'hidden', cursor: 'pointer', background: 'none',
-                      transition: 'border-color var(--transition-fast), transform var(--transition-fast)',
-                      flexShrink: 0,
-                    }}
-                    aria-label={`View photo ${i + 1}`}
-                  >
-                    <img src={publicAssetUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Header ─────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-          <div>
-            <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 8 }}>{item.title}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <StatusBadge status={item.status} />
-              <span className="badge badge-success">
-                <span className="badge-dot" />FOUND
-              </span>
-              {isMine && <span className="badge badge-primary">Your report</span>}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Details ────────────────────────────────────────────── */}
-        <dl className="detail-list" style={{ marginBottom: 28 }}>
-          <div>
-            <dt>Description</dt>
-            <dd style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
-              {item.description || <span className="text-muted">No additional description provided.</span>}
-            </dd>
-          </div>
-          {item.locationDetails && (
-            <div>
-              <dt>Reported Location</dt>
-              <dd style={{ fontWeight: 600 }}>{item.locationDetails}</dd>
-            </div>
-          )}
-          {!item.locationDetails && (item.buildingName || item.floorName || item.locationName || item.location) && (
-            <div><dt>Found Location</dt><dd style={{ fontWeight: 600 }}>{[item.buildingName, item.floorName, item.locationName || item.location].filter(Boolean).join(' • ')}</dd></div>
-          )}
-          {item.categoryName && <div><dt>Category</dt><dd style={{ fontWeight: 600 }}>{item.categoryName}</dd></div>}
-          <div>
-            <dt>Date Found</dt>
-            <dd>{formatDate(item.foundAt)}</dd>
-          </div>
-          {item.createdAt && (
-            <div>
-              <dt>Logged On</dt>
-              <dd>{formatDate(item.createdAt)}</dd>
-            </div>
-          )}
-        </dl>
-
-        {/* ── Claim Section ───────────────────────────────────────── */}
-        {!isMine && canClaimItems && (
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 28 }}>
-            <h3 style={{ marginBottom: 8, fontSize: '1.15rem' }}>Is this item yours?</h3>
-
-            {existingClaim ? (
-              <div style={{
-                display: 'grid',
-                gap: 14,
-                padding: '18px 20px',
-                background: 'var(--surface-card-alt)',
-                borderRadius: 'var(--radius-xl)',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 16,
-                  flexWrap: 'wrap',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="text-sm font-semibold text-secondary">Your claim status:</span>
-                    <StatusBadge status={existingClaim.status} />
-                  </div>
-                  <Link to="/my-claims" className="text-sm font-semibold" style={{ color: 'var(--primary-deep)' }}>
-                    View claim progress →
-                  </Link>
-                </div>
-
-                {existingClaim.status === 'Pending' && (
-                  ['PendingSecurityReview', 'Approved'].includes(existingClaim.verificationStatus) ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: 'var(--verify-surface, #C7EABB)',
-                      color: '#2d5a27',
-                      fontSize: '0.84rem',
-                      fontWeight: 700,
-                      border: '1px solid #84B179',
-                    }}>
-                      <span>✓</span> Ownership questions answered. Campus Security is reviewing your claim.
-                    </div>
-                  ) : ['AttemptsExhausted', 'Locked'].includes(existingClaim.verificationStatus) ? (
-                    <div style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: 'var(--danger-bg)',
-                      color: 'var(--danger)',
-                      fontSize: '0.84rem',
-                      fontWeight: 600,
-                    }}>
-                      ⚠️ Verification attempts reached. Manual verification required at Security Desk.
-                    </div>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      background: 'var(--verify-bg, #E8F5BD)',
-                      border: '1px solid var(--verify-primary, #84B179)',
-                      gap: 12,
-                      flexWrap: 'wrap',
-                    }}>
-                      <div style={{ fontSize: '0.85rem', color: '#1F2937' }}>
-                        <strong>🛡️ Action Required:</strong> Answer 3 quick ownership questions to verify your claim.
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        onClick={() => setShowVerificationModal(true)}
-                        style={{
-                          background: 'var(--verify-primary, #84B179)',
-                          borderColor: 'var(--verify-primary, #84B179)',
-                          color: '#1F2937',
-                          fontWeight: 700,
-                        }}
-                      >
-                        Start Verification →
-                      </button>
-                    </div>
-                  )
-                )}
-              </div>
-            ) : showClaimForm && item.status === 'Available' ? (
-              <motion.form
-                onSubmit={handleClaimSubmit}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                transition={{ duration: 0.35 }}
-                style={{ display: 'grid', gap: 18 }}
-              >
-                <Alert type="error">{claimError}</Alert>
-                <div style={{
-                  padding: '14px 18px',
-                  background: 'rgba(143, 162, 138, 0.14)',
-                  borderRadius: 'var(--radius-md)',
-                  borderLeft: '4px solid var(--primary)',
-                }}>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--primary-deep)', fontWeight: 600 }}>
-                    ✦ Provide specific distinguishing details (e.g. serial numbers, stickers, contents) so Campus Security can verify your ownership.
-                  </p>
-                </div>
-                <div className="form-field">
-                  <label htmlFor="claimantNotes">Proof of Ownership / Distinguishing Details</label>
-                  <textarea
-                    id="claimantNotes"
-                    placeholder="Describe specific details only the rightful owner would know (e.g. exact contents, lock screen picture, engraved initials, receipts, etc.)"
-                    value={claimNotes}
-                    onChange={(e) => setClaimNotes(e.target.value)}
-                    rows={4}
-                  />
-                  <span className="hint">Clear details expedite Security verification and return.</span>
-                </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <motion.button
-                    type="submit"
-                    className="btn btn-primary btn-lg"
-                    disabled={claimSubmitting}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    {claimSubmitting && <ButtonSpinner />}
-                    {claimSubmitting ? 'Submitting…' : 'Submit Ownership Claim'}
-                  </motion.button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => setShowClaimForm(false)}
-                    disabled={claimSubmitting}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </motion.form>
-            ) : (
-              <div>
-                <p className="text-secondary text-sm" style={{ marginBottom: 16, maxWidth: 580 }}>
-                  If you lost this item on campus, submit an ownership claim with identifying proof. Campus Security will verify your claim.
-                </p>
-                {item.status === 'Available' ? (
-                  <motion.button
-                    type="button"
-                    className="btn btn-primary btn-lg"
-                    onClick={() => setShowClaimForm(true)}
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    ⚖️ Claim This Item
-                  </motion.button>
-                ) : (
-                  <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-                    This item is currently {item.status?.toLowerCase() || 'unavailable'} and is not accepting new claims.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </motion.div>
-
-      {/* ── Administrator: Reporter Contact Card ─────────────────── */}
-      {user?.role === 'Administrator' && item.reporterEmail && (
-        <motion.div
-          className="card card-pad"
-          style={{ marginTop: 20 }}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h3 style={{ fontSize: '1rem', marginBottom: 16 }}>Finder Details</h3>
-          <dl className="detail-list">
-            <div><dt>Name</dt><dd>{item.reporterName || 'Not provided'}</dd></div>
-            <div><dt>Email</dt><dd>{item.reporterEmail || 'Not available'}</dd></div>
-            <div><dt>Department</dt><dd>{item.reporterDepartment || 'Not provided'}</dd></div>
-            <div><dt>Phone</dt><dd>{item.reporterPhone || 'Not provided'}</dd></div>
-          </dl>
-        </motion.div>
-      )}
-
-      {/* ── Ownership Verification Modal ────────────────────── */}
-      <VerificationModal
-        claim={existingClaim}
-        isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
-        onComplete={() => {
-          getMyClaims().then(claims => {
-            const mine = claims.find(c => c.foundItemId === id);
-            if (mine) setExistingClaim(mine);
-          });
-        }}
-      />
-    </div>
-  );
+    {isMine && verification && <section className="card card-pad-lg" style={{ marginTop: 20 }}>
+      <span className="eyebrow">Private finder evidence</span><h2>Ownership Verification</h2>
+      <p className="text-secondary">These answers are never shown to students. They are locked once a claim is active and are compared only by a Security Officer.</p>
+      <Alert type={verification.isComplete ? 'success' : 'info'}>{verification.isComplete ? 'Verification status: Ready' : 'Verification status: Incomplete — answer all three questions to make matching claims available.'}</Alert>
+      {verification.questions.map((question, index) => <div className="form-field" key={question.id} style={{ marginTop: 16 }}><label htmlFor={`founder-answer-${question.id}`}>Question {index + 1}: {question.question}</label><textarea id={`founder-answer-${question.id}`} rows={3} maxLength={1000} value={answers[index] || ''} onChange={event => setAnswers(values => values.map((value, answerIndex) => answerIndex === index ? event.target.value : value))} disabled={verification.isComplete} /><span className="hint">{(answers[index] || '').length}/1000 characters</span></div>)}
+      {!verification.isComplete && <button type="button" className="btn btn-primary" style={{ marginTop: 18 }} disabled={saving || answers.some(answer => !answer.trim())} onClick={saveVerification}>{saving && <ButtonSpinner />}{saving ? 'Saving…' : 'Save Verification Answers'}</button>}
+      {saveMessage && <div style={{ marginTop: 14 }}><Alert type={verification.isComplete ? 'success' : 'error'}>{saveMessage}</Alert></div>}
+    </section>}
+  </div>;
 }
