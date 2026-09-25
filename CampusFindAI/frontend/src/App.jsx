@@ -41,6 +41,7 @@ import CampusFindAssistantPage from './pages/CampusFindAssistantPage';
 import CampusMapPage from './pages/CampusMapPage';
 import ReputationHistoryPage from './pages/ReputationHistoryPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import VisualSearchPage from './pages/Search/VisualSearchPage';
 import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/matches/:matchId/verify" element={<OwnershipVerificationPage />} />
             <Route path="/search" element={<SemanticSearchPage />} />
+            <Route path="/visual-search" element={<VisualSearchPage />} />
             <Route path="/assistant" element={<CampusFindAssistantPage />} />
             <Route path="/security-officer-request" element={<SecurityOfficerRequestPage />} />
           </Route>

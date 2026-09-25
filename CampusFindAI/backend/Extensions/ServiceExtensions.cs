@@ -59,6 +59,8 @@ public static class ServiceExtensions
         services.AddDataProtection();
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddSingleton<IImageSimilarityService, ImageSimilarityService>();
+        services.AddScoped<IVisualEmbeddingProvider, GeminiVisualEmbeddingProvider>();
+        services.AddScoped<IVisualSearchService, VisualSearchService>();
         services.AddScoped<IMatchService, MatchService>();
         services.AddScoped<ISecurityDashboardService, SecurityDashboardService>();
         services.AddHttpClient("Gemini");

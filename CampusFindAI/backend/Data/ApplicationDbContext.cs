@@ -31,6 +31,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Feedback> Feedback => Set<Feedback>();
     public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
     public DbSet<SecurityOfficerRequest> SecurityOfficerRequests => Set<SecurityOfficerRequest>();
+    public DbSet<VisualEmbedding> VisualEmbeddings => Set<VisualEmbedding>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -226,5 +227,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<SecurityOfficerRequest>().Property(x => x.AdminNotes).HasMaxLength(1000);
         builder.Entity<SecurityOfficerRequest>().Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
         builder.Entity<Claim>().Property(x => x.HandoverQrToken).HasMaxLength(128);
+        builder.Entity<VisualEmbedding>().HasIndex(x => new { x.ImageId, x.Model }).IsUnique();
+        builder.Entity<VisualEmbedding>().Property(x => x.Model).HasMaxLength(100);
+        builder.Entity<VisualEmbedding>().HasOne(x => x.Image).WithMany().HasForeignKey(x => x.ImageId).OnDelete(DeleteBehavior.Cascade);
     }
 }
