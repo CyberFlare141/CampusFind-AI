@@ -115,6 +115,7 @@ const STUDENT_LINKS = [
   { to: '/campus-map',  label: 'Campus Map',   icon: 'map' },
   { to: '/assistant',   label: 'Assistant',    icon: 'matches' },
   { to: '/search',      label: '✦ AI Search',  icon: 'search' },
+  { to: '/visual-search', label: 'Visual Search', icon: 'search' },
   { to: '/lost-items',  label: 'Lost Items',   icon: 'lost' },
   { to: '/found-items', label: 'Found Items',  icon: 'found' },
   { to: '/my-claims',   label: 'My Claims',    icon: 'claims' },
@@ -132,6 +133,7 @@ const OFFICER_LINKS = [
 const BOTTOM_NAV_LINKS = [
   { to: '/',            label: 'Home',    icon: 'home',   end: true },
   { to: '/search',      label: 'Search',  icon: 'search' },
+  { to: '/visual-search', label: 'Visual Search', icon: 'search' },
   { to: '/lost-items',  label: 'Lost',    icon: 'lost' },
   { to: '/found-items', label: 'Found',   icon: 'found' },
   { to: '/my-claims',   label: 'Claims',  icon: 'claims' },
