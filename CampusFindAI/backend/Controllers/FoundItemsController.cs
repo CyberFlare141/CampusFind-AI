@@ -65,6 +65,18 @@ public class FoundItemsController(
         return Ok(items);
     }
 
+    [HttpGet("ownership-verification/questions")]
+    public async Task<ActionResult<IReadOnlyList<VerificationQuestionDto>>> GetOwnershipVerificationQuestions(CancellationToken cancellationToken) =>
+        Ok(await service.GetOwnershipVerificationQuestionsAsync(cancellationToken));
+
+    [HttpGet("{id:guid}/ownership-verification")]
+    public async Task<ActionResult<FounderVerificationResponseDto>> GetFounderVerification(Guid id, CancellationToken cancellationToken) =>
+        await FounderVerificationAction(userId => service.GetFounderVerificationAsync(userId, id, cancellationToken));
+
+    [HttpPut("{id:guid}/ownership-verification")]
+    public async Task<ActionResult<FounderVerificationResponseDto>> SaveFounderVerification(Guid id, SaveFounderVerificationAnswersDto request, CancellationToken cancellationToken) =>
+        await FounderVerificationAction(userId => service.SaveFounderVerificationAsync(userId, id, request, cancellationToken));
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<FoundItemDto>> GetById(
         Guid id,
@@ -107,6 +119,13 @@ public class FoundItemsController(
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
         try { return Ok(await operation(userId)); } catch (ReportManagementException ex) { return ManagementError(ex); }
+    }
+    private async Task<ActionResult<FounderVerificationResponseDto>> FounderVerificationAction(Func<string, Task<FounderVerificationResponseDto>> operation)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { return Ok(await operation(userId)); }
+        catch (ReportManagementException ex) { return ManagementError(ex); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
     private ActionResult ManagementError(ReportManagementException ex) => ex.Failure switch { ReportManagementFailure.NotFound => NotFound(), ReportManagementFailure.Forbidden => Forbid(), ReportManagementFailure.Conflict => Conflict(new { message = ex.Message }), _ => BadRequest() };
 }

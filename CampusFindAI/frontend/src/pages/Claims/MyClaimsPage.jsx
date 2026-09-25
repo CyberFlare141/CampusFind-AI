@@ -6,14 +6,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getAllFoundItems } from '../../api/foundItems';
 import { Alert, EmptyState, PageLoading, SkeletonGrid, ItemCard, StatusBadge, formatDate } from '../../components/Ui';
 import VerificationModal from '../../components/VerificationModal';
+import { openClaimChat } from '../../api/claimChat';
 
 const STATUS_STEPS = ['Submitted', 'Verification', 'Approved', 'Handover'];
 
 function ClaimTimeline({ status, verificationStatus }) {
   const isRejected = status === 'Rejected';
   let currentStep = 0;
-  if (['PendingSecurityReview', 'Approved'].includes(verificationStatus)) currentStep = 1;
-  if (status === 'Approved') currentStep = 2;
+  if (verificationStatus === 'PendingSecurityReview') currentStep = 1;
+  if (status === 'Approved' || verificationStatus === 'Approved') currentStep = 2;
   if (status === 'Handover' || status === 'Returned') currentStep = 3;
 
   return (
@@ -98,6 +99,7 @@ export default function MyClaimsPage() {
   const [activeVerificationClaim, setActiveVerificationClaim] = useState(null);
   const [foundCatalog, setFoundCatalog] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [chatByClaim, setChatByClaim] = useState({});
 
   async function loadClaims() {
     setLoading(true);
@@ -105,6 +107,8 @@ export default function MyClaimsPage() {
     try {
       const data = await getMyClaims();
       setClaims(data);
+      const approvedChats = await Promise.all(data.filter(claim => claim.status === 'Approved').map(async claim => [claim.id, await openClaimChat(claim.id).catch(() => null)]));
+      setChatByClaim(Object.fromEntries(approvedChats.filter(([, chat]) => chat)));
       if (data.length === 0) {
         setCatalogLoading(true);
         getAllFoundItems()
@@ -152,7 +156,7 @@ export default function MyClaimsPage() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            + Claim a Found Item
+            Browse Found Items
           </Link>
           <Link to="/found-items" className="btn btn-secondary btn-sm">
             Browse Catalog <span className="btn-arrow">→</span>
@@ -212,7 +216,7 @@ export default function MyClaimsPage() {
               </svg>
             )}
             title="No active claims filed yet"
-            message="To claim a lost belonging, find your item in the campus catalog below, click 'Claim Item', and answer the AI ownership questions for Security Review."
+            message="Ownership verification can be started only from an eligible match in My AI Matches."
             action={(
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Link to="/found-items" className="btn btn-primary btn-lg">
@@ -231,10 +235,10 @@ export default function MyClaimsPage() {
               <div>
                 <span className="eyebrow" style={{ color: 'var(--primary-deep)', fontWeight: 800 }}>Campus Catalog</span>
                 <h3 style={{ fontSize: '1.25rem', margin: '2px 0 4px', fontFamily: 'var(--font-display)' }}>
-                  Recent Campus Found Items — Ready to Claim
+                  Recent Campus Found Items
                 </h3>
                 <p className="text-xs text-muted">
-                  Click <strong>"Claim Item →"</strong> on any item you recognize to start your ownership verification claim.
+                  Catalogue items are for viewing. Start ownership verification only from My AI Matches when an eligible match is available.
                 </p>
               </div>
               <Link to="/found-items" className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
@@ -366,6 +370,13 @@ export default function MyClaimsPage() {
                 </div>
               )}
 
+              {claim.status === 'Approved' && (
+                <div style={{ marginBottom: 14, padding: '16px', borderRadius: 12, background: 'var(--success-bg)', border: '1px solid var(--success)' }}>
+                  <strong style={{ color: 'var(--success)', display: 'block', marginBottom: 5 }}>Claim approved</strong>
+                  <p className="text-sm" style={{ margin: '0 0 12px' }}>Use the private chat to arrange a meeting with the finder. When you meet face-to-face, use the QR code below at the Security Desk.</p>
+                  <Link className="btn btn-primary" to={`/claims/${claim.id}/chat`}>💬 Chat with Finder{chatByClaim[claim.id]?.unreadCount ? ` (${chatByClaim[claim.id].unreadCount})` : ''}</Link>
+                </div>
+              )}
               <HandoverQrCard claim={claim} />
 
               {claim.decisionNotes && (

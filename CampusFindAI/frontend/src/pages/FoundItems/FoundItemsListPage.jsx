@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAllFoundItems, getMyFoundItems } from '../../api/foundItems';
+import { getFounderClaimChats } from '../../api/claimChat';
 import ReportManagementActions from '../../components/ReportManagementActions';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, EmptyState, SkeletonGrid, ItemCard } from '../../components/Ui';
@@ -18,6 +19,7 @@ export default function FoundItemsListPage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [claimChatsByItem, setClaimChatsByItem] = useState({});
 
   const reload = async () => { try { setItems(tab === 'mine' ? await getMyFoundItems() : await getAllFoundItems()); } catch (err) { setError(err.message); } };
 
@@ -35,7 +37,19 @@ export default function FoundItemsListPage() {
       setError('');
       try {
         const data = tab === 'mine' ? await getMyFoundItems() : await getAllFoundItems();
-        if (!cancelled) setItems(data);
+        if (cancelled) return;
+        setItems(data);
+        if (tab === 'mine') {
+          const chatResults = await Promise.allSettled(data.map(async item => [item.id, await getFounderClaimChats(item.id)]));
+          if (!cancelled) {
+            setClaimChatsByItem(Object.fromEntries(chatResults
+              .filter(result => result.status === 'fulfilled')
+              .map(result => result.value)
+              .filter(([, chats]) => chats.length > 0)));
+          }
+        } else {
+          setClaimChatsByItem({});
+        }
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -70,7 +84,7 @@ export default function FoundItemsListPage() {
           <span className="eyebrow">Campus Catalog</span>
           <h1>Found Item Reports</h1>
           <p className="text-secondary">
-            Browse items found across campus grounds. If you recognize something of yours, submit an ownership claim.
+            Browse items found across campus grounds. Ownership verification is available only from a matching report in My AI Matches.
           </p>
         </div>
         {canReportItems && (
@@ -208,6 +222,12 @@ export default function FoundItemsListPage() {
               transition={{ delay: Math.min(i * 0.04, 0.28), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               <ItemCard item={item} type="found" isMine={item.userId === user?.id} />
+              {tab === 'mine' && claimChatsByItem[item.id]?.map(chat => (
+                <div key={chat.claimId} className="card" style={{ marginTop: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderColor: 'var(--success)' }}>
+                  <span className="text-sm font-semibold">Owner verified — ready to arrange handover</span>
+                  <Link className="btn btn-primary btn-sm" to={`/claims/${chat.claimId}/chat`}>💬 Chat with Owner{chat.unreadCount ? ` (${chat.unreadCount})` : ''}</Link>
+                </div>
+              ))}
               {tab === 'mine' && item.userId === user?.id && <ReportManagementActions item={item} type="found" onChanged={reload} />}
             </motion.div>
           ))}

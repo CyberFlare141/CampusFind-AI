@@ -24,6 +24,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Reputation> Reputations => Set<Reputation>();
     public DbSet<ChatHistory> ChatHistories => Set<ChatHistory>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ClaimChatConversation> ClaimChatConversations => Set<ClaimChatConversation>();
+    public DbSet<ClaimChatMessage> ClaimChatMessages => Set<ClaimChatMessage>();
     public DbSet<AIRequest> AIRequests => Set<AIRequest>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
     public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
@@ -76,6 +78,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<LostItem>().Property(x => x.LocationDetails).HasMaxLength(200);
         builder.Entity<FoundItem>().Property(x => x.LocationDetails).HasMaxLength(200);
         builder.Entity<FoundItem>().Property(x => x.PrivateVerificationDetails).HasMaxLength(1000);
+        builder.Entity<FoundItem>().Property(x => x.FounderVerificationAnswersJson).HasColumnType("nvarchar(max)");
         builder.Entity<Floor>().HasIndex(x => new { x.BuildingId, x.FloorNumber }).IsUnique();
         builder.Entity<Floor>().HasOne(x => x.Building).WithMany(x => x.Floors).HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<Location>().HasOne(x => x.Floor).WithMany(x => x.Locations).HasForeignKey(x => x.FloorId).OnDelete(DeleteBehavior.Restrict);
@@ -138,6 +141,27 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<ChatConversation>().Property(x => x.Title).HasMaxLength(120);
         builder.Entity<ChatConversation>().HasIndex(x => new { x.UserId, x.UpdatedAt });
+
+        builder.Entity<ClaimChatConversation>().HasIndex(x => x.ClaimId).IsUnique();
+        builder.Entity<ClaimChatConversation>().Property(x => x.OwnerUserId).HasMaxLength(450);
+        builder.Entity<ClaimChatConversation>().Property(x => x.FounderUserId).HasMaxLength(450);
+        builder.Entity<ClaimChatConversation>()
+            .HasOne(x => x.Claim)
+            .WithMany()
+            .HasForeignKey(x => x.ClaimId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<ClaimChatMessage>().Property(x => x.Content).HasMaxLength(1000);
+        builder.Entity<ClaimChatMessage>().HasIndex(x => new { x.ConversationId, x.SentAt });
+        builder.Entity<ClaimChatMessage>()
+            .HasOne(x => x.Conversation)
+            .WithMany(x => x.Messages)
+            .HasForeignKey(x => x.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ClaimChatMessage>()
+            .HasOne(x => x.SenderUser)
+            .WithMany()
+            .HasForeignKey(x => x.SenderUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<AIRequest>()
             .HasOne(x => x.User)

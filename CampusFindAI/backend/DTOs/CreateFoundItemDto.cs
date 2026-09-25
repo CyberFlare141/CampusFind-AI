@@ -8,8 +8,8 @@ public class CreateFoundItemDto
 
     public string? Description { get; set; }
 
-    /// <summary>Private identifying facts. Never returned by public Found Item endpoints.</summary>
-    public string? PrivateVerificationDetails { get; set; }
+    /// <summary>Private answers to the three existing ownership-verification questions.</summary>
+    public List<string> FounderVerificationAnswers { get; set; } = [];
 
     public DateTime? FoundAt { get; set; }
 

@@ -7,6 +7,24 @@ public class VerificationQuestionDto
     public string Type { get; set; } = "text";
 }
 
+public class FounderVerificationQuestionDto : VerificationQuestionDto
+{
+    public string Answer { get; set; } = string.Empty;
+}
+
+public class FounderVerificationResponseDto
+{
+    public Guid FoundItemId { get; set; }
+    public bool IsComplete { get; set; }
+    public string Status { get; set; } = "Incomplete";
+    public IReadOnlyList<FounderVerificationQuestionDto> Questions { get; set; } = [];
+}
+
+public class SaveFounderVerificationAnswersDto
+{
+    public List<string> Answers { get; set; } = [];
+}
+
 public class ClaimVerificationResponseDto
 {
     public Guid ClaimId { get; set; }
@@ -52,8 +70,8 @@ public class OfficerQuestionEvaluationDto
 {
     public int Id { get; set; }
     public string Question { get; set; } = string.Empty;
-    public string? ExpectedAnswer { get; set; }
-    public string? StudentAnswer { get; set; }
+    public string? FounderAnswer { get; set; }
+    public string? OwnerAnswer { get; set; }
 }
 
 public class OfficerVerificationReviewDto
@@ -71,7 +89,6 @@ public class OfficerVerificationReviewDto
     public string? FinderName { get; set; }
     public string FoundItemTitle { get; set; } = string.Empty;
     public string? FinderEmail { get; set; }
-    public string? PrivateVerificationDetails { get; set; }
     public decimal MatchConfidenceScore { get; set; }
     public string? SecurityReviewedByUserId { get; set; }
     public DateTime? SecurityReviewedAt { get; set; }

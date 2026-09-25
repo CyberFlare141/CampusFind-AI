@@ -10,10 +10,15 @@ public class FoundItem
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     /// <summary>
-    /// Finder-provided identifying facts used exclusively by the ownership-verification service.
-    /// This field is deliberately omitted from every public DTO.
+    /// Legacy single finder verification detail. New reports use FounderVerificationAnswersJson
+    /// instead; this remains so historical reports can still be read safely.
     /// </summary>
     public string? PrivateVerificationDetails { get; set; }
+    /// <summary>
+    /// JSON payload of the finder's three private answers. It is intentionally omitted from every
+    /// public DTO and is only read by the finder and an authorized security-review workflow.
+    /// </summary>
+    public string? FounderVerificationAnswersJson { get; set; }
     public DateTime? FoundAt { get; set; }
     public string Status { get; set; } = "Available";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

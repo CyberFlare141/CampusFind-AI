@@ -14,7 +14,10 @@ public class ClaimsController(
     IOwnershipVerificationService verificationService,
     IInstitutionalAccessService accessService) : ControllerBase
 {
-    /// <summary>A student files a claim of ownership against a found item.</summary>
+    /// <summary>
+    /// Claims are deliberately not created from the public found-item catalogue. A claim is created
+    /// only by the match-bound ownership-verification start endpoint.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<ClaimDto>> Create(
         CreateClaimDto request,
@@ -28,9 +31,7 @@ public class ClaimsController(
         }
         if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
-        var claim = await service.CreateAsync(userId, request, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id = claim.Id }, claim);
+        return BadRequest(new { message = "Claims must be started from a valid My AI Matches ownership-verification flow." });
     }
 
     /// <summary>The current user's own submitted claims.</summary>
@@ -139,6 +140,10 @@ public class ClaimsController(
         {
             return Unauthorized();
         }
+
+        var existing = await service.GetByIdAsync(id, cancellationToken);
+        if (existing?.VerificationMatchId is not null)
+            return BadRequest(new { message = "Match-bound claims must be approved or rejected through the ownership-verification review. QR handover is available only after the separate face-to-face handover stage." });
 
         var claim = await service.DecideAsync(id, officerId, request, cancellationToken);
 

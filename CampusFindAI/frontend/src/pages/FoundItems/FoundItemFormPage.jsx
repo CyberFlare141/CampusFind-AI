@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createFoundItem } from '../../api/foundItems';
+import { createFoundItem, getOwnershipVerificationQuestions } from '../../api/foundItems';
 import { getCategories } from '../../api/reference';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, ButtonSpinner, SuccessCheck } from '../../components/Ui';
@@ -45,7 +45,8 @@ export default function FoundItemFormPage() {
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [privateVerificationDetails, setPrivateVerificationDetails] = useState('');
+  const [verificationQuestions, setVerificationQuestions] = useState([]);
+  const [founderAnswers, setFounderAnswers] = useState([]);
   const [foundAt, setFoundAt] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [locationText, setLocationText] = useState('');
@@ -63,7 +64,11 @@ export default function FoundItemFormPage() {
   const earliest = new Date();
   earliest.setMonth(earliest.getMonth() - 6);
   const earliestDate = toDateTimeLocal(earliest);
-  useEffect(() => { getCategories().then(setCategories).catch(err => setFormError(err.message)); }, []);
+  useEffect(() => {
+    Promise.all([getCategories(), getOwnershipVerificationQuestions()])
+      .then(([categoryList, questions]) => { setCategories(categoryList); setVerificationQuestions(questions); setFounderAnswers(questions.map(() => '')); })
+      .catch(err => setFormError(err.message));
+  }, []);
   useEffect(() => {
     try {
       const draft = JSON.parse(sessionStorage.getItem('campusfind.chatReportDraft') || 'null');
@@ -81,7 +86,7 @@ export default function FoundItemFormPage() {
     const errors = {};
     if (!title.trim()) errors.title = 'Give the item a clear, descriptive title.';
     else if (title.trim().length > 150) errors.title = 'Title must be under 150 characters.';
-    if (!privateVerificationDetails.trim()) errors.privateVerificationDetails = 'Private identifying details are required for ownership verification.';
+    if (verificationQuestions.length !== 3 || founderAnswers.length !== 3 || founderAnswers.some(answer => !answer.trim())) errors.founderAnswers = 'Answer all three private ownership-verification questions.';
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -118,7 +123,7 @@ export default function FoundItemFormPage() {
       const created = await createFoundItem({
         title: title.trim(),
         description: description.trim() || undefined,
-        privateVerificationDetails: privateVerificationDetails.trim(),
+        founderVerificationAnswers: founderAnswers.map(answer => answer.trim()),
         foundAt: foundAt ? new Date(foundAt).toISOString() : undefined,
         categoryId,
         locationDetails: locationText.trim(),
@@ -239,11 +244,14 @@ export default function FoundItemFormPage() {
                   <span className="hint">Avoid publicly disclosing private contents (e.g. cash amount or full credit card names).</span>
                 </div>
                 <div className="form-field" style={{ padding: 18, background: 'var(--surface-card-alt)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                  <label htmlFor="f-private-details">Private Ownership Verification Details *</label>
-                  <p className="hint" style={{ margin: '0 0 10px' }}>These details are never shown publicly. They are used only to verify the true owner after an eligible AI match.</p>
-                  <textarea id="f-private-details" value={privateVerificationDetails} onChange={e => setPrivateVerificationDetails(e.target.value)} maxLength={1000} rows={5} placeholder="Describe marks, damage, contents, writing, stickers, accessories, or hidden features only the real owner would know." className={fieldErrors.privateVerificationDetails ? 'input-error' : ''} />
-                  <span className="hint">{privateVerificationDetails.length}/1000 characters</span>
-                  {fieldErrors.privateVerificationDetails && <span className="field-error">{fieldErrors.privateVerificationDetails}</span>}
+                  <label>Ownership Verification *</label>
+                  <p className="hint" style={{ margin: '0 0 14px' }}>Answer all three questions. These answers stay private and are shown only to Campus Security if a matched owner submits a claim.</p>
+                  {verificationQuestions.map((question, index) => <div key={question.id} style={{ marginTop: index ? 16 : 0 }}>
+                    <label htmlFor={`founder-verification-${question.id}`}>Question {index + 1}: {question.question}</label>
+                    <textarea id={`founder-verification-${question.id}`} value={founderAnswers[index] || ''} onChange={e => setFounderAnswers(values => values.map((value, answerIndex) => answerIndex === index ? e.target.value : value))} maxLength={1000} rows={3} placeholder="Founder answer" className={fieldErrors.founderAnswers ? 'input-error' : ''} />
+                    <span className="hint">{(founderAnswers[index] || '').length}/1000 characters</span>
+                  </div>)}
+                  {fieldErrors.founderAnswers && <span className="field-error">{fieldErrors.founderAnswers}</span>}
                 </div>
               </motion.div>
             )}
@@ -372,7 +380,7 @@ export default function FoundItemFormPage() {
                   {[
                     { label: 'Item Title', value: title || '—' },
                     { label: 'Description', value: description || 'Not provided' },
-                    { label: 'Private verification details', value: privateVerificationDetails ? 'Recorded privately — never displayed publicly' : 'Not provided' },
+                    { label: 'Ownership verification', value: founderAnswers.every(answer => answer.trim()) ? 'All 3 private answers recorded' : 'Incomplete' },
                     { label: 'Where Found', value: locationText || 'Not provided' },
                     { label: 'Date Found', value: foundAt ? new Date(foundAt).toLocaleString() : 'Not specified' },
                     { label: 'Photos', value: `${previews.length} photo${previews.length !== 1 ? 's' : ''} attached` },

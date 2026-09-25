@@ -31,7 +31,7 @@ function MatchItem({ match, verification }) {
         <div className="match-rationale"><p>{match.explanation}</p>{match.matchedAttributes?.length > 0 && <ul>{match.matchedAttributes.map(attribute => <li key={attribute}>{attribute}</li>)}</ul>}<ConfidenceBar score={match.confidenceScore} />
           <p className="text-sm" style={{ marginTop: 12, fontWeight: 700 }}>{verification?.message || (score < 60 ? 'Ownership verification unavailable' : 'Checking verification eligibility…')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><Link className="btn btn-secondary" to={'/found-items/' + match.foundItemId}>View found item</Link>{verification?.canStart && <Link className="btn btn-primary" to={`/matches/${match.id}/verify`}>{verification.attemptCount ? 'Retry Ownership Verification' : 'Start Ownership Verification'}</Link>}{verification?.canAccessHandoverChat && <span className="badge badge-success">Handover chat eligible</span>}</div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><Link className="btn btn-secondary" to={'/found-items/' + match.foundItemId}>View found item</Link>{verification?.canStart && <Link className="btn btn-primary" to={`/matches/${match.id}/verify`}>{verification.status === 'InProgress' ? 'Continue Ownership Verification' : verification.attemptCount ? 'Retry Ownership Verification' : 'Start Ownership Verification'}</Link>}{verification?.canAccessHandoverChat && <span className="badge badge-success">Handover chat eligible</span>}</div>
       </div>
     </article>
   );

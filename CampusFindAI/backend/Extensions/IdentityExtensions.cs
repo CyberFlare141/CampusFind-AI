@@ -80,6 +80,12 @@ public static class IdentityExtensions
             // until its expiry.
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hubs/claim-chat")) context.Token = accessToken;
+                    return Task.CompletedTask;
+                },
                 OnTokenValidated = async context =>
                 {
                     var userId = context.Principal?
