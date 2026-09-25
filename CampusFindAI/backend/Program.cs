@@ -57,6 +57,7 @@ app.UseAuthentication();  //Look at the incoming request and figure out who the 
 app.UseAuthorization();   // ''    ''    ''        ''          ''
 app.MapControllers();
 app.MapHub<ClaimChatHub>("/hubs/claim-chat");
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapGet("/", () => Results.Ok(new
 {

@@ -67,10 +67,17 @@ public class ClaimService(
             cancellationToken);
 
         await CreateNotificationAsync(
+            claimantUserId,
+            "Your ownership claim has been submitted for Security review.",
+            "/my-claims",
+            "CLAIM_SUBMITTED",
+            cancellationToken);
+
+        await CreateNotificationAsync(
             foundItem.UserId,
             $"A new ownership claim was submitted for your found-item report: {foundItem.Title}.",
             $"/found-items/{foundItem.Id}",
-            "claim-request",
+            "CLAIM_SUBMITTED",
             cancellationToken);
 
         var saved = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -211,7 +218,7 @@ public class ClaimService(
                 ? $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was approved."
                 : $"Your ownership claim for {claim.FoundItem?.Title ?? "the found item"} was not approved.",
             "/my-claims",
-            request.Approve ? "claim-approved" : "claim-rejected",
+            request.Approve ? "CLAIM_APPROVED" : "CLAIM_REJECTED",
             cancellationToken);
 
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);
@@ -268,11 +275,11 @@ public class ClaimService(
             cancellationToken);
 
         var title = claim.FoundItem?.Title ?? "the found item";
-        await CreateNotificationAsync(claim.ClaimantUserId, $"Handover complete: {title} has been returned to you.", "/my-claims", "handover-complete", cancellationToken);
+        await CreateNotificationAsync(claim.ClaimantUserId, "The item handover was completed successfully.", "/my-claims", "HANDOVER_COMPLETED", cancellationToken);
         var foundItem = await foundItemRepository.GetByIdAsync(claim.FoundItemId, cancellationToken);
         if (foundItem is not null)
         {
-            await CreateNotificationAsync(foundItem.UserId, $"Handover complete: {title} has been returned to its owner.", $"/found-items/{foundItem.Id}", "handover-complete", cancellationToken);
+            await CreateNotificationAsync(foundItem.UserId, "The item return was completed successfully.", $"/found-items/{foundItem.Id}", "HANDOVER_COMPLETED", cancellationToken);
         }
 
         var updated = await claimRepository.GetByIdAsync(claim.Id, cancellationToken);

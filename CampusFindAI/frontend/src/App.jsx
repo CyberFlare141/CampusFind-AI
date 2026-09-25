@@ -41,6 +41,7 @@ import CampusFindAssistantPage from './pages/CampusFindAssistantPage';
 import CampusMapPage from './pages/CampusMapPage';
 import ReputationHistoryPage from './pages/ReputationHistoryPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -107,6 +108,7 @@ export default function App() {
           >
             <Route path="/" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/campus-map" element={<CampusMapPage />} />
             <Route path="/reputation" element={<ReputationHistoryPage />} />
 
