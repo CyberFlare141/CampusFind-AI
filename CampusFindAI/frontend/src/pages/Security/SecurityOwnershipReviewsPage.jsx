@@ -185,20 +185,40 @@ export default function SecurityOwnershipReviewsPage() {
                   }}
                 >
                   <div className="security-ownership-summary-details" style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
-                    {primaryImage && (
-                      <div
-                        style={{
-                          width: 60,
-                          height: 60,
-                          borderRadius: 'var(--radius-md)',
-                          overflow: 'hidden',
-                          flexShrink: 0,
-                          border: '1px solid var(--border)',
-                        }}
-                      >
+                    <div
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 10,
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface-tinted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {primaryImage ? (
                         <FadeImage src={publicAssetUrl(primaryImage)} alt={claim.foundItemTitle} />
-                      </div>
-                    )}
+                      ) : (
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ opacity: 0.45, color: 'var(--text-muted)' }}
+                          aria-hidden="true"
+                        >
+                          <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                          <polyline points="16 3 12 7 8 3" />
+                        </svg>
+                      )}
+                    </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span className="badge badge-info" style={{ fontSize: '0.74rem' }}>

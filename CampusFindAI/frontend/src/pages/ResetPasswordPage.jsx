@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { resetPassword } from '../api/auth';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthCellularDecor } from '../components/Ui';
 
 function validatePassword(password) {
   if (password.length < 8) return 'Password must be at least 8 characters long.';
@@ -88,6 +88,7 @@ export default function ResetPasswordPage() {
 
       {/* ── Right Card: Reset Password ──────────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

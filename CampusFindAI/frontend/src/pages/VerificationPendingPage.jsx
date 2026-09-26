@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { resendConfirmation } from '../api/auth';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthCellularDecor } from '../components/Ui';
 
 export default function VerificationPendingPage() {
   const location = useLocation();
@@ -69,6 +69,7 @@ export default function VerificationPendingPage() {
 
       {/* ── Right Card: Verification Pending ────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

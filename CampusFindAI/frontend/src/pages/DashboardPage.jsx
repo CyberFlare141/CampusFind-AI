@@ -162,58 +162,73 @@ export default function DashboardPage() {
             </>
           )}
 
-          {canReportItems && (
-            <div className="dashboard-ctas">
-              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/lost-items/new" className="btn btn-primary btn-lg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  Report Lost Item <span className="btn-arrow">→</span>
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/found-items/new" className="btn btn-secondary btn-lg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/>
-                  </svg>
-                  Report Found Item <span className="btn-arrow">→</span>
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/found-items" className="btn btn-secondary btn-lg" style={{ background: 'var(--surface-card)', borderColor: 'var(--border)' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                  Claim a Found Item <span className="btn-arrow">→</span>
-                </Link>
-              </motion.div>
-            </div>
-          )}
-          {user?.isRestricted && (
-            <div style={{ marginTop: 18 }}><p className="text-muted">Your account can browse campus reports. Institutional accounts can report items and submit claims.</p><Link to="/security-officer-request" className="btn btn-secondary">Request Security Officer access</Link></div>
-          )}
+          {/* ── Unified Hero Action Command Bar ───────────────── */}
+          <div className="dashboard-hero-actions" role="toolbar" aria-label="Quick actions">
+            {isOfficer && (
+              <>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/security/claims" className="btn btn-primary btn-lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
+                    Review Claims
+                    {overview?.pendingClaimsCount > 0 && (
+                      <span className="btn-badge btn-badge-primary">{overview.pendingClaimsCount}</span>
+                    )}
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/security/matches" className="btn btn-accent-subtle btn-lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    AI Match Suggestions
+                    {overview?.suggestedMatchesCount > 0 && (
+                      <span className="btn-badge btn-badge-ai">{overview.suggestedMatchesCount}</span>
+                    )}
+                  </Link>
+                </motion.div>
+              </>
+            )}
 
-          {isOfficer && (
-            <div className="dashboard-ctas">
-              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/security/claims" className="btn btn-primary btn-lg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                  </svg>
-                  Review Claims Queue <span className="btn-arrow">→</span>
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/security/matches" className="btn btn-secondary btn-lg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                  AI Match Suggestions <span className="btn-arrow">→</span>
-                </Link>
-              </motion.div>
-            </div>
-          )}
+            {canReportItems && (
+              <>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/lost-items/new" className={isOfficer ? 'btn btn-secondary btn-lg' : 'btn btn-primary btn-lg'}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Report Lost Item
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/found-items/new" className="btn btn-secondary btn-lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><polyline points="16 3 12 7 8 3"/>
+                    </svg>
+                    Report Found Item
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/found-items" className="btn btn-secondary btn-lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    Claim a Found Item
+                  </Link>
+                </motion.div>
+              </>
+            )}
+
+            {user?.isRestricted && (
+              <div style={{ width: '100%', marginTop: 8 }}>
+                <p className="text-muted" style={{ margin: '0 0 8px 0', fontSize: '0.88rem' }}>
+                  Your account can browse campus reports. Institutional accounts can report items and submit claims.
+                </p>
+                <Link to="/security-officer-request" className="btn btn-secondary btn-sm">Request Security Officer access</Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Asymmetric Motif Artwork */}
