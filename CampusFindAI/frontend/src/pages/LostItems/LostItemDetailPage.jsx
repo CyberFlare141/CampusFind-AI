@@ -84,7 +84,7 @@ export default function LostItemDetailPage() {
                 key={selectedImage}
                 src={publicAssetUrl(images[selectedImage])}
                 alt={`${item.title} — photo ${selectedImage + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}

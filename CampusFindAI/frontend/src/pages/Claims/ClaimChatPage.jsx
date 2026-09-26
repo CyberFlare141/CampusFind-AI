@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { Alert, ButtonSpinner, PageLoading } from '../../components/Ui';
+import { Alert, ButtonSpinner, PageLoading, SlideIn } from '../../components/Ui';
 import { API_BASE_URL, formatBangladeshDate, getToken } from '../../api/client';
 import { getClaimChatMessages, markClaimChatRead, sendClaimChatMessage } from '../../api/claimChat';
 
@@ -68,12 +68,20 @@ export default function ClaimChatPage() {
 
   if (loading) return <PageLoading label="Opening private handover chat…" />;
   if (!chat) return <div className="page-container-form"><Alert type="error">{error || 'Chat is unavailable.'}</Alert><Link className="btn btn-secondary" to="/my-claims">Back to My Claims</Link></div>;
-  return <div className="page-container-form"><div className="card" style={{ overflow: 'hidden' }}>
+  return <div className="page-container-form claim-chat-page"><div className="card claim-chat-ticket" style={{ overflow: 'hidden' }}>
     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><Link className="back-link" to="/my-claims">← Back to My Claims</Link><h1 style={{ margin: '8px 0 4px' }}>Item Handover</h1><p className="text-secondary" style={{ margin: 0 }}>{chat.itemTitle} · Claim Approved</p></div><span className="badge badge-success">Private chat</span></div>
-    <div style={{ minHeight: 360, maxHeight: '55vh', overflowY: 'auto', padding: 24, background: 'var(--surface-card-alt)' }}>
+    <div className="claim-chat-thread" style={{ minHeight: 360, maxHeight: '55vh', overflowY: 'auto', padding: 24, background: 'var(--surface-card-alt)' }}>
       {nextBefore && <div style={{ textAlign: 'center', marginBottom: 16 }}><button className="btn btn-secondary btn-sm" onClick={loadOlder} disabled={loadingOlder}>{loadingOlder ? 'Loading…' : 'Load older messages'}</button></div>}
       {messages.length === 0 && <div className="text-secondary" style={{ textAlign: 'center', padding: '90px 16px' }}>No messages yet. Use this private chat only to arrange the physical handover.</div>}
-      {messages.map(message => <div key={message.id} style={{ display: 'flex', justifyContent: message.isMine ? 'flex-end' : 'flex-start', marginBottom: 14 }}><div style={{ maxWidth: '78%' }}><div className="text-xs" style={{ marginBottom: 4, color: 'var(--text-muted)', textAlign: message.isMine ? 'right' : 'left' }}>{message.isMine ? 'You' : chat.otherParticipantName}</div><div style={{ padding: '10px 14px', borderRadius: 14, background: message.isMine ? 'var(--primary)' : 'var(--surface-card)', color: message.isMine ? 'white' : 'var(--text-primary)', border: message.isMine ? 'none' : '1px solid var(--border)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{message.content}</div><div className="text-xs text-muted" style={{ marginTop: 3, textAlign: message.isMine ? 'right' : 'left' }}>{formatTime(message.sentAt)}</div></div></div>)}
+      {messages.map(message => (
+        <SlideIn key={message.id} from={message.isMine ? 'right' : 'left'} className={`claim-chat-message-row ${message.isMine ? 'is-mine' : ''}`}>
+          <div className="claim-chat-message-wrap">
+            <div className="claim-chat-sender">{message.isMine ? 'You' : chat.otherParticipantName}</div>
+            <div className="claim-chat-bubble">{message.content}</div>
+            <div className="claim-chat-time">{formatTime(message.sentAt)}</div>
+          </div>
+        </SlideIn>
+      ))}
       <div ref={bottomRef} />
     </div>
     {chat.isReadOnly ? <div style={{ padding: 18, background: 'var(--success-bg)', color: 'var(--success)', fontWeight: 700 }}>✓ Item Successfully Returned — this conversation is now read-only.</div> : <form onSubmit={send} className="claim-chat-composer" style={{ padding: 16, borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}><textarea value={text} onChange={event => setText(event.target.value)} maxLength={1000} rows={2} placeholder="Type a message to arrange the handover…" style={{ flex: 1, minWidth: 0 }} /><button className="btn btn-primary" disabled={sending || !text.trim()}>{sending ? <ButtonSpinner /> : 'Send'}</button></form>}

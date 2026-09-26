@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { resendConfirmation } from '../api/auth';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import { Alert, ButtonSpinner, AuthBubbleBackground } from '../components/Ui';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export default function LoginPage() {
@@ -93,22 +93,7 @@ export default function LoginPage() {
     <div className="auth-shell">
       {/* ── Left Hero Panel ─────────────────────────────────── */}
       <div className="auth-panel">
-        <motion.div
-          style={{
-            position: 'absolute', width: 220, height: 220, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)', bottom: 80, left: 40, zIndex: 0,
-          }}
-          animate={{ y: [0, -16, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          style={{
-            position: 'absolute', width: 140, height: 140, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)', top: 120, right: 40, zIndex: 0,
-          }}
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
+        <AuthBubbleBackground />
 
         <motion.div
           initial={{ opacity: 0, x: -24 }}

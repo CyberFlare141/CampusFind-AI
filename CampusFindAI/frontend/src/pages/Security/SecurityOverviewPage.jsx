@@ -127,7 +127,6 @@ export default function SecurityOverviewPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                whileHover={{ y: -3, boxShadow: 'var(--shadow-elevated)' }}
               >
                 <div style={{
                   width: 44, height: 44,

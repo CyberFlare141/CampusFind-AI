@@ -107,6 +107,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
 
   return (
     <div
+      className="verification-modal-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
@@ -121,6 +122,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
       onClick={(e) => { if (e.target === e.currentTarget && !submitting) onClose(); }}
     >
       <motion.div
+        className="verification-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-verification-title"
@@ -143,6 +145,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
       >
         {/* ── Modal Header ─────────────────────────────────────── */}
         <div
+          className="verification-modal-header"
           style={{
             padding: '20px 24px',
             background: 'var(--verify-surface, #C7EABB)',
@@ -207,7 +210,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
         </div>
 
         {/* ── Modal Body ───────────────────────────────────────── */}
-        <div style={{ padding: '24px' }}>
+        <div className="verification-modal-body" style={{ padding: '24px' }}>
           <Alert type="error">{error}</Alert>
 
           {loading ? (
@@ -223,6 +226,7 @@ export default function VerificationModal({ claim, isOpen, onClose, onComplete }
           ) : completed ? (
             /* ── Post-Completion View ────────────────────────────── */
             <motion.div
+              className="verification-complete"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}

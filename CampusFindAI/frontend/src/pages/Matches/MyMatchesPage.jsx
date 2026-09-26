@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getMyMatches } from '../../api/matches';
 import { getOwnershipVerificationStatus } from '../../api/ownershipVerification';
 import { publicAssetUrl } from '../../api/client';
-import { AIBadge, Alert, ConfidenceBar, EmptyState, FadeImage, PageLoading } from '../../components/Ui';
+import { AIBadge, Alert, ConfidenceBar, EmptyState, FadeImage, PageLoading, PageMotion, StaggerList } from '../../components/Ui';
 
 function MatchItem({ match, verification }) {
   const score = Math.round(match.confidenceScore);
@@ -44,9 +44,18 @@ export default function MyMatchesPage() {
   const [verificationByMatch, setVerificationByMatch] = useState({});
   useEffect(() => { getMyMatches().then(async list => { setMatches(list); const statuses = await Promise.all(list.map(async match => [match.id, await getOwnershipVerificationStatus(match.id).catch(() => null)])); setVerificationByMatch(Object.fromEntries(statuses.filter(([, status]) => status))); }).catch(err => setError(err.message)).finally(() => setLoading(false)); }, []);
   if (loading) return <PageLoading label="Finding your AI matches…" />;
-  return <div className="page-container-wide matches-page">
-    <div className="page-header"><div><AIBadge label="Student discovery" /><h1>My AI Matches</h1><p>Potential matches for your open lost-item reports. Review each suggestion before making a claim.</p></div></div>
-    <Alert type="error">{error}</Alert>
-    {!error && matches.length === 0 ? <EmptyState title="No potential matches yet" message="CampusFind is still checking found-item reports for possible matches." action={<Link className="btn btn-primary" to="/lost-items">View My Lost Items</Link>} /> : <div className="match-comparison-list">{matches.map(match => <MatchItem key={match.id} match={match} verification={verificationByMatch[match.id]} />)}</div>}
-  </div>;
+  return (
+    <PageMotion kind="catalog" className="page-container-wide matches-page">
+      <div className="page-header"><div><AIBadge label="Student discovery" /><h1>My AI Matches</h1><p>Potential matches for your open lost-item reports. Review each suggestion before making a claim.</p></div></div>
+      <Alert type="error">{error}</Alert>
+      {!error && matches.length === 0
+        ? <EmptyState title="No potential matches yet" message="CampusFind is still checking found-item reports for possible matches." action={<Link className="btn btn-primary" to="/lost-items">View My Lost Items</Link>} />
+        : <div className="match-comparison-list">
+            <StaggerList stagger={0.08}>
+              {matches.map(match => <MatchItem key={match.id} match={match} verification={verificationByMatch[match.id]} />)}
+            </StaggerList>
+          </div>
+      }
+    </PageMotion>
+  );
 }

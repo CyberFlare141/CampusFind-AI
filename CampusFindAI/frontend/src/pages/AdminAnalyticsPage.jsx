@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Alert, EmptyState, PageLoading, SkeletonCard } from '../components/Ui';
+import { Alert, AnimatedNumber, EmptyState, PageLoading, SkeletonCard } from '../components/Ui';
 import { formatBangladeshDate } from '../api/client';
 import { getAnalytics } from '../api/adminAnalytics';
 
@@ -47,13 +47,23 @@ export default function AdminAnalyticsPage() {
 
   if (loading && !overview) return <AnalyticsSkeleton />;
   return <section className="page-container admin-analytics-page">
-    <header className="page-header analytics-header"><div><span className="eyebrow">Administration</span><h1>Platform Analytics</h1><p>CampusFind activity from the application database.</p></div></header>
+    <header className="page-header analytics-header">
+      <div>
+        <span className="eyebrow">Administration</span>
+        <h1>Platform Analytics</h1>
+        <p>CampusFind activity from the application database.</p>
+      </div>
+      <div className="analytics-telemetry-badge">
+        <span className="telemetry-pulse" />
+        <span>Live Platform Metrics</span>
+      </div>
+    </header>
     <div className="analytics-controls"><label htmlFor="analytics-range">Date range<select id="analytics-range" value={range} onChange={event => setRange(event.target.value)}><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option></select></label><button className="btn btn-secondary" onClick={exportCsv} disabled={!items || loading || exporting}>{exporting ? 'Exporting...' : 'Export CSV'}</button></div>
     {period && <p className="analytics-period"><strong>Selected period:</strong> {RANGE_LABELS[range]} · {formatPeriod(period)}</p>}
     {loading && <p className="analytics-refreshing" role="status">Updating analytics for the selected period...</p>}
     {error ? <div className="analytics-error"><Alert type="error">{error}</Alert><button className="btn btn-secondary" onClick={load}>Try again</button></div> : <>
-      <AnalyticsSection title="Overview"><div className="analytics-kpis">{Object.entries(KPI_LABELS).map(([key, label]) => <MetricCard key={key} label={label} value={formatCount(overview?.[key])} />)}</div></AnalyticsSection>
-      <AnalyticsSection title="Performance"><div className="analytics-secondary-kpis"><MetricCard label="Active Users" value={formatCount(users?.active)} hint="Distinct users who signed in during this period" /><MetricCard label="Recovery Rate" value={formatPercent(claims?.recoveryRate)} hint="Returned claims out of completed claim decisions" /><MetricCard label="Avg. Resolution Time" value={formatResolution(claims?.averageResolutionHours, claims?.reviewedClaims)} hint="Claim created to security review decision" /></div></AnalyticsSection>
+      <AnalyticsSection title="Overview"><div className="analytics-kpis">{Object.entries(KPI_LABELS).map(([key, label]) => <MetricCard key={key} label={label} value={formatCount(overview?.[key])} animatedValue={overview?.[key]} />)}</div></AnalyticsSection>
+      <AnalyticsSection title="Performance"><div className="analytics-secondary-kpis"><MetricCard label="Active Users" value={formatCount(users?.active)} animatedValue={users?.active} hint="Distinct users who signed in during this period" /><MetricCard label="Recovery Rate" value={formatPercent(claims?.recoveryRate)} hint="Returned claims out of completed claim decisions" /><MetricCard label="Avg. Resolution Time" value={formatResolution(claims?.averageResolutionHours, claims?.reviewedClaims)} hint="Claim created to security review decision" /></div></AnalyticsSection>
       {!hasAnalyticsData ? <EmptyState title="No activity for this period" message="Choose another date range to review CampusFind activity." /> : <>
         <AnalyticsSection title="Report Activity"><div className="analytics-charts"><ChartCard title="Lost vs Found Reports" emptyMessage="No report activity for this period." hasData={activityData.some(row => row.count > 0)} rows={activityData}><BarChart data={activityData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis allowDecimals={false} width={30} /><Tooltip formatter={value => [formatCount(value), 'Reports']} /><Bar dataKey="count" radius={[6, 6, 0, 0]}>{activityData.map(row => <Cell key={row.label} fill={row.color} />)}</Bar></BarChart></ChartCard><ChartCard title="Category Distribution" emptyMessage="No category data for this period." hasData={categories.length > 0} rows={categories}><BarChart data={categories} layout="vertical" margin={{ left: 12 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" allowDecimals={false} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} /><Tooltip formatter={value => [formatCount(value), 'Reports']} /><Bar dataKey="count" fill="#0F766E" radius={[0, 6, 6, 0]} /></BarChart></ChartCard></div></AnalyticsSection>
         <AnalyticsSection title="Claims & Recovery"><div className="analytics-charts"><ChartCard title="Claim Status" emptyMessage="No claims for this period." hasData={statuses.length > 0} rows={statuses}><BarChart data={statuses} layout="vertical" margin={{ left: 12 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" allowDecimals={false} /><YAxis type="category" dataKey="status" width={100} tick={{ fontSize: 12 }} /><Tooltip formatter={value => [formatCount(value), 'Claims']} /><Bar dataKey="count" radius={[0, 6, 6, 0]}>{statuses.map((row, index) => <Cell key={row.status} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />)}</Bar></BarChart></ChartCard><ChartCard title="Top Locations" emptyMessage="No location activity for this period. Try selecting a different date range." hasData={locations.length > 0} rows={locations}><BarChart data={locations} layout="vertical" margin={{ left: 12 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" allowDecimals={false} /><YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} /><Tooltip formatter={value => [formatCount(value), 'Reports']} /><Bar dataKey="count" fill="#7C6CC4" radius={[0, 6, 6, 0]} /></BarChart></ChartCard></div></AnalyticsSection>
@@ -63,7 +73,7 @@ export default function AdminAnalyticsPage() {
 }
 
 function AnalyticsSection({ title, children }) { return <section className="analytics-section"><h2>{title}</h2>{children}</section>; }
-function MetricCard({ label, value, hint }) { return <article className="card analytics-kpi"><span>{label}</span><strong>{value}</strong>{hint && <small>{hint}</small>}</article>; }
+function MetricCard({ label, value, animatedValue, hint }) { return <article className="card analytics-kpi"><span>{label}</span><strong>{animatedValue == null ? value : <AnimatedNumber value={animatedValue} formatter={formatCount} />}</strong>{hint && <small>{hint}</small>}</article>; }
 function ChartCard({ title, emptyMessage, hasData, rows, children }) { return <article className="card analytics-chart"><h3>{title}</h3>{hasData ? <><div className="analytics-chart-canvas"><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div><ul className="analytics-chart-values">{rows.map(row => <li key={row.name || row.status || row.label}><span>{row.name || row.status || row.label}</span><strong>{formatCount(row.count)}</strong></li>)}</ul></> : <div className="analytics-chart-empty"><p>{emptyMessage}</p></div>}</article>; }
 function AnalyticsSkeleton() { return <section className="page-container admin-analytics-page"><header className="page-header"><div><span className="eyebrow">Administration</span><h1>Platform Analytics</h1></div></header><div className="analytics-kpis">{Array.from({ length: 5 }, (_, index) => <SkeletonCard key={index} />)}</div></section>; }
 function formatCount(value) { return new Intl.NumberFormat('en-BD').format(Number(value) || 0); }
