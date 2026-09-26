@@ -1,5 +1,6 @@
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
+using CampusFindAI.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,7 @@ public static class DbInitializer
 
         await SeedLocalDevelopmentAccountsAsync(userManager, userRepository, dbContext, environment);
         await SeedReferenceDataAsync(dbContext, configuration);
+        await BackfillDevelopmentVerificationEvidenceAsync(dbContext, environment);
     }
 
     public static async Task SeedLocalDevelopmentAccountsAsync(
@@ -139,6 +141,35 @@ public static class DbInitializer
     }
 
     private sealed record LocalDevelopmentAccount(string Email, UserRole Role, string Password);
+
+    // Older local sample reports existed before the three-question founder
+    // verification flow. Populate development data only, so that sample claims
+    // exercise the same protected journey as newly created reports. Production
+    // records must always be completed by the finder in the report form.
+    private static async Task BackfillDevelopmentVerificationEvidenceAsync(ApplicationDbContext dbContext, IHostEnvironment environment)
+    {
+        if (!environment.IsDevelopment()) return;
+
+        var legacyReports = await dbContext.FoundItems
+            .Where(item => string.IsNullOrWhiteSpace(item.FounderVerificationAnswersJson))
+            .ToListAsync();
+
+        foreach (var item in legacyReports)
+        {
+            var distinguishingDetail = string.IsNullOrWhiteSpace(item.PrivateVerificationDetails)
+                ? item.Description ?? item.Title
+                : item.PrivateVerificationDetails;
+            var answers = new[]
+            {
+                distinguishingDetail,
+                $"Reported near {item.LocationDetails ?? "the campus location"}.",
+                item.Description ?? item.Title
+            };
+            item.FounderVerificationAnswersJson = OwnershipVerificationQuestions.SerializeFounderAnswers(answers);
+        }
+
+        if (legacyReports.Count > 0) await dbContext.SaveChangesAsync();
+    }
 
     private static async Task SeedReferenceDataAsync(ApplicationDbContext dbContext, IConfiguration configuration)
     {

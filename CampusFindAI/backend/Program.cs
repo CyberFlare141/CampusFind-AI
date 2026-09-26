@@ -7,6 +7,8 @@ using CampusFindAI.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+ValidateProductionConfiguration(builder.Configuration, builder.Environment);
+
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddIdentityAndJwt(builder.Configuration);   // This calls the extension method to add Identity and JWT authentication
 builder.Services.AddCorsPolicy(builder.Configuration);
@@ -68,3 +70,24 @@ app.MapGet("/", () => Results.Ok(new
 await app.SeedIdentityAsync();
 
 app.Run();
+
+static void ValidateProductionConfiguration(IConfiguration configuration, IHostEnvironment environment)
+{
+    if (environment.IsDevelopment()) return;
+
+    var errors = new List<string>();
+    var jwtKey = configuration["Jwt:Key"];
+    if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32 || jwtKey.Contains("development-only", StringComparison.OrdinalIgnoreCase) || jwtKey.Contains("replace_with", StringComparison.OrdinalIgnoreCase))
+        errors.Add("Jwt:Key must be a unique secret of at least 32 characters, supplied through environment configuration or a secret store.");
+
+    var emailProvider = configuration["Email:Provider"];
+    var smtpHost = configuration["Email:Smtp:Host"];
+    var frontendBaseUrl = configuration["Email:FrontendBaseUrl"];
+    if (!string.Equals(emailProvider, "Smtp", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(smtpHost))
+        errors.Add("Email:Provider must be Smtp and Email:Smtp:Host must be configured.");
+    if (!Uri.TryCreate(frontendBaseUrl, UriKind.Absolute, out var frontendUri) || frontendUri.Scheme != Uri.UriSchemeHttps)
+        errors.Add("Email:FrontendBaseUrl must be an HTTPS URL in production.");
+
+    if (errors.Count > 0)
+        throw new InvalidOperationException("Production configuration is incomplete: " + string.Join(" ", errors));
+}

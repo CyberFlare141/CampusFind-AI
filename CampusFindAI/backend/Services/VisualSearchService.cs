@@ -8,6 +8,13 @@ namespace CampusFindAI.Api.Services;
 
 public sealed class VisualSearchService(ApplicationDbContext db, IVisualEmbeddingProvider provider, IReportImageStorage imageStorage, IWebHostEnvironment environment, IConfiguration configuration, ILogger<VisualSearchService> logger) : IVisualSearchService
 {
+    // The on-device fingerprint is intentionally limited to near-duplicate
+    // images. Unlike a trained multimodal model, it must not claim that two
+    // unrelated dark electronics are a high-confidence object match.
+    private const double LocalNearDuplicateThreshold = 0.98;
+    private const double GeminiHighConfidenceThreshold = 0.82;
+    private const double DefaultCloseMatchTolerance = 0.10;
+
     public async Task<VisualSearchResponseDto> SearchAsync(IFormFile image, CancellationToken ct = default)
     {
         imageStorage.Validate([image]);
@@ -57,15 +64,42 @@ public sealed class VisualSearchService(ApplicationDbContext db, IVisualEmbeddin
             try { vectorStored = JsonSerializer.Deserialize<float[]>(stored.VectorJson) ?? []; }
             catch (JsonException) { continue; }
             var score = Cosine(query, vectorStored);
-            var threshold = configuration.GetValue("VisualSearch:SimilarityThreshold", 0.55);
+            var threshold = configuration.GetValue("VisualSearch:SimilarityThreshold", GeminiHighConfidenceThreshold);
+            if (provider.Model.StartsWith("local-", StringComparison.OrdinalIgnoreCase))
+            {
+                threshold = Math.Max(threshold, LocalNearDuplicateThreshold);
+            }
+            else
+            {
+                // Image embeddings describe broad visual concepts. Scores such
+                // as 60–75% commonly mean only that two items are electronics,
+                // not that they are the same object. Do not surface those as a
+                // claim-worthy match even if a deployment config is too loose.
+                threshold = Math.Max(threshold, GeminiHighConfidenceThreshold);
+            }
             if (score < threshold) continue;
             matches.Add(new VisualSearchMatchDto { FoundItemId = candidate.Item.Id, Title = candidate.Item.Title, Description = candidate.Item.Description, ImageUrl = candidate.Photo.Url, SimilarityScore = (decimal)score, SimilarityPercentage = (int)Math.Round(Math.Clamp(score, 0, 1) * 100) });
         }
 
-        var max = Math.Clamp(configuration.GetValue("VisualSearch:MaxResults", 5), 1, 20);
-        var results = matches.GroupBy(x => x.FoundItemId).Select(x => x.OrderByDescending(m => m.SimilarityScore).First()).OrderByDescending(x => x.SimilarityScore).Take(max).ToList();
+        var max = Math.Clamp(configuration.GetValue("VisualSearch:MaxResults", 3), 1, 20);
+        var results = matches.GroupBy(x => x.FoundItemId).Select(x => x.OrderByDescending(m => m.SimilarityScore).First()).OrderByDescending(x => x.SimilarityScore).ToList();
+        if (results.Count > 0)
+        {
+            // A result substantially below the best candidate is not useful to
+            // the user and makes the result set look more certain than it is.
+            var closeMatchTolerance = Math.Clamp(configuration.GetValue("VisualSearch:CloseMatchTolerance", DefaultCloseMatchTolerance), 0.02, 0.25);
+            var minimumRelativeScore = (decimal)Math.Max(0, (double)results[0].SimilarityScore - closeMatchTolerance);
+            results = results.Where(x => x.SimilarityScore >= minimumRelativeScore).Take(max).ToList();
+        }
         logger.LogInformation("Visual search completed; matches={Count}", results.Count);
-        return new VisualSearchResponseDto { Matches = results, Message = results.Count == 0 ? "No visually similar items were found." : "Possible matches" };
+        var localMode = provider.Model.StartsWith("local-", StringComparison.OrdinalIgnoreCase);
+        return new VisualSearchResponseDto
+        {
+            Matches = results,
+            Message = results.Count == 0 && localMode
+                ? "No near-identical local image match was found. Configure Gemini for similar-item visual search."
+                : results.Count == 0 ? "No high-confidence visual candidates were found. Try a clearer photo or browse found-item reports." : "High-confidence visual candidates. Compare distinctive details before making a claim."
+        };
     }
 
     private string? SafePath(string url)
