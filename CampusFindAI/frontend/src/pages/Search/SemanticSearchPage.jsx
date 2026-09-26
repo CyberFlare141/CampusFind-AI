@@ -445,6 +445,111 @@ export default function SemanticSearchPage() {
         </AnimatePresence>
       </motion.div>
 
+      {/* ── Idle State Architectural Showcase ── */}
+      {state === 'idle' && (
+        <section className="ss-idle-showcase" aria-label="Semantic search guidance and campus hotspots">
+          {/* 3 Modern Cards: Natural Language Engine Pipeline */}
+          <div className="vs-pipeline-section">
+            <div className="vs-section-heading">
+              <h3>Natural Language Intelligence</h3>
+              <span className="vs-section-tag">Gemini Semantic NLP</span>
+            </div>
+            <div className="vs-steps-grid">
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STAGE 01</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Intent &amp; Entity Detection</h4>
+                <p>Understands whether you lost or found an item, separating object descriptors from context.</p>
+              </div>
+
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STAGE 02</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Spatial Campus Geocoding</h4>
+                <p>Grounds descriptions to campus buildings, floor levels, cafeterias, and common landmarks.</p>
+              </div>
+
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STAGE 03</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Fuzzy Record Retrieval</h4>
+                <p>Matches item colors, brands, shapes, and date ranges even if exact terms differ.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Campus Hotspots */}
+          <div className="vs-categories-section">
+            <div className="vs-section-heading">
+              <h3>Popular Campus Landmarks</h3>
+              <span className="vs-section-tag">Click to search</span>
+            </div>
+            <div className="vs-categories-grid">
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('item lost in Central Library 2nd floor')}>
+                🏛️ Central Library
+              </button>
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('found item in Campus Cafeteria')}>
+                ☕ Campus Cafeteria
+              </button>
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('lost near Science Block B')}>
+                🔬 Science Block B
+              </button>
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('item left in North Auditorium')}>
+                🎭 North Auditorium
+              </button>
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('keys or wallet at Sports Complex')}>
+                🏟️ Sports Complex
+              </button>
+              <button type="button" className="ai-suggestion-chip" onClick={() => handleExampleClick('left in Computer Lab 3')}>
+                💻 Computer Lab 3
+              </button>
+            </div>
+          </div>
+
+          {/* Pro-Tips Banner */}
+          <div className="vs-tips-card">
+            <div className="vs-section-heading">
+              <h3>Query Construction Tips</h3>
+              <span className="vs-section-tag">Best Practices</span>
+            </div>
+            <div className="vs-tips-grid">
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">💬</span>
+                <div>
+                  <strong>Natural Phrasing:</strong> You can type full sentences like <em>"I dropped my blue hydro flask on the 3rd floor stairs yesterday"</em>.
+                </div>
+              </div>
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">📍</span>
+                <div>
+                  <strong>Include Location Clues:</strong> Mention nearby rooms, benches, cafeterias, or building blocks for narrower matching.
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </section>
+      )}
+
       {/* ── State: Searching ──────────────────────────────────── */}
       <AnimatePresence mode="wait">
         {state === 'searching' && (

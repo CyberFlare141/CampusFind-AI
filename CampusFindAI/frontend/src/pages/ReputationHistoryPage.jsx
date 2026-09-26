@@ -41,16 +41,14 @@ export default function ReputationHistoryPage() {
             ) : (
               <ol className="reputation-ledger">
                 {data.history.map((event, index) => (
-                  <SlideIn key={event.id} from="left" delay={Math.min(index * 0.04, 0.28)} className="reputation-ledger-entry">
-                    <li>
-                      <span className={`reputation-points ${event.pointChange > 0 ? 'is-positive' : ''}`}>
-                        {event.pointChange > 0 ? '+' : ''}{event.pointChange}
-                      </span>
-                      <div>
-                        <strong>{event.reason}</strong>
-                        <time>{formatBangladeshDate(event.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</time>
-                      </div>
-                    </li>
+                  <SlideIn key={event.id} as="li" from="left" delay={Math.min(index * 0.04, 0.28)} className="reputation-ledger-entry">
+                    <span className={`reputation-points ${event.pointChange > 0 ? 'is-positive' : ''}`}>
+                      {event.pointChange > 0 ? '+' : ''}{event.pointChange}
+                    </span>
+                    <div>
+                      <strong>{event.reason}</strong>
+                      <time>{formatBangladeshDate(event.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</time>
+                    </div>
                   </SlideIn>
                 ))}
               </ol>

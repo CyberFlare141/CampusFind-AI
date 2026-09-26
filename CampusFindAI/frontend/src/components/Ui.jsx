@@ -2,6 +2,7 @@
 // Clean, tactile components and motion primitives used across all pages.
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { formatBangladeshDate, publicAssetUrl } from '../api/client';
@@ -81,13 +82,14 @@ export function PageMotion({ children, kind = 'desk', className, ...props }) {
 }
 
 /** A reusable sender-aware entrance for chat messages, notices, and ticket toasts. */
-export function SlideIn({ children, from = 'left', className, delay = 0, ...props }) {
+export function SlideIn({ children, from = 'left', className, delay = 0, as = 'div', ...props }) {
   const reducedMotion = useReducedMotion();
   const x = from === 'right' ? 14 : from === 'bottom' ? 0 : -14;
   const y = from === 'bottom' ? 10 : 0;
+  const MotionElement = motion[as] || motion.div;
 
   return (
-    <motion.div
+    <MotionElement
       {...props}
       className={className}
       initial={reducedMotion ? false : { opacity: 0, x, y }}
@@ -95,7 +97,7 @@ export function SlideIn({ children, from = 'left', className, delay = 0, ...prop
       transition={{ duration: MOTION.durations.component, delay, ease: MOTION.easings.outSmooth }}
     >
       {children}
-    </motion.div>
+    </MotionElement>
   );
 }
 
@@ -305,17 +307,18 @@ export function CampusDiscoveryRadar({ count = 0 }) {
 
 /* ── Art-Directed Empty State with Ambient Motion ───────────── */
 export function EmptyState({ icon = null, svgIcon = null, title, message, action }) {
+  const reducedMotion = useReducedMotion();
   return (
     <motion.div
       className="empty-state"
-      initial={{ opacity: 0, y: 12 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reducedMotion ? 0 : MOTION.durations.component, ease: MOTION.easings.smooth }}
     >
       <motion.div
         className="empty-state-icon-wrap"
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+        animate={reducedMotion ? undefined : { y: [0, -4, 0] }}
+        transition={{ duration: MOTION.durations.ambient, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           width: 68, height: 68,
           borderRadius: 'var(--radius-xl)',
@@ -344,6 +347,7 @@ export function EmptyState({ icon = null, svgIcon = null, title, message, action
 /* ── Alerts & Notices ────────────────────────────────────────── */
 export function Alert({ type = 'info', children }) {
   if (!children) return null;
+  const reducedMotion = useReducedMotion();
   const icons = {
     error: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -370,9 +374,9 @@ export function Alert({ type = 'info', children }) {
     <motion.div
       className={`alert alert-${type}`}
       role={type === 'error' ? 'alert' : 'status'}
-      initial={{ opacity: 0, y: -4 }}
+      initial={reducedMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reducedMotion ? 0 : MOTION.durations.interaction, ease: MOTION.easings.smooth }}
     >
       <span aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }}>{icons[type]}</span>
       <span>{children}</span>
@@ -429,6 +433,7 @@ export function ConfidenceBar({ score, animated = true }) {
   const pct = Math.round(score);
   const level = pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low';
   const label = pct >= 80 ? 'Very likely match' : pct >= 50 ? 'Possible match' : 'Low confidence';
+  const reducedMotion = useReducedMotion();
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -440,9 +445,9 @@ export function ConfidenceBar({ score, animated = true }) {
       <div className="confidence-bar">
         <motion.div
           className={`confidence-fill ${level}`}
-          initial={animated ? { width: 0 } : { width: `${pct}%` }}
+          initial={animated && !reducedMotion ? { width: 0 } : { width: `${pct}%` }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reducedMotion ? 0 : MOTION.durations.page, ease: MOTION.easings.smooth }}
         />
       </div>
     </div>
@@ -621,3 +626,87 @@ export function StaggerList({ children, stagger = 0.05 }) {
     </>
   );
 }
+
+/* ── CountUp — alias for AnimatedNumber ─────────────────────── */
+export const CountUp = AnimatedNumber;
+
+/* ── Ambient Bubble Background ───────────────────────────────── */
+// Rendered via a React portal directly on document.body so it
+// is completely unaffected by overflow:hidden or stacking contexts
+// inside the app shell. z-index: 1 keeps it above the page background
+// but below all app UI (sidebar is z-index: 30, topbar similar).
+const BUBBLE_CONFIG = [
+  { left: '4%',  size: 18, dur: 16, delay: 0   },
+  { left: '11%', size: 28, dur: 22, delay: 3.1 },
+  { left: '19%', size: 13, dur: 14, delay: 6.8 },
+  { left: '27%', size: 36, dur: 20, delay: 1.4 },
+  { left: '35%', size: 22, dur: 17, delay: 8.2 },
+  { left: '43%', size: 10, dur: 11, delay: 4.5 },
+  { left: '51%', size: 32, dur: 19, delay: 2.7 },
+  { left: '58%', size: 16, dur: 15, delay: 7.0 },
+  { left: '66%', size: 42, dur: 23, delay: 0.9 },
+  { left: '74%', size: 20, dur: 18, delay: 5.3 },
+  { left: '82%', size: 12, dur: 13, delay: 9.1 },
+  { left: '90%', size: 26, dur: 21, delay: 3.8 },
+  { left: '96%', size: 34, dur: 16, delay: 6.2 },
+];
+
+export function BubbleBackground() {
+  return (
+    <div className="bubble-canvas" aria-hidden="true">
+      {BUBBLE_CONFIG.map((b, i) => (
+        <span
+          key={i}
+          className="bubble"
+          style={{
+            left: b.left,
+            width: b.size,
+            height: b.size,
+            '--bub-dur': `${b.dur}s`,
+            '--bub-delay': `${b.delay}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ── Auth-panel Bubble Background (white variant, inline) ────── */
+// Auth panel already clips its own overflow so this stays inline
+// (absolute-positioned inside the green panel — no portal needed).
+const AUTH_BUBBLE_CONFIG = [
+  { left: '6%',  size: 22, dur: 14, delay: 0   },
+  { left: '18%', size: 38, dur: 20, delay: 2.5 },
+  { left: '30%', size: 16, dur: 12, delay: 5.0 },
+  { left: '45%', size: 30, dur: 18, delay: 1.2 },
+  { left: '62%', size: 14, dur: 15, delay: 7.3 },
+  { left: '75%', size: 26, dur: 22, delay: 3.6 },
+  { left: '88%', size: 20, dur: 16, delay: 4.9 },
+];
+
+export function AuthBubbleBackground() {
+  return (
+    <div
+      className="bubble-canvas"
+      aria-hidden="true"
+      style={{ position: 'absolute', zIndex: 0 }}
+    >
+      {AUTH_BUBBLE_CONFIG.map((b, i) => (
+        <span
+          key={i}
+          className="bubble"
+          style={{
+            left: b.left,
+            width: b.size,
+            height: b.size,
+            '--bub-dur': `${b.dur}s`,
+            '--bub-delay': `${b.delay}s`,
+            background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.12) 55%, rgba(255,255,255,0.03) 100%)',
+            borderColor: 'rgba(255,255,255,0.22)',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+

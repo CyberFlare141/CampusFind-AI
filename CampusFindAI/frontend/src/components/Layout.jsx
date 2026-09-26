@@ -3,7 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-do
 import { motion, AnimatePresence } from 'framer-motion';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from '../context/AuthContext';
-import { PageMotion } from './Ui';
+import { PageMotion, BubbleBackground } from './Ui';
+import StaticCanvasDecor from './StaticCanvasDecor';
 import { getProfile } from '../api/profile';
 import { API_BASE_URL, formatBangladeshDate, getToken, publicAssetUrl } from '../api/client';
 import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead } from '../api/notifications';
@@ -100,7 +101,6 @@ const Icon = ({ name }) => {
       </svg>
     ),
   };
-  if (name === 'map') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15m6-12v15"/></svg>;
   return icons[name] || null;
 };
 
@@ -116,7 +116,6 @@ const LogoMark = () => (
 /* ── Nav Links ───────────────────────────────────────────────── */
 const STUDENT_LINKS = [
   { to: '/',            label: 'Dashboard',    icon: 'home',   end: true },
-  { to: '/campus-map',  label: 'Campus Map',   icon: 'map' },
   { to: '/assistant',   label: 'Assistant',    icon: 'matches' },
   { to: '/search',      label: '✦ AI Search',  icon: 'search' },
   { to: '/visual-search', label: 'Visual Search', icon: 'search' },
@@ -156,7 +155,6 @@ function getRoleLabel(role, isRestricted) {
 }
 
 function getPageMotionKind(pathname) {
-  if (pathname === '/campus-map') return 'map';
   if (pathname.includes('/chat') || pathname === '/assistant') return 'chat';
   if (pathname.endsWith('/new') || pathname.endsWith('/edit') || pathname.includes('/verify')) return 'form';
   if (/\/(lost|found)-items\/[^/]+$/.test(pathname) || pathname === '/profile' || pathname === '/reputation') return 'detail';
@@ -366,6 +364,10 @@ export default function Layout() {
 
   return (
     <div className={'app-shell ' + (collapsed ? 'sidebar-collapsed' : '')}>
+      {/* ── Ambient bubble background (decorative, pointer-events: none) */}
+      <StaticCanvasDecor />
+      <BubbleBackground />
+
       {/* ── Mobile Topbar ───────────────────────────────────────── */}
       <header className="mobile-topbar">
         <Link to="/" className="mobile-topbar-logo">

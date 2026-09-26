@@ -440,8 +440,6 @@ export default function ProfilePage() {
             <Link to="/lost-items?tab=mine" style={{ textDecoration: 'none' }}>
               <motion.div
                 className="stat-card"
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div style={{
                   width: 42, height: 42, borderRadius: 'var(--radius-md)',
@@ -464,8 +462,6 @@ export default function ProfilePage() {
             <Link to="/found-items" style={{ textDecoration: 'none' }}>
               <motion.div
                 className="stat-card"
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div style={{
                   width: 42, height: 42, borderRadius: 'var(--radius-md)',
@@ -488,8 +484,6 @@ export default function ProfilePage() {
             <Link to="/my-claims" style={{ textDecoration: 'none' }}>
               <motion.div
                 className="stat-card accent"
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div style={{
                   width: 42, height: 42, borderRadius: 'var(--radius-md)',

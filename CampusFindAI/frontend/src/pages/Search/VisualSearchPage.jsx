@@ -85,7 +85,128 @@ export default function VisualSearchPage() {
         </div>
       </form>
 
-      {state === 'idle' && <p className="visual-search-note">Upload an image to search for visually similar items.</p>}
+      {state === 'idle' && (
+        <section className="vs-idle-showcase" aria-label="Visual search information and workflow">
+          {/* Status & Capability Strip */}
+          <div className="vs-status-strip">
+            <div className="vs-status-pill">
+              <span className="vs-status-dot" />
+              <span>AI VISION MATCH ENGINE READY</span>
+            </div>
+            <div className="vs-status-specs">
+              <span>512-DIM VECTOR EMBEDDING</span>
+              <span>·</span>
+              <span>IN-MEMORY COSINE MATCHING</span>
+              <span>·</span>
+              <span>ZERO LOGGED FACIAL DATA</span>
+            </div>
+          </div>
+
+          {/* 3-Step Pipeline */}
+          <div className="vs-pipeline-section">
+            <div className="vs-section-heading">
+              <h3>How Visual Match Works</h3>
+              <span className="vs-section-tag">Neural Pipeline</span>
+            </div>
+            <div className="vs-steps-grid">
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STEP 01</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Foreground Segmentation</h4>
+                <p>Normalizes lighting, crops campus backgrounds, and isolates the target object boundaries.</p>
+              </div>
+
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STEP 02</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Feature Vectorization</h4>
+                <p>Extracts color histograms, texture signatures, contours, and logo markings into neural vectors.</p>
+              </div>
+
+              <div className="vs-step-card">
+                <div className="vs-step-card-header">
+                  <span className="vs-step-num">STEP 03</span>
+                  <div className="vs-step-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <polyline points="9 12 11 14 15 10"/>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Campus Registry Check</h4>
+                <p>Ranks similarity against active found-item photos cataloged by security posts in real time.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Supported Item Categories */}
+          <div className="vs-categories-section">
+            <div className="vs-section-heading">
+              <h3>Commonly Identified Campus Items</h3>
+              <span className="vs-section-tag">Category Index</span>
+            </div>
+            <div className="vs-categories-grid">
+              <span className="vs-cat-chip">📱 Smartphones &amp; Cables</span>
+              <span className="vs-cat-chip">🎒 Backpacks &amp; Totes</span>
+              <span className="vs-cat-chip">🔑 Keys &amp; Student IDs</span>
+              <span className="vs-cat-chip">🎧 Earbuds &amp; Headphones</span>
+              <span className="vs-cat-chip">💻 Laptops &amp; Chargers</span>
+              <span className="vs-cat-chip">🧥 Jackets &amp; Umbrellas</span>
+              <span className="vs-cat-chip">📚 Notebooks &amp; Calculators</span>
+              <span className="vs-cat-chip">🕶️ Glasses &amp; Wallets</span>
+            </div>
+          </div>
+
+          {/* Photo Tips for Best Match */}
+          <div className="vs-tips-card">
+            <div className="vs-section-heading">
+              <h3>Photo Tips for Higher Match Accuracy</h3>
+              <span className="vs-section-tag">Best Practices</span>
+            </div>
+            <div className="vs-tips-grid">
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">☀️</span>
+                <div>
+                  <strong>Natural Lighting:</strong> Avoid dark rooms or harsh flash glare reflecting off glass/metal.
+                </div>
+              </div>
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">📦</span>
+                <div>
+                  <strong>Clean Background:</strong> Place item on a contrasting desk or flat surface without clutter.
+                </div>
+              </div>
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">🏷</span>
+                <div>
+                  <strong>Distinctive Features:</strong> Capture stickers, keychain charms, scratches, or wear marks.
+                </div>
+              </div>
+              <div className="vs-tip-item">
+                <span className="vs-tip-badge">📐</span>
+                <div>
+                  <strong>70%+ Frame Fill:</strong> Ensure the item fills the photo rather than being a tiny speck.
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+        </section>
+      )}
       {state === 'searching' && <p className="visual-search-searching" role="status">Reading visual clues and checking found-item reports…</p>}
       {state === 'error' && <p className="visual-search-error" role="alert">{error || 'Visual search is temporarily unavailable. Please try again.'}</p>}
       {state === 'results' && (

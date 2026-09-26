@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { register as registerApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import { Alert, ButtonSpinner, AuthBubbleBackground } from '../components/Ui';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 // Mirrors backend password policy in IdentityExtensions.cs
@@ -81,16 +81,7 @@ export default function RegisterPage() {
     <div className="auth-shell">
       {/* ── Left Hero Panel ─────────────────────────────────── */}
       <div className="auth-panel">
-        <motion.div
-          style={{ position: 'absolute', width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', bottom: 40, right: -60, zIndex: 0 }}
-          animate={{ y: [0, -14, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          style={{ position: 'absolute', width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', top: 60, right: 80, zIndex: 0 }}
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        />
+        <AuthBubbleBackground />
 
         <motion.div
           initial={{ opacity: 0, x: -24 }}

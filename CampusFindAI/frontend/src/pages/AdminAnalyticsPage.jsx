@@ -47,7 +47,17 @@ export default function AdminAnalyticsPage() {
 
   if (loading && !overview) return <AnalyticsSkeleton />;
   return <section className="page-container admin-analytics-page">
-    <header className="page-header analytics-header"><div><span className="eyebrow">Administration</span><h1>Platform Analytics</h1><p>CampusFind activity from the application database.</p></div></header>
+    <header className="page-header analytics-header">
+      <div>
+        <span className="eyebrow">Administration</span>
+        <h1>Platform Analytics</h1>
+        <p>CampusFind activity from the application database.</p>
+      </div>
+      <div className="analytics-telemetry-badge">
+        <span className="telemetry-pulse" />
+        <span>Live Platform Metrics</span>
+      </div>
+    </header>
     <div className="analytics-controls"><label htmlFor="analytics-range">Date range<select id="analytics-range" value={range} onChange={event => setRange(event.target.value)}><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option></select></label><button className="btn btn-secondary" onClick={exportCsv} disabled={!items || loading || exporting}>{exporting ? 'Exporting...' : 'Export CSV'}</button></div>
     {period && <p className="analytics-period"><strong>Selected period:</strong> {RANGE_LABELS[range]} · {formatPeriod(period)}</p>}
     {loading && <p className="analytics-refreshing" role="status">Updating analytics for the selected period...</p>}

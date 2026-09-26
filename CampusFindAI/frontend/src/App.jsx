@@ -38,7 +38,6 @@ import SecurityOwnershipReviewsPage from './pages/Security/SecurityOwnershipRevi
 import SecurityOfficerRequestPage from './pages/SecurityOfficerRequestPage';
 import AdminSecurityOfficerRequestsPage from './pages/AdminSecurityOfficerRequestsPage';
 import CampusFindAssistantPage from './pages/CampusFindAssistantPage';
-import CampusMapPage from './pages/CampusMapPage';
 import ReputationHistoryPage from './pages/ReputationHistoryPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 import VisualSearchPage from './pages/Search/VisualSearchPage';
@@ -110,7 +109,6 @@ export default function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/campus-map" element={<CampusMapPage />} />
             <Route path="/reputation" element={<ReputationHistoryPage />} />
 
             <Route path="/lost-items" element={<LostItemsListPage />} />
