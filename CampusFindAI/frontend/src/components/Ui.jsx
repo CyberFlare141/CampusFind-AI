@@ -2,7 +2,7 @@
 // Clean, tactile components and motion primitives used across all pages.
 
 import { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { formatBangladeshDate, publicAssetUrl } from '../api/client';
 
@@ -27,11 +27,77 @@ export const MOTION = {
     exit: { opacity: 0, y: -6 },
     transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
   },
+  pageKinds: {
+    catalog: {
+      initial: { opacity: 0, y: 12 },
+      animate: { opacity: 1, y: 0 },
+    },
+    detail: {
+      initial: { opacity: 0, x: -10 },
+      animate: { opacity: 1, x: 0 },
+    },
+    form: {
+      initial: { opacity: 0, rotate: -0.35, y: 8 },
+      animate: { opacity: 1, rotate: 0, y: 0 },
+    },
+    chat: {
+      initial: { opacity: 0, x: 12 },
+      animate: { opacity: 1, x: 0 },
+    },
+    map: {
+      initial: { opacity: 0, scale: 0.985 },
+      animate: { opacity: 1, scale: 1 },
+    },
+    desk: {
+      initial: { opacity: 0, y: 6, scale: 0.995 },
+      animate: { opacity: 1, y: 0, scale: 1 },
+    },
+  },
   cardHover: {
     rest: { y: 0, scale: 1 },
     hover: { y: -2, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } },
   },
 };
+
+/**
+ * Shared page entrance with a small vocabulary of context-aware movements.
+ * Keeping this here prevents every route from inventing a bespoke fade-up.
+ */
+export function PageMotion({ children, kind = 'desk', className, ...props }) {
+  const reducedMotion = useReducedMotion();
+  const motionKind = MOTION.pageKinds[kind] || MOTION.pageKinds.desk;
+
+  return (
+    <motion.div
+      {...props}
+      className={className}
+      initial={reducedMotion ? false : motionKind.initial}
+      animate={motionKind.animate}
+      transition={{ duration: MOTION.durations.component, ease: MOTION.easings.smooth }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** A reusable sender-aware entrance for chat messages, notices, and ticket toasts. */
+export function SlideIn({ children, from = 'left', className, delay = 0, ...props }) {
+  const reducedMotion = useReducedMotion();
+  const x = from === 'right' ? 14 : from === 'bottom' ? 0 : -14;
+  const y = from === 'bottom' ? 10 : 0;
+
+  return (
+    <motion.div
+      {...props}
+      className={className}
+      initial={reducedMotion ? false : { opacity: 0, x, y }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      transition={{ duration: MOTION.durations.component, delay, ease: MOTION.easings.outSmooth }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 /* ── Metric Count-Up Animation (Physical & Smooth) ───────────── */
 export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = '' }) {
@@ -539,14 +605,15 @@ export function StaggerList({ children, stagger = 0.05 }) {
   // Conditional JSX can leave `false` placeholders in a grid. Do not render
   // animation wrappers for those placeholders, or they become empty grid cells.
   const items = (Array.isArray(children) ? children : [children]).filter(Boolean);
+  const reducedMotion = useReducedMotion();
   return (
     <>
       {items.map((child, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, y: 10 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(i * stagger, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: reducedMotion ? 0 : Math.min(i * stagger, 0.3), duration: MOTION.durations.component, ease: MOTION.easings.smooth }}
         >
           {child}
         </motion.div>

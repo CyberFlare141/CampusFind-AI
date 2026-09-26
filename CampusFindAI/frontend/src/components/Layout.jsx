@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-do
 import { motion, AnimatePresence } from 'framer-motion';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from '../context/AuthContext';
+import { PageMotion } from './Ui';
 import { getProfile } from '../api/profile';
 import { API_BASE_URL, formatBangladeshDate, getToken, publicAssetUrl } from '../api/client';
 import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead } from '../api/notifications';
@@ -152,6 +153,15 @@ function getRoleLabel(role, isRestricted) {
   if (role === 'SecurityOfficer') return 'Security';
   if (role === 'Administrator')   return 'Admin';
   return isRestricted ? 'User' : 'Student';
+}
+
+function getPageMotionKind(pathname) {
+  if (pathname === '/campus-map') return 'map';
+  if (pathname.includes('/chat') || pathname === '/assistant') return 'chat';
+  if (pathname.endsWith('/new') || pathname.endsWith('/edit') || pathname.includes('/verify')) return 'form';
+  if (/\/(lost|found)-items\/[^/]+$/.test(pathname) || pathname === '/profile' || pathname === '/reputation') return 'detail';
+  if (pathname.includes('/lost-items') || pathname.includes('/found-items') || pathname.includes('/matches') || pathname === '/notifications' || pathname.includes('/search')) return 'catalog';
+  return 'desk';
 }
 
 export default function Layout() {
@@ -604,15 +614,14 @@ export default function Layout() {
 
         {/* ── Content ─────────────────────────────────────────── */}
         <main className="app-content">
-          <motion.div
-            key="page"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          <PageMotion
+            key={location.pathname}
+            kind={getPageMotionKind(location.pathname)}
+            className={`page-motion page-motion--${getPageMotionKind(location.pathname)}`}
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
           >
             <Outlet />
-          </motion.div>
+          </PageMotion>
         </main>
       </div>
 
