@@ -1,8 +1,10 @@
 /* ============================================================
    CampusFind AI — Design System
-   Campus green, teal discovery, and violet AI accents
+   Campus green, teal discovery, and violet AI accents.
+   Visual language: the campus lost-and-found claim tag —
+   die-cut corners, ticket typography, tactile paper motion.
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
 
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
@@ -106,8 +108,17 @@
   --radius-full:      9999px;
 
   /* ── Typography ── */
-  --font-display:     'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display:     'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-body:        'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-tag:         'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* ── Tag / claim-ticket motif ──────────────────────────────
+     Item cards, badges and panels borrow the shape of a physical
+     lost-and-found claim tag: one die-cut corner + a punch hole. */
+  --tag-notch:  16px;
+  --tag-clip:   polygon(
+    var(--tag-notch) 0%, 100% 0%, 100% 100%, 0% 100%, 0% var(--tag-notch)
+  );
 
   /* ── Spacing Scale ── */
   --space-1:          4px;
@@ -138,10 +149,6 @@
   --transition-base:  var(--dur-interaction) var(--ease-smooth);
   --transition-slow:  var(--dur-component) var(--ease-smooth);
   --transition-page:  var(--dur-page) var(--ease-smooth);
-
-  --radius-lg: 18px;
-  --radius-xl: 18px;
-  --font-body: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
   font-family: var(--font-body);
   color: var(--text-primary);
@@ -198,14 +205,20 @@ p  { margin: 0; line-height: 1.65; }
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-muted);
   margin-bottom: var(--space-2);
-  font-family: var(--font-display);
+  font-family: var(--font-tag);
+}
+.eyebrow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
 }
 
 .text-muted      { color: var(--text-muted); }
@@ -317,7 +330,7 @@ p  { margin: 0; line-height: 1.65; }
 .card {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs) var(--radius-xl) var(--radius-xl) var(--radius-xl);
   box-shadow: var(--shadow-soft);
   transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
 }
@@ -325,14 +338,14 @@ p  { margin: 0; line-height: 1.65; }
 .card-elevated {
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs) var(--radius-xl) var(--radius-xl) var(--radius-xl);
   box-shadow: var(--shadow-elevated);
 }
 
 .card-flat {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs) var(--radius-xl) var(--radius-xl) var(--radius-xl);
   box-shadow: none;
 }
 
@@ -381,21 +394,26 @@ p  { margin: 0; line-height: 1.65; }
   transform: translateY(-1px);
 }
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
   box-shadow: 0 1px 3px rgba(60, 72, 58, 0.08);
+  transition-duration: 80ms;
 }
 
-/* Primary — Sage */
+/* Primary — Sage. Corner is clipped like a stamped claim slip. */
 .btn-primary {
   background: var(--primary);
   color: var(--text-inverse);
   border-color: var(--primary);
   box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-xs) var(--radius-md) var(--radius-md) var(--radius-md);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
   box-shadow: var(--shadow-elevated);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97) rotate(-0.6deg);
 }
 
 /* Secondary — Warm Ivory Surface */
@@ -521,20 +539,20 @@ textarea { resize: vertical; min-height: 110px; }
 .field-error { font-size: 0.8rem; color: var(--danger); font-weight: 600; }
 .hint { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
 
-/* ── Badges ─────────────────────────────────────────────────── */
+/* ── Badges — cut like a small claim-ticket stub ──────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0.28rem 0.75rem;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  padding: 0.28rem 0.7rem 0.28rem 0.55rem;
+  border-radius: 3px var(--radius-full) var(--radius-full) 3px;
+  font-size: 0.74rem;
+  font-weight: 600;
   white-space: nowrap;
-  font-family: var(--font-display);
+  font-family: var(--font-tag);
   box-shadow: var(--shadow-sm);
+  border-left: 2px dashed currentColor;
+  opacity: 0.97;
 }
 .badge-dot {
   width: 6px; height: 6px;
@@ -604,6 +622,32 @@ textarea { resize: vertical; min-height: 110px; }
 .spinner-primary { border-color: rgba(143,162,138,0.3); border-top-color: var(--primary); }
 .spinner-lg { width: 28px; height: 28px; border-width: 3px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Signature moment: the mark drops in like a pin locating a find ── */
+@keyframes pin-drop {
+  0%   { transform: translateY(-14px) scale(0.7); opacity: 0; }
+  55%  { transform: translateY(2px) scale(1.05); opacity: 1; }
+  75%  { transform: translateY(-1px) scale(0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+.sidebar-logo-mark { animation: pin-drop 0.7s var(--ease-spring) both; }
+
+@keyframes ai-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--ai-border); }
+  50%      { box-shadow: 0 0 0 4px rgba(124, 108, 196, 0); }
+}
+.ai-badge { animation: ai-pulse 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-logo-mark,
+  .ai-badge,
+  .item-card,
+  .btn,
+  .item-card-image img {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 
 /* ── Page Loading ───────────────────────────────────────────── */
 .page-loading {
@@ -726,14 +770,15 @@ textarea { resize: vertical; min-height: 110px; }
 .match-rationale li { color: var(--text-secondary); font-size: .82rem; }
 .match-rationale li::before { content: '✓'; color: var(--primary-deep); font-weight: 800; margin-right: 6px; }
 
-/* ── Item Cards (Premium Touch & Typography) ─────────────────── */
+/* ── Item Cards — a claim tag pinned to the page ─────────────── */
 .item-card {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs) var(--radius-xl) var(--radius-xl) var(--radius-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
   transition: box-shadow var(--dur-interaction) var(--ease-smooth),
               transform var(--dur-interaction) var(--ease-smooth),
               border-color var(--dur-interaction) var(--ease-smooth);
@@ -744,9 +789,19 @@ textarea { resize: vertical; min-height: 110px; }
   height: 100%;
   will-change: transform;
 }
+/* die-cut corner, like a ticket torn from a pad */
+.item-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 16px; height: 16px;
+  background: var(--bg);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  z-index: 2;
+}
 .item-card:hover {
   box-shadow: var(--shadow-elevated);
-  transform: translateY(-2px);
+  transform: translateY(-3px) rotate(-0.4deg);
   border-color: rgba(143, 162, 138, 0.45);
 }
 .item-card-image {
@@ -793,7 +848,7 @@ textarea { resize: vertical; min-height: 110px; }
 .dashboard-hero {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xs) var(--radius-2xl) var(--radius-2xl) var(--radius-2xl);
   padding: var(--space-10) var(--space-10);
   margin-bottom: var(--space-8);
   position: relative;

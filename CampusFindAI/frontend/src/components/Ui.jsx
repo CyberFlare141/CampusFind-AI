@@ -101,8 +101,11 @@ export function FadeImage({ src, alt, className, style, placeholder }) {
         alt={alt || ''}
         className={className}
         style={{ width: '100%', height: '100%', objectFit: 'cover', ...style }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: loaded ? 1 : 0 }}
+        // Do not make the image visibility depend on `onLoad`.  Browsers can
+        // satisfy a cached image before React receives that event, which left
+        // otherwise valid report photos permanently transparent.
+        initial={false}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.28, ease: 'easeOut' }}
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
