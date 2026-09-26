@@ -141,43 +141,86 @@ export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = ''
 }
 
 /* ── Fade-In Image with Fallback ─────────────────────────────── */
-export function FadeImage({ src, alt, className, style, placeholder }) {
+export function FadeImage({ src, alt, className, style, placeholder, loading = 'eager' }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const imgRef = useRef(null);
 
   useEffect(() => {
     setLoaded(false);
     setFailed(false);
   }, [src]);
 
-  if (!src || failed) return placeholder || (
-    <div className="item-image-fallback" role="img" aria-label={alt || 'No image available'}>
-      <span aria-hidden="true">▧</span><span>No image available</span>
-    </div>
-  );
+  // Check if image is already cached / completed
+  useEffect(() => {
+    if (imgRef.current) {
+      if (imgRef.current.complete) {
+        if (imgRef.current.naturalWidth > 0) {
+          setLoaded(true);
+        } else if (imgRef.current.naturalWidth === 0 && src) {
+          setFailed(true);
+        }
+      }
+    }
+  }, [src]);
+
+  if (!src || failed) {
+    return placeholder || (
+      <div className="item-image-fallback" role="img" aria-label={alt || 'No image available'}>
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       {!loaded && (
         <div
           className="skeleton skeleton-img"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', margin: 0 }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            margin: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
         />
       )}
       <motion.img
+        ref={imgRef}
         src={src}
         alt={alt || ''}
         className={className}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', ...style }}
-        // Do not make the image visibility depend on `onLoad`.  Browsers can
-        // satisfy a cached image before React receives that event, which left
-        // otherwise valid report photos permanently transparent.
-        initial={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          position: 'relative',
+          zIndex: 1,
+          ...style,
+        }}
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.28, ease: 'easeOut' }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
-        loading="lazy"
+        loading={loading}
       />
     </div>
   );
@@ -346,8 +389,11 @@ export function EmptyState({ icon = null, svgIcon = null, title, message, action
 
 /* ── Alerts & Notices ────────────────────────────────────────── */
 export function Alert({ type = 'info', children }) {
-  if (!children) return null;
   const reducedMotion = useReducedMotion();
+  // Hooks must run in the same order on every render.  Alerts commonly start
+  // empty and receive an API error after a request completes, so returning
+  // before this hook turns that normal state change into a page-level crash.
+  if (!children) return null;
   const icons = {
     error: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -706,6 +752,20 @@ export function AuthBubbleBackground() {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+/* ── Auth Voronoi Cellular Decor ────────────────────────────── */
+export function AuthCellularDecor({ variant = 'canvas' }) {
+  if (variant === 'hero') return null;
+  return (
+    <div className="auth-canvas-cellular-decor" aria-hidden="true">
+      <img
+        src="/cellular-lattice.png"
+        alt=""
+        className="auth-canvas-cellular-img"
+      />
     </div>
   );
 }

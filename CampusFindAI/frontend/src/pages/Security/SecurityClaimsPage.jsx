@@ -254,11 +254,40 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
       {/* ── Claim Header & Primary Details ─────────────────────── */}
       <div className="security-claim-header" style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
         <div className="security-claim-summary" style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
-          {primaryImage && (
-            <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 10,
+              overflow: 'hidden',
+              flexShrink: 0,
+              border: '1px solid var(--border)',
+              background: 'var(--surface-tinted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {primaryImage ? (
               <FadeImage src={publicAssetUrl(primaryImage)} alt={claim.foundItemTitle} />
-            </div>
-          )}
+            ) : (
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.45, color: 'var(--text-muted)' }}
+                aria-hidden="true"
+              >
+                <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                <polyline points="16 3 12 7 8 3" />
+              </svg>
+            )}
+          </div>
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '0 0 4px 0' }}>
               {claim.foundItemTitle}
@@ -565,11 +594,14 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
       </AnimatePresence>
 
       {/* ── Action Buttons Bar ───────────────────────────────── */}
-      <div className="security-claim-actions"
+      {/* ── Action Buttons Bar ───────────────────────────────── */}
+      <div
+        className="security-claim-actions"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          justifyContent: 'space-between',
+          gap: 12,
           marginTop: 14,
           paddingTop: 14,
           borderTop: '1px solid var(--border)',
@@ -581,21 +613,29 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
           className="btn btn-secondary btn-sm"
           onClick={toggleReview}
           disabled={reviewLoading}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
         >
-          {reviewLoading ? 'Loading evidence…' : reviewOpen ? 'Hide Evidence Comparison' : 'View Full Evidence'}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          {reviewLoading ? 'Loading evidence…' : reviewOpen ? 'Hide Evidence' : 'View Full Evidence'}
         </button>
 
         {isPendingTab && claim.status === 'Pending' && !showDecisionForm && (
-          <>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {!isConflictClaim ? (
               <motion.button
                 type="button"
-                className="btn btn-primary btn-sm"
+                className="btn btn-approve btn-sm"
                 onClick={() => startDecision('approve')}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
+                whileTap={{ scale: 0.98 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                ✓ Approve Claim
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Approve Claim
               </motion.button>
             ) : (
               <span
@@ -608,14 +648,18 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
             )}
             <motion.button
               type="button"
-              className="btn btn-danger btn-sm"
+              className="btn btn-reject btn-sm"
               onClick={() => startDecision('reject')}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
+              whileTap={{ scale: 0.98 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              ✗ Reject Claim
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Reject Claim
             </motion.button>
-          </>
+          </div>
         )}
 
         {!isPendingTab && claim.status === 'Approved' && !showHandover && (
@@ -628,8 +672,12 @@ function ClaimReviewRow({ claim, isPendingTab, onDecided }) {
               setScannedToken('');
             }}
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.98 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
             Scan Student QR / Confirm Handover
           </motion.button>
         )}

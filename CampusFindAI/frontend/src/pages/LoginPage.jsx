@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { resendConfirmation } from '../api/auth';
-import { Alert, ButtonSpinner, AuthBubbleBackground } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthBubbleBackground, AuthCellularDecor } from '../components/Ui';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export default function LoginPage() {
@@ -145,6 +145,7 @@ export default function LoginPage() {
 
       {/* ── Right Panel: Sign In Form ───────────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

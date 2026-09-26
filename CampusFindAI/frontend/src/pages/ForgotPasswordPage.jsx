@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { forgotPassword } from '../api/auth';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthCellularDecor } from '../components/Ui';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -70,6 +70,7 @@ export default function ForgotPasswordPage() {
 
       {/* ── Right Card: Forgot Password ─────────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

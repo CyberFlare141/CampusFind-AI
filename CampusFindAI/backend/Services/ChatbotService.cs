@@ -169,7 +169,7 @@ public sealed class ChatbotService(
     {
         var key = configuration["Gemini:ApiKey"];
         var model = configuration["Gemini:Model"] ?? "gemini-3.6-flash";
-        if (string.IsNullOrWhiteSpace(key)) return bangla ? "CampusFind সম্পর্কে সাহায্য করতে পারি: report করা, search, claim, match এবং notification। AI language help সাময়িকভাবে unavailable।" : "I can help with CampusFind reporting, searching, claims, matches, and notifications. AI language help is temporarily unavailable.";
+        if (string.IsNullOrWhiteSpace(key)) return LocalGeneralReply(message, bangla);
         try
         {
             var client = httpClientFactory.CreateClient("Gemini");
@@ -181,6 +181,19 @@ public sealed class ChatbotService(
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         { logger.LogWarning(ex, "Gemini chatbot fallback failed"); return bangla ? "CampusFind সাহায্য দিতে পারি, তবে AI উত্তর এখন পাওয়া যাচ্ছে না।" : "I can help with CampusFind, but the AI response is temporarily unavailable."; }
+    }
+
+    private static string LocalGeneralReply(string message, bool bangla)
+    {
+        var isGreeting = Regex.IsMatch(message, @"^\s*(hi|hello|hey|assalamu alaikum|salam)\b", RegexOptions.IgnoreCase);
+        if (bangla)
+            return isGreeting
+                ? "হ্যালো! আমি CampusFind Assistant। হারানো বা পাওয়া জিনিসের রিপোর্ট, খোঁজ, claim এবং match নিয়ে সাহায্য করতে পারি।"
+                : "আমি CampusFind Assistant। হারানো বা পাওয়া জিনিসের রিপোর্ট করতে, আপনার claim বা match দেখতে, কিংবা campus catalog খুঁজতে সাহায্য করতে পারি।";
+
+        return isGreeting
+            ? "Hello! I’m the CampusFind Assistant. I can help you report or search for an item, check claims and matches, or explain the handover process."
+            : "I can help you report or search for an item, check your claims or matches, or explain the CampusFind handover process. Try asking about a lost item, a claim, or your matches.";
     }
 
     private static string Classify(string m)

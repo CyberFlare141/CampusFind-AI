@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { register as registerApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
-import { Alert, ButtonSpinner, AuthBubbleBackground } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthBubbleBackground, AuthCellularDecor } from '../components/Ui';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 // Mirrors backend password policy in IdentityExtensions.cs
@@ -126,6 +126,7 @@ export default function RegisterPage() {
 
       {/* ── Right Panel: Register Form ──────────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

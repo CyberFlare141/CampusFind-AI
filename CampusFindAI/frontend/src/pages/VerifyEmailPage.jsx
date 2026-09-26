@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { confirmEmail, resendConfirmation } from '../api/auth';
-import { Alert, ButtonSpinner } from '../components/Ui';
+import {Alert, ButtonSpinner, AuthCellularDecor } from '../components/Ui';
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -94,6 +94,7 @@ export default function VerifyEmailPage() {
 
       {/* ── Right Card: Verification Handler ────────────────── */}
       <div className="auth-card-wrap">
+        <AuthCellularDecor variant="canvas" />
         <motion.div
           className="auth-card"
           initial={{ opacity: 0, y: 20 }}

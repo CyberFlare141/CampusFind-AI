@@ -8,20 +8,34 @@ export default function VisualSearchPage() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [matches, setMatches] = useState([]);
+  const [resultMessage, setResultMessage] = useState('');
   const [state, setState] = useState('idle');
   const [error, setError] = useState('');
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
-  function select(next) {
+  async function select(next) {
     if (preview) URL.revokeObjectURL(preview);
     if (next) {
+      try {
+        next = await normalizeLegacyAvif(next);
+      } catch {
+        setFile(null);
+        setPreview('');
+        setError('This image could not be prepared for visual search. Please choose a JPG, PNG, or WebP image.');
+        setMatches([]);
+        setResultMessage('');
+        setState('idle');
+        return;
+      }
+
       const { files, error: validationError } = validateReportImages([next]);
       if (validationError) {
         setFile(null);
         setPreview('');
         setError(validationError);
         setMatches([]);
+        setResultMessage('');
         setState('idle');
         return;
       }
@@ -30,6 +44,7 @@ export default function VisualSearchPage() {
     setFile(next);
     setPreview(next ? URL.createObjectURL(next) : '');
     setMatches([]);
+    setResultMessage('');
     setError('');
     setState('idle');
   }
@@ -45,6 +60,7 @@ export default function VisualSearchPage() {
     try {
       const result = await apiRequest('/visual-search', { method: 'POST', body });
       setMatches(result.matches || []);
+      setResultMessage(result.message || '');
       setState('results');
     } catch (err) {
       setError(err.status >= 500 ? 'Visual search is temporarily unavailable. Please try again.' : (err.message || 'Visual search is temporarily unavailable. Please try again.'));
@@ -74,11 +90,11 @@ export default function VisualSearchPage() {
             <strong>{preview ? file?.name : 'Choose a photo'}</strong>
             <span>JPG, PNG, or WebP · up to 5 MB</span>
           </span>
-          <input id="visual-search-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={event => select(event.target.files?.[0] || null)} />
+          <input id="visual-search-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={event => { void select(event.target.files?.[0] || null); }} />
           {state === 'searching' && <span className="visual-search-scan" aria-hidden="true" />}
         </label>
         <div className="visual-search-actions">
-          {file && <button type="button" className="btn btn-secondary" onClick={() => select(null)}>Remove photo</button>}
+          {file && <button type="button" className="btn btn-secondary" onClick={() => { void select(null); }}>Remove photo</button>}
           <button className="btn btn-primary" disabled={!file || state === 'searching'}>
             {state === 'searching' ? 'Analyzing image and searching…' : 'Search found items'}
           </button>
@@ -94,9 +110,9 @@ export default function VisualSearchPage() {
               <span>AI VISION MATCH ENGINE READY</span>
             </div>
             <div className="vs-status-specs">
-              <span>512-DIM VECTOR EMBEDDING</span>
+              <span>768-DIM VECTOR EMBEDDING</span>
               <span>·</span>
-              <span>IN-MEMORY COSINE MATCHING</span>
+              <span>COSINE-SIMILARITY RANKING</span>
               <span>·</span>
               <span>ZERO LOGGED FACIAL DATA</span>
             </div>
@@ -119,8 +135,8 @@ export default function VisualSearchPage() {
                     </svg>
                   </div>
                 </div>
-                <h4>Foreground Segmentation</h4>
-                <p>Normalizes lighting, crops campus backgrounds, and isolates the target object boundaries.</p>
+                <h4>Image Embedding</h4>
+                <p>Encodes the visual features of the uploaded photo for comparison with active found-item photos.</p>
               </div>
 
               <div className="vs-step-card">
@@ -132,8 +148,8 @@ export default function VisualSearchPage() {
                     </svg>
                   </div>
                 </div>
-                <h4>Feature Vectorization</h4>
-                <p>Extracts color histograms, texture signatures, contours, and logo markings into neural vectors.</p>
+                <h4>Confidence Filtering</h4>
+                <p>Shows only high-confidence candidates and removes results far below the strongest visual match.</p>
               </div>
 
               <div className="vs-step-card">
@@ -147,7 +163,7 @@ export default function VisualSearchPage() {
                   </div>
                 </div>
                 <h4>Campus Registry Check</h4>
-                <p>Ranks similarity against active found-item photos cataloged by security posts in real time.</p>
+                <p>Ranks high-confidence candidates from active found-item reports. A visual candidate is not proof of ownership.</p>
               </div>
             </div>
           </div>
@@ -214,12 +230,12 @@ export default function VisualSearchPage() {
           <header className="visual-search-results-header">
             <div>
               <span className="visual-search-kicker">Match ticket</span>
-              <h2>Possible matches</h2>
+              <h2>High-confidence candidates</h2>
             </div>
-            <span className="visual-search-results-count">{matches.length} found</span>
+            <span className="visual-search-results-count">{matches.length} high-confidence</span>
           </header>
           {matches.length === 0 ? (
-            <p className="visual-search-empty">No visually similar items found. Try another image with better lighting or a clearer view of the item.</p>
+            <p className="visual-search-empty">{resultMessage || 'No visually similar items found. Try another image with better lighting or a clearer view of the item.'}</p>
           ) : (
             <div className="visual-search-grid">
               {matches.map((match, index) => (
@@ -235,6 +251,7 @@ export default function VisualSearchPage() {
                     <span className="visual-search-score">{match.similarityPercentage}% visual similarity</span>
                     <h3>{match.title}</h3>
                     <p>{match.description || 'Found item report'}</p>
+                    <p className="visual-search-card-note">Candidate only — compare identifying details before claiming.</p>
                     <Link className="visual-search-card-link" to={`/found-items/${match.foundItemId}`}>View found item</Link>
                   </div>
                 </article>
@@ -245,4 +262,35 @@ export default function VisualSearchPage() {
       )}
     </main>
   );
+}
+
+async function normalizeLegacyAvif(file) {
+  const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const avif = header.length >= 12
+    && String.fromCharCode(...header.slice(4, 12)) === 'ftypavif';
+  if (!avif) return file;
+
+  // Older report photos were saved with a .jpg name even though their bytes
+  // are AVIF. Modern browsers can display them, but the API rightly rejects
+  // them as invalid JPEG uploads. Re-encode only this legacy mismatch.
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = reject;
+      element.src = sourceUrl;
+    });
+    const largestSide = 2048;
+    const scale = Math.min(1, largestSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    const jpeg = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    if (!jpeg) throw new Error('JPEG conversion failed.');
+    return new File([jpeg], `${file.name.replace(/\.[^.]+$/, '') || 'visual-search'}.jpg`, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
 }
