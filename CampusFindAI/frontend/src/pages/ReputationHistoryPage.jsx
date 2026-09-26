@@ -2,14 +2,62 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getMyReputation } from '../api/reputation';
 import { formatBangladeshDate } from '../api/client';
+import { Alert, AnimatedNumber, EmptyState, SlideIn } from '../components/Ui';
 
 export default function ReputationHistoryPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+
   useEffect(() => { getMyReputation().then(setData).catch(e => setError(e.message)); }, []);
-  return <section className="page-container"><header className="page-header"><Link to="/profile">← Profile</Link><h1>Your reputation</h1></header>
-    {error && <p role="alert">{error}</p>}{!data ? <p>Loading reputation…</p> : <>
-      <div className="card" style={{ padding: 24, marginBottom: 20 }}><strong style={{ fontSize: 32 }}>{data.points}</strong><span> points · {data.level}</span></div>
-      <h2>History</h2>{data.history.length === 0 ? <p>Your reputation history will appear here when you help return an item.</p> : <ul>{data.history.map(event => <li key={event.id} style={{ padding: '12px 0' }}><strong>{event.pointChange > 0 ? '+' : ''}{event.pointChange} points</strong> — {event.reason}<div className="text-sm text-muted">{formatBangladeshDate(event.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</div></li>)}</ul>}
-    </>}</section>;
+
+  return (
+    <section className="page-container reputation-page">
+      <header className="page-header reputation-header">
+        <div>
+          <Link className="back-link" to="/profile">Back to profile</Link>
+          <span className="eyebrow">Return ledger</span>
+          <h1>Your reputation</h1>
+          <p className="text-secondary">A record of the help you have given to return campus property.</p>
+        </div>
+      </header>
+      {error && <Alert type="error">{error}</Alert>}
+      {!data ? (
+        <div className="reputation-loading" role="status">Opening your return ledger...</div>
+      ) : (
+        <>
+          <section className="reputation-score-card">
+            <span className="reputation-score-label">Current standing</span>
+            <strong><AnimatedNumber value={data.points} /></strong>
+            <span className="reputation-score-unit">points</span>
+            <span className="reputation-level">{data.level}</span>
+          </section>
+          <section className="reputation-history" aria-label="Reputation history">
+            <div className="reputation-history-heading">
+              <h2>History</h2>
+              <span>{data.history.length} entries</span>
+            </div>
+            {data.history.length === 0 ? (
+              <EmptyState title="No ledger entries yet" message="Your history will appear when you help return an item." />
+            ) : (
+              <ol className="reputation-ledger">
+                {data.history.map((event, index) => (
+                  <SlideIn key={event.id} from="left" delay={Math.min(index * 0.04, 0.28)} className="reputation-ledger-entry">
+                    <li>
+                      <span className={`reputation-points ${event.pointChange > 0 ? 'is-positive' : ''}`}>
+                        {event.pointChange > 0 ? '+' : ''}{event.pointChange}
+                      </span>
+                      <div>
+                        <strong>{event.reason}</strong>
+                        <time>{formatBangladeshDate(event.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</time>
+                      </div>
+                    </li>
+                  </SlideIn>
+                ))}
+              </ol>
+            )}
+          </section>
+        </>
+      )}
+    </section>
+  );
 }

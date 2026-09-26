@@ -3091,3 +3091,289 @@ tbody tr:hover { background: var(--surface-tinted); }
   .visual-search-icon,
   .visual-search-scan { animation: none !important; }
 }
+
+/* Claim handover chat: messages arrive from their actual sender side. */
+.claim-chat-ticket {
+  border-radius: 3px var(--radius-2xl) var(--radius-lg) var(--radius-2xl);
+  box-shadow: var(--shadow-paper);
+}
+.claim-chat-ticket > :first-child {
+  position: relative;
+  border-bottom-style: dashed !important;
+  background: var(--surface-card);
+}
+.claim-chat-ticket > :first-child::after {
+  content: 'Handover ticket';
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-family: var(--font-tag);
+  font-size: 0.7rem;
+}
+.claim-chat-thread {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  background: repeating-linear-gradient(-45deg, var(--surface-card-alt), var(--surface-card-alt) 10px, var(--surface-tinted) 10px, var(--surface-tinted) 11px) !important;
+}
+.claim-chat-thread::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 31px;
+  border-left: 1px dashed var(--border-medium);
+  pointer-events: none;
+}
+.claim-chat-message-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+.claim-chat-message-row.is-mine { justify-content: flex-end; }
+.claim-chat-message-wrap { max-width: min(78%, 580px); }
+.claim-chat-sender,
+.claim-chat-time {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-family: var(--font-tag);
+  font-size: 0.7rem;
+}
+.claim-chat-message-row.is-mine .claim-chat-sender,
+.claim-chat-message-row.is-mine .claim-chat-time { text-align: right; }
+.claim-chat-bubble {
+  padding: 0.68rem 0.86rem;
+  border: 1px solid var(--border);
+  border-radius: 3px var(--radius-md) var(--radius-sm) var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.claim-chat-message-row.is-mine .claim-chat-bubble {
+  border-color: var(--primary);
+  border-radius: var(--radius-md) 3px var(--radius-md) var(--radius-sm);
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+.claim-chat-time { margin: 3px 0 0; }
+.claim-chat-composer {
+  background: var(--surface-card);
+  border-top-style: dashed !important;
+}
+.claim-chat-composer textarea { border-radius: 3px var(--radius-md) var(--radius-sm) var(--radius-md); }
+.claim-chat-ticket > :nth-child(3)[style*="success-bg"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px dashed var(--success);
+  font-family: var(--font-display);
+}
+.claim-chat-ticket > :nth-child(3)[style*="success-bg"]::before {
+  content: 'Returned';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.55rem;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-tag);
+  font-size: 0.7rem;
+  transform: rotate(-1deg);
+  animation: stamp-press var(--dur-page) var(--ease-spring) both;
+}
+
+/* Assistant replies retain their own conversational rhythm without a global fade. */
+.assistant-spark { color: var(--ai); animation: ai-pulse var(--dur-ambient) var(--ease-in-out-smooth) infinite; }
+.assistant-message { animation: message-arrive-left var(--dur-component) var(--ease-smooth) both; }
+.assistant-message.mine { animation-name: message-arrive-right; }
+@keyframes message-arrive-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes message-arrive-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Notifications are detachable activity stubs, with a sender-aware entry motion. */
+.notification-ledger {
+  overflow: hidden;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px var(--radius-xl) var(--radius-md) var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-xs);
+}
+.notification-ticket-entry + .notification-ticket-entry { border-top: 1px dashed var(--border-medium); }
+.notification-ticket {
+  position: relative;
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-left: 3px dashed transparent;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background var(--transition-base), border-color var(--transition-base);
+}
+.notification-ticket.is-unread { border-left-color: var(--primary); background: var(--surface-tinted); }
+.notification-ticket:hover { background: var(--surface); }
+.notification-ticket-kicker,
+.notification-ticket-time {
+  color: var(--text-muted);
+  font-family: var(--font-tag);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+.notification-ticket-message { line-height: 1.5; }
+.notification-ticket-time { margin-top: 2px; font-weight: 500; }
+.notification-load-more { margin-top: var(--space-4); }
+
+/* Reputation becomes a recovery ledger with a count-up total. */
+.reputation-page { max-width: 980px; }
+.reputation-score-card {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: end;
+  column-gap: var(--space-2);
+  padding: var(--space-8);
+  border: 1px solid var(--primary);
+  border-radius: 3px var(--radius-2xl) var(--radius-lg) var(--radius-2xl);
+  background: linear-gradient(135deg, var(--surface-card), var(--surface-tinted));
+  box-shadow: var(--shadow-paper);
+}
+.reputation-score-label {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-tag);
+  font-size: 0.74rem;
+}
+.reputation-score-card strong {
+  color: var(--primary-deep);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 9vw, 5.4rem);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.reputation-score-unit { margin-bottom: 0.25rem; color: var(--text-secondary); font-family: var(--font-tag); }
+.reputation-level {
+  justify-self: end;
+  align-self: start;
+  padding: 0.3rem 0.55rem;
+  border-left: 2px dashed var(--primary);
+  background: var(--primary-subtle);
+  color: var(--primary-deep);
+  font-family: var(--font-tag);
+  font-size: 0.72rem;
+}
+.reputation-history { margin-top: var(--space-8); }
+.reputation-history-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.reputation-history-heading > span { color: var(--text-muted); font-family: var(--font-tag); font-size: 0.72rem; }
+.reputation-ledger { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border: 1px solid var(--border-medium); border-radius: 3px var(--radius-xl) var(--radius-md) var(--radius-xl); overflow: hidden; background: var(--surface-card); }
+.reputation-ledger-entry + .reputation-ledger-entry { border-top: 1px dashed var(--border-medium); }
+.reputation-ledger li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--space-4); align-items: center; padding: var(--space-4) var(--space-5); }
+.reputation-points { display: grid; place-items: center; min-height: 42px; border: 1px dashed var(--border-medium); border-radius: 2px var(--radius-md) var(--radius-xs) var(--radius-md); color: var(--text-secondary); font-family: var(--font-tag); font-weight: 600; }
+.reputation-points.is-positive { border-color: var(--primary); color: var(--primary-deep); background: var(--primary-subtle); }
+.reputation-ledger strong { display: block; font-family: var(--font-display); }
+.reputation-ledger time { display: block; margin-top: 3px; color: var(--text-muted); font-family: var(--font-tag); font-size: 0.72rem; }
+.reputation-loading { padding: var(--space-8); border-left: 3px dashed var(--primary); background: var(--surface-card); color: var(--text-muted); font-family: var(--font-tag); }
+
+/* Decision sheets and verification are physical, layered claim records. */
+.report-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-1) 0; }
+.report-action-backdrop,
+.verification-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: rgba(23, 33, 27, 0.48) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px);
+}
+.report-action-sheet {
+  width: min(460px, 100%);
+  padding: var(--space-6);
+  border: 1px solid var(--border-medium);
+  border-radius: 3px var(--radius-xl) var(--radius-md) var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: 7px 9px 0 rgba(23, 33, 27, 0.14);
+}
+.report-action-sheet h2 { margin: var(--space-3) 0 var(--space-2); }
+.report-action-error { margin-top: var(--space-3); color: var(--danger); font-family: var(--font-tag); }
+.report-action-controls { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+.verification-modal {
+  position: relative;
+  border-radius: 3px var(--radius-2xl) var(--radius-lg) var(--radius-2xl) !important;
+  border-color: var(--primary) !important;
+  background: var(--surface-card) !important;
+  box-shadow: 8px 10px 0 rgba(23, 33, 27, 0.16) !important;
+}
+.verification-modal::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 18px;
+  right: 18px;
+  border-top: 1px dashed var(--border-medium);
+  pointer-events: none;
+}
+.verification-modal-header {
+  margin-top: 12px;
+  border-bottom-style: dashed !important;
+  background: var(--surface-tinted) !important;
+}
+.verification-modal-header [style*="textTransform"],
+.verification-modal [style*="textTransform"] {
+  font-family: var(--font-tag) !important;
+  letter-spacing: 0.015em !important;
+  text-transform: none !important;
+}
+.verification-modal-body { background: var(--surface-card); }
+.verification-modal-body [style*="borderRadius"] { border-radius: 3px var(--radius-md) var(--radius-sm) var(--radius-md) !important; }
+.verification-complete [style*="borderRadius"] { border-radius: 2px var(--radius-lg) var(--radius-sm) var(--radius-lg) !important; }
+.verification-complete h3::before {
+  content: 'Submitted';
+  display: inline-flex;
+  margin-right: var(--space-2);
+  padding: 0.25rem 0.45rem;
+  border: 2px solid var(--success);
+  color: var(--success);
+  border-radius: 2px;
+  font-family: var(--font-tag);
+  font-size: 0.68rem;
+  transform: rotate(-1deg);
+  animation: stamp-press var(--dur-page) var(--ease-spring) both;
+}
+.admin-requests-list { display: grid; gap: var(--space-4); }
+.admin-request-heading { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.admin-request-heading h2 { margin-bottom: 3px; }
+.admin-request-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.admin-request-card > p { padding-left: var(--space-3); border-left: 1px dashed var(--border-medium); }
+
+@media (max-width: 600px) {
+  .claim-chat-thread::before { display: none; }
+  .claim-chat-message-wrap { max-width: 91%; }
+  .reputation-score-card { grid-template-columns: auto 1fr; padding: var(--space-6); }
+  .reputation-level { grid-column: 1 / -1; justify-self: start; margin-top: var(--space-4); }
+  .reputation-ledger li { grid-template-columns: 50px minmax(0, 1fr); padding: var(--space-3); }
+  .report-action-controls { display: grid; grid-template-columns: 1fr; }
+  .report-action-controls .btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-spark,
+  .assistant-message,
+  .assistant-message.mine,
+  .claim-chat-ticket > :nth-child(3)[style*="success-bg"]::before,
+  .verification-complete h3::before { animation: none !important; }
+}

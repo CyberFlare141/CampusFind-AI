@@ -100,7 +100,7 @@ export function SlideIn({ children, from = 'left', className, delay = 0, ...prop
 }
 
 /* ── Metric Count-Up Animation (Physical & Smooth) ───────────── */
-export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = '' }) {
+export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = '', formatter }) {
   const target = typeof value === 'number' ? value : parseInt(value, 10) || 0;
   const [displayValue, setDisplayValue] = useState(0);
   const prevTargetRef = useRef(target);
@@ -135,7 +135,7 @@ export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = ''
     return () => cancelAnimationFrame(animId);
   }, [target, duration]);
 
-  return <>{prefix}{displayValue}{suffix}</>;
+  return <>{prefix}{formatter ? formatter(displayValue) : displayValue}{suffix}</>;
 }
 
 /* ── Fade-In Image with Fallback ─────────────────────────────── */
