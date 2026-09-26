@@ -1,7 +1,0 @@
-import { apiClient } from './apiClient';
-export interface CreateLostItemRequest { title: string; description?: string; lostAt?: string; categoryId?: string | null; locationId?: string | null; images?: File[]; }
-export interface LostItem { id: string; userId: string; title: string; description?: string | null; lostAt?: string | null; categoryId?: string | null; locationId?: string | null; status: string; createdAt: string; imageUrls: string[]; }
-export async function createLostItem(request: CreateLostItemRequest): Promise<LostItem> { const data = new FormData(); data.append('title', request.title); if (request.description) data.append('description', request.description); if (request.lostAt) data.append('lostAt', request.lostAt); if (request.categoryId) data.append('categoryId', request.categoryId); if (request.locationId) data.append('locationId', request.locationId); request.images?.forEach(image => data.append('images', image)); return (await apiClient.post<LostItem>('/LostItems', data)).data; }
-export async function getMyLostItems(): Promise<LostItem[]> { return (await apiClient.get<LostItem[]>('/LostItems/my')).data; }
-export async function getLostItemById(id: string): Promise<LostItem> { return (await apiClient.get<LostItem>(`/LostItems/${id}`)).data; }
-export async function getAllLostItems(): Promise<LostItem[]> { return (await apiClient.get<LostItem[]>('/LostItems')).data; }
