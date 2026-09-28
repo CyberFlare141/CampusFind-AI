@@ -45,6 +45,16 @@ const Icon = ({ name }) => {
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
       </svg>
     ),
+    moon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.8A8.5 8.5 0 1111.2 3 6.6 6.6 0 0021 12.8z"/>
+      </svg>
+    ),
+    sun: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+    ),
     user: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -145,7 +155,6 @@ const BOTTOM_NAV_LINKS = [
   { to: '/lost-items',  label: 'Lost',    icon: 'lost' },
   { to: '/found-items', label: 'Found',   icon: 'found' },
   { to: '/my-claims',   label: 'Claims',  icon: 'claims' },
-  { to: '/profile',     label: 'Profile', icon: 'user' },
 ];
 
 function getRolePillClass(role) {
@@ -172,6 +181,9 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('campusfind-theme') || 'light'; } catch { return 'light'; }
+  });
   const [fabOpen, setFabOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,6 +197,13 @@ export default function Layout() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const notificationIds = useRef(new Set());
   const notificationBaselineReady = useRef(false);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('campusfind-theme', theme); } catch { /* Storage is optional. */ }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(current => current === 'dark' ? 'light' : 'dark');
 
   const refreshNotifications = async (showToast = false) => {
     const [page, unread] = await Promise.all([getNotifications(), getUnreadNotificationCount()]);
@@ -248,7 +267,7 @@ export default function Layout() {
   }, []);
 
   const studentLinks = user?.role === 'Administrator'
-    ? STUDENT_LINKS.filter(l => !['/search', '/my-claims', '/my-matches'].includes(l.to))
+    ? STUDENT_LINKS.filter(l => !['/search', '/my-claims', '/my-matches', '/support'].includes(l.to))
     : (user?.isRestricted || user?.role === 'SecurityOfficer'
       ? STUDENT_LINKS.filter(l => !['/my-claims', '/my-matches'].includes(l.to))
       : STUDENT_LINKS);
@@ -397,7 +416,7 @@ export default function Layout() {
           </span>
           <span className="mobile-topbar-logo-name">CampusFind AI</span>
         </Link>
-        <div className="mobile-topbar-actions"><button className="topbar-action-btn" aria-label="Notifications" onClick={() => navigate('/notifications')}><Icon name="bell" />{unreadNotifications > 0 && <span className="topbar-notif-dot" />}</button><button className="topbar-action-btn" aria-label="Open menu" onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button></div>
+        <div className="mobile-topbar-actions"><button className="topbar-action-btn" aria-label={theme === 'dark' ? 'Use light mode' : 'Use dark mode'} aria-pressed={theme === 'dark'} onClick={toggleTheme}><Icon name={theme === 'dark' ? 'sun' : 'moon'} /></button><button className="topbar-action-btn" aria-label="Notifications" onClick={() => navigate('/notifications')}><Icon name="bell" />{unreadNotifications > 0 && <span className="topbar-notif-dot" />}</button><button className="topbar-action-btn" aria-label="Open menu" onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button></div>
       </header>
 
       {/* ── Desktop Top Bar ─────────────────────────────────────── */}
@@ -456,6 +475,7 @@ export default function Layout() {
 
         {/* Right Actions */}
         <div className="topbar-actions" style={{ position: 'relative' }}>
+          <button className="topbar-action-btn" aria-label={theme === 'dark' ? 'Use light mode' : 'Use dark mode'} aria-pressed={theme === 'dark'} title={theme === 'dark' ? 'Use light mode' : 'Use dark mode'} onClick={toggleTheme}><Icon name={theme === 'dark' ? 'sun' : 'moon'} /></button>
           <button
             className="topbar-action-btn"
             aria-label="Notifications"
@@ -646,9 +666,11 @@ export default function Layout() {
           >
             <Outlet />
           </PageMotion>
-          <footer className="app-footer" style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
-            Enjoying CampusFind? <Link to="/support" style={{ fontWeight: 700 }}>Buy us a coffee ☕</Link>
-          </footer>
+          {user?.role !== 'Administrator' && (
+            <footer className="app-footer" style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
+              Enjoying CampusFind? <Link to="/support" style={{ fontWeight: 700 }}>Buy us a coffee ☕</Link>
+            </footer>
+          )}
         </main>
       </div>
 
@@ -756,6 +778,10 @@ export default function Layout() {
               {renderNavIndicator(link)}
             </NavLink>
           ))}
+          <button type="button" className="mobile-nav-btn" onClick={() => setDrawerOpen(true)} aria-label="Open more navigation options">
+            <span className="mobile-nav-icon"><Icon name="menu" /></span>
+            <span className="mobile-nav-label">More</span>
+          </button>
         </div>
       </nav>
 

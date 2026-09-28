@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getLostItemById } from '../../api/lostItems';
 import { useAuth } from '../../context/AuthContext';
-import { Alert, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
+import { Alert, FadeImage, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
 export default function LostItemDetailPage() {
@@ -80,15 +80,7 @@ export default function LostItemDetailPage() {
               border: '1px solid var(--border)',
               boxShadow: 'var(--shadow-sm)',
             }}>
-              <motion.img
-                key={selectedImage}
-                src={publicAssetUrl(images[selectedImage])}
-                alt={`${item.title} — photo ${selectedImage + 1}`}
-                style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              />
+              <FadeImage src={publicAssetUrl(images[selectedImage])} alt={`${item.title} — photo ${selectedImage + 1}`} style={{ objectFit: 'contain' }} />
             </div>
             {images.length > 1 && (
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
@@ -106,7 +98,7 @@ export default function LostItemDetailPage() {
                     }}
                     aria-label={`View photo ${i + 1}`}
                   >
-                    <img src={publicAssetUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <FadeImage src={publicAssetUrl(img)} alt="" loading="lazy" />
                   </button>
                 ))}
               </div>
