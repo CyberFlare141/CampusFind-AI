@@ -9,9 +9,9 @@ import { getMyMatches } from '../api/matches';
 import { getSecurityOverview } from '../api/security';
 import { publicAssetUrl } from '../api/client';
 import {
-  PageLoading, Alert, StatusBadge, formatDate,
+  DashboardSkeleton, Alert, StatusBadge, formatDate,
   AIBadge, SectionHeader, StaggerList, AnimatedNumber,
-  CampusDiscoveryRadar
+  CampusDiscoveryRadar, FadeImage
 } from '../components/Ui';
 
 /* ── Stat SVG Icons ──────────────────────────────────────────── */
@@ -238,7 +238,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {loading ? (
-        <PageLoading label="Loading your dashboard…" />
+        <DashboardSkeleton />
       ) : (
         <>
           {/* ── 2. Key Metrics ───────────────────────────────────── */}
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                         placeItems: 'center',
                       }}>
                         {item.imageUrls?.[0] ? (
-                          <img src={publicAssetUrl(item.imageUrls[0])} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <FadeImage src={publicAssetUrl(item.imageUrls[0])} alt="" loading="lazy" />
                         ) : (
                           <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>📦</span>
                         )}

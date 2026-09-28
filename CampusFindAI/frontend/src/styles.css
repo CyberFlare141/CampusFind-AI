@@ -32,6 +32,8 @@
   --surface-raised:   var(--color-surface);
   --surface-card:     var(--color-surface);
   --surface-card-alt: #F6F8F4;
+  --card-bg:          var(--surface-card);
+  --surface-chrome:    rgba(248, 247, 242, 0.92);
   /* Level 3: Inset control */
   --surface-inset:    #F2F5F0;
 
@@ -162,6 +164,52 @@
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark mode keeps the CampusFind green/teal/violet accents while improving contrast. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #101914;
+  --color-surface: #17231c;
+  --color-text: #edf5ed;
+  --color-text-muted: #a8b8ac;
+  --color-border: #304235;
+  --bg: #101914;
+  --surface: #1c2a20;
+  --surface-hover: #273a2b;
+  --surface-tinted: #17271d;
+  --surface-raised: #17231c;
+  --surface-card: #17231c;
+  --surface-card-alt: #1c2a20;
+  --surface-chrome: rgba(16, 25, 20, .92);
+  --surface-inset: #122017;
+  --primary: #58b878;
+  --primary-hover: #73cd90;
+  --primary-deep: #86dc9f;
+  --primary-soft: #75ad82;
+  --primary-subtle: rgba(88, 184, 120, .17);
+  --primary-glow: rgba(88, 184, 120, .26);
+  --accent: #4fc7bd;
+  --accent-hover: #73ddd5;
+  --accent-deep: #8be7df;
+  --accent-bg: rgba(79, 199, 189, .15);
+  --accent-border: rgba(79, 199, 189, .34);
+  --ai: #aa9cf0;
+  --ai-deep: #c5bcff;
+  --ai-bg: #292348;
+  --ai-border: #51487f;
+  --text-primary: #edf5ed;
+  --text-secondary: #c0d0c3;
+  --text-muted: #a8b8ac;
+  --border: #304235;
+  --border-medium: rgba(210, 234, 215, .18);
+  --success-bg: #183d25;
+  --warning-bg: #4a3711;
+  --danger-bg: #4b2020;
+  --info-bg: #1b3445;
+  --shadow-soft: 6px 6px 16px rgba(0, 0, 0, .22), -3px -3px 10px rgba(255, 255, 255, .025);
+  --shadow-elevated: 10px 14px 30px rgba(0, 0, 0, .28), -4px -4px 12px rgba(255, 255, 255, .025);
+  --shadow-inset: inset 3px 3px 8px rgba(0, 0, 0, .25), inset -2px -2px 6px rgba(255, 255, 255, .02);
 }
 
 /* ── Reset & Base ───────────────────────────────────────────── */
@@ -472,14 +520,14 @@ p  { margin: 0; line-height: 1.65; }
 
 /* Secondary — Crisp Surface with subtle border */
 .btn-secondary {
-  background: #FFFFFF;
+  background: var(--surface-card);
   color: var(--text-primary);
   border-color: var(--border);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   border-radius: 9px;
 }
 .btn-secondary:hover:not(:disabled) {
-  background: #FAFDF8;
+  background: var(--surface-hover);
   border-color: var(--primary);
   color: var(--primary);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
@@ -883,7 +931,7 @@ textarea { resize: vertical; min-height: 110px; }
 .match-score span, .match-panel-label { color: var(--text-muted); font-size: 0.74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .match-comparison-grid { display: grid; grid-template-columns: minmax(0,1fr) 136px minmax(0,1fr); gap: 16px; align-items: stretch; margin: 22px 0; }
 .match-item-panel { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; background: var(--surface-card-alt); min-width: 0; }
-.match-item-panel-found { background: #F3F9F7; }
+.match-item-panel-found { background: var(--surface-tinted); }
 .match-item-panel h3 { font-size: 1rem; margin: 12px 0 4px; overflow-wrap: anywhere; }
 .match-item-panel p { color: var(--text-muted); font-size: .85rem; }
 .match-item-visual { width: 58px; height: 58px; border-radius: 14px; margin-top: 12px; display: grid; place-items: center; overflow: hidden; background: var(--surface); color: var(--primary-deep); }
@@ -1003,7 +1051,7 @@ textarea { resize: vertical; min-height: 110px; }
   padding: 6px 6px 6px 16px;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
-  background: rgba(255,255,255,.9);
+  background: var(--surface-raised);
   box-shadow: var(--shadow-sm);
 }
 .dashboard-search > svg { width: 20px; height: 20px; color: var(--ai); flex-shrink: 0; }
@@ -1378,7 +1426,7 @@ dd { margin: 0; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6
 
 /* ── AI Match / Spotlight Card ───────────────────────────────── */
 .ai-match-card {
-  background: #F4F8F3;
+  background: var(--surface-card-alt);
   border: 1px solid var(--surface);
   border-radius: var(--radius-xl);
   padding: 22px 28px;
@@ -2538,8 +2586,10 @@ input:checked + .toggle-slider:before {
 
 
 /* Shared image and unexpected-rendering fallbacks. */
-.item-image-fallback { width: 100%; height: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; background: var(--surface-card-alt); color: var(--text-muted); border-radius: inherit; overflow: hidden; }
+.item-image-fallback { width: 100%; height: 100%; min-height: 100%; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; background: var(--surface-card-alt); color: var(--text-muted); border-radius: inherit; overflow: hidden; }
 .item-image-fallback svg { display: block; opacity: 0.6; }
+.image-retry-btn { border: 1px solid var(--border); border-radius: var(--radius-full); padding: 5px 9px; background: var(--surface-card); color: var(--primary-deep); font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.image-retry-btn:hover { border-color: var(--primary); background: var(--surface-tinted); }
 .app-error-boundary{min-height:100vh;display:grid;place-content:center;text-align:center;padding:24px;background:var(--surface);color:var(--text-primary)}.app-error-boundary>span{font-size:2rem;color:var(--warning)}.app-error-boundary h1{max-width:520px;margin:12px auto 8px}.app-error-boundary p{max-width:460px;color:var(--text-muted);margin:0 auto 20px}.app-error-boundary div{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .visual-search-result-image{height:210px}.visual-search-card>.visual-search-result-image{padding:0}
 
@@ -2811,7 +2861,7 @@ tbody tr:hover { background: var(--surface-tinted); }
   background: rgba(0, 0, 0, 0.03);
 }
 .tab-btn.active {
-  background: #FFFFFF;
+  background: var(--surface-card);
   color: var(--text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   font-weight: 700;

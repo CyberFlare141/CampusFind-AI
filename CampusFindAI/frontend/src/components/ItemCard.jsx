@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { StatusBadge, formatDate } from './Ui';
+import { FadeImage, StatusBadge, formatDate } from './Ui';
 import { publicAssetUrl } from '../api/client';
 
 /**
@@ -18,7 +18,7 @@ export default function ItemCard({ kind, item, mine }) {
     <Link to={linkTo} className="item-card" aria-label={item.title}>
       <div className="item-card-image">
         {image ? (
-          <img src={publicAssetUrl(image)} alt={item.title} loading="lazy" />
+          <FadeImage src={publicAssetUrl(image)} alt={item.title} loading="lazy" />
         ) : (
           <div className="item-card-image-placeholder">
             {isLost ? (

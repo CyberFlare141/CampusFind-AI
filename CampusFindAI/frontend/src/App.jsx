@@ -142,12 +142,12 @@ export default function App() {
               <Route path="/visual-search" element={<VisualSearchPage />} />
               <Route path="/assistant" element={<CampusFindAssistantPage />} />
               <Route path="/security-officer-request" element={<SecurityOfficerRequestPage />} />
-              <Route path="/support" element={<SupportPage />} />
-              <Route path="/support/manual" element={<ManualSupportPaymentPage />} />
-              <Route path="/support/awaiting-confirmation" element={<SupportAwaitingConfirmationPage />} />
-              <Route path="/support/success" element={<SupportResultPage expected="Succeeded" />} />
-              <Route path="/support/cancelled" element={<SupportResultPage expected="Cancelled" />} />
-              <Route path="/support/failed" element={<SupportResultPage expected="Failed" />} />
+              <Route path="/support" element={<ProtectedRoute denySupportAccess><SupportPage /></ProtectedRoute>} />
+              <Route path="/support/manual" element={<ProtectedRoute denySupportAccess><ManualSupportPaymentPage /></ProtectedRoute>} />
+              <Route path="/support/awaiting-confirmation" element={<ProtectedRoute denySupportAccess><SupportAwaitingConfirmationPage /></ProtectedRoute>} />
+              <Route path="/support/success" element={<ProtectedRoute denySupportAccess><SupportResultPage expected="Succeeded" /></ProtectedRoute>} />
+              <Route path="/support/cancelled" element={<ProtectedRoute denySupportAccess><SupportResultPage expected="Cancelled" /></ProtectedRoute>} />
+              <Route path="/support/failed" element={<ProtectedRoute denySupportAccess><SupportResultPage expected="Failed" /></ProtectedRoute>} />
             </Route>
 
             {/* Security Office (role-protected) */}

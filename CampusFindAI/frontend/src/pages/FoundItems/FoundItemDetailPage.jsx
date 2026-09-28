@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { getFoundItemById, getFounderVerification, saveFounderVerification } from '../../api/foundItems';
 import { getFounderClaimChats } from '../../api/claimChat';
 import { useAuth } from '../../context/AuthContext';
-import { Alert, ButtonSpinner, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
+import { Alert, ButtonSpinner, FadeImage, PageLoading, StatusBadge, formatDate } from '../../components/Ui';
 import { publicAssetUrl } from '../../api/client';
 
 export default function FoundItemDetailPage() {
@@ -68,12 +68,7 @@ export default function FoundItemDetailPage() {
     <motion.article className="card card-pad-lg" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
       {item.imageUrls?.[0] && (
         <div style={{ width: '100%', height: 340, maxHeight: '60vw', borderRadius: 'var(--radius-xl)', marginBottom: 24, overflow: 'hidden', background: 'var(--surface)' }}>
-          <img
-            src={publicAssetUrl(item.imageUrls[0])}
-            alt={`${item.title} found-item photo`}
-            loading="eager"
-            style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
-          />
+          <FadeImage src={publicAssetUrl(item.imageUrls[0])} alt={`${item.title} found-item photo`} loading="eager" style={{ objectFit: 'contain' }} />
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><span className="eyebrow">Found item</span><h1>{item.title}</h1></div><StatusBadge status={item.status} /></div>

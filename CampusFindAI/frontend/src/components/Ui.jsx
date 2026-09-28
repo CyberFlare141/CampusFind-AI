@@ -144,11 +144,13 @@ export function AnimatedNumber({ value, duration = 750, prefix = '', suffix = ''
 export function FadeImage({ src, alt, className, style, placeholder, loading = 'eager' }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const imgRef = useRef(null);
 
   useEffect(() => {
     setLoaded(false);
     setFailed(false);
+    setAttempt(0);
   }, [src]);
 
   // Check if image is already cached / completed
@@ -164,24 +166,36 @@ export function FadeImage({ src, alt, className, style, placeholder, loading = '
     }
   }, [src]);
 
+  function retryImage(event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setLoaded(false);
+    setFailed(false);
+    setAttempt(current => current + 1);
+  }
+
   if (!src || failed) {
-    return placeholder || (
+    const fallback = placeholder || (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    );
+    return (
       <div className="item-image-fallback" role="img" aria-label={alt || 'No image available'}>
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" />
-        </svg>
+        {fallback}
+        {src && failed && <button type="button" className="image-retry-btn" onClick={retryImage}>Retry image</button>}
       </div>
     );
   }
@@ -204,7 +218,7 @@ export function FadeImage({ src, alt, className, style, placeholder, loading = '
       )}
       <motion.img
         ref={imgRef}
-        src={src}
+        src={attempt ? `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}` : src}
         alt={alt || ''}
         className={className}
         style={{
@@ -276,6 +290,23 @@ export function SkeletonGrid({ count = 8 }) {
           <SkeletonCard />
         </motion.div>
       ))}
+    </div>
+  );
+}
+
+export function DashboardSkeleton() {
+  return (
+    <div aria-label="Loading dashboard content" aria-busy="true">
+      <div className="stat-grid stat-grid-4" style={{ marginBottom: 36 }}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div className="card card-pad" key={index}>
+            <SkeletonText width="34%" height={12} />
+            <SkeletonText width="48%" height={36} style={{ marginTop: 18 }} />
+            <SkeletonText width="72%" height={12} style={{ marginTop: 18 }} />
+          </div>
+        ))}
+      </div>
+      <div className="item-grid"><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
     </div>
   );
 }
