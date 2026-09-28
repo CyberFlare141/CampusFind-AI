@@ -79,24 +79,29 @@ public static class ServiceExtensions
 
         return services;
     }
-
-    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
+public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
+{
+    services.AddCors(options =>
     {
-        services.AddCors(options =>
+        options.AddPolicy("Frontend", policy =>
         {
-            options.AddPolicy("Frontend", policy =>
-            {
-                var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-                    ?? ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"];
+            var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173",
+                    "http://localhost:5174",
+                    "http://127.0.0.1:5174"
+                ];
 
-                policy.WithOrigins(origins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            });
+            policy.WithOrigins(origins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
+    });
 
-        return services;
-    }
+    return services;
+}
 
     public static IServiceCollection AddRateLimitingPolicies(this IServiceCollection services)
     {
