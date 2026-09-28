@@ -269,7 +269,7 @@ export default function Layout() {
   const studentLinks = user?.role === 'Administrator'
     ? STUDENT_LINKS.filter(l => !['/search', '/my-claims', '/my-matches', '/support'].includes(l.to))
     : (user?.isRestricted || user?.role === 'SecurityOfficer'
-      ? STUDENT_LINKS.filter(l => !['/my-claims', '/my-matches'].includes(l.to))
+      ? STUDENT_LINKS.filter(l => !['/my-claims', '/my-matches', '/support'].includes(l.to))
       : STUDENT_LINKS);
 
   const SUGGESTIONS = [
@@ -666,7 +666,7 @@ export default function Layout() {
           >
             <Outlet />
           </PageMotion>
-          {user?.role !== 'Administrator' && (
+          {!['Administrator', 'SecurityOfficer'].includes(user?.role) && (
             <footer className="app-footer" style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
               Enjoying CampusFind? <Link to="/support" style={{ fontWeight: 700 }}>Buy us a coffee ☕</Link>
             </footer>

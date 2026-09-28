@@ -161,7 +161,7 @@
   transition: transform var(--dur-micro) var(--ease-smooth), color var(--dur-micro) var(--ease-smooth);
 }
 .nav-item:hover {
-  background: rgba(220, 231, 216, 0.72);
+  background: var(--surface-hover);
   color: var(--text-primary);
 }
 .nav-item:hover .nav-icon {
@@ -225,7 +225,7 @@
   color: inherit;
   overflow: hidden;
 }
-.sidebar-user:hover { background: rgba(220, 231, 216, 0.72); }
+.sidebar-user:hover { background: var(--surface-hover); }
 .sidebar-avatar {
   width: 36px; height: 36px;
   border-radius: 50%;
@@ -280,7 +280,7 @@
   font-family: var(--font-display);
 }
 .sidebar-collapse-btn svg { width: 16px; height: 16px; }
-.sidebar-collapse-btn:hover { background: rgba(220, 231, 216, 0.72); color: var(--text-primary); }
+.sidebar-collapse-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
 
 .sidebar-logout {
   display: flex;
@@ -307,7 +307,7 @@
 /* ── Top Header Bar & AI Search ──────────────────────────────── */
 .topbar {
   height: 68px;
-  background: rgba(248, 247, 242, 0.92);
+  background: var(--surface-chrome);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -530,7 +530,7 @@
   position: fixed;
   bottom: 0;
   left: 0; right: 0;
-  background: rgba(247, 244, 237, 0.94);
+  background: var(--surface-chrome);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
@@ -684,7 +684,7 @@
 .mobile-topbar {
   display: none;
   height: 60px;
-  background: rgba(247, 244, 237, 0.94);
+  background: var(--surface-chrome);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
@@ -818,6 +818,12 @@
   .mobile-topbar-actions { display: flex; align-items: center; gap: 6px; }
   .mobile-topbar-actions .topbar-action-btn { position: relative; min-width: 44px; min-height: 44px; }
   .notification-toast { position: fixed; top: auto; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom) + 12px); width: min(320px, calc(100vw - 32px)); max-width: calc(100vw - 32px); overflow-wrap: anywhere; }
+}
+
+@media (max-width: 360px) {
+  .mobile-nav-btn { gap: 0; }
+  .mobile-nav-label { display: none; }
+  .mobile-nav-icon { width: 34px; height: 34px; }
 }
 
 /* Claim-tag shell refinement: navigation is a labelled index, not a row of pills. */
