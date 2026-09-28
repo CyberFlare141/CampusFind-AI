@@ -22,7 +22,7 @@ export function login({ email, password }) {
 }
 
 export function googleLogin({ idToken }) {
-  return apiRequest('/api/Auth/google', {
+  return apiRequest('/Auth/google', {
     method: 'POST',
     body: { idToken },
     auth: false,
