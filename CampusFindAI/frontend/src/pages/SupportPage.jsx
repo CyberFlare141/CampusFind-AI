@@ -46,7 +46,7 @@ export default function SupportPage() {
       {error && <Alert type="error">{error}</Alert>}
       <h2 style={{ marginTop: 24 }}>Choose an amount</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-        {SUGGESTED.map(item => <button key={item.amount} type="button" onClick={() => { setAmount(item.amount); setCustomAmount(''); }} className="card" style={{ padding: 16, textAlign: 'left', cursor: 'pointer', border: selectedAmount === item.amount && !customAmount ? '2px solid var(--primary)' : '1px solid var(--border)', background: 'white' }}><strong style={{ display: 'block', fontSize: '1.25rem' }}>৳{item.amount}</strong><span className="text-secondary text-sm">{item.label}</span></button>)}
+        {SUGGESTED.map(item => <button key={item.amount} type="button" onClick={() => { setAmount(item.amount); setCustomAmount(''); }} className="card" style={{ padding: 16, textAlign: 'left', cursor: 'pointer', border: selectedAmount === item.amount && !customAmount ? '2px solid var(--primary)' : '1px solid var(--border)', background: 'var(--surface-card)' }}><strong style={{ display: 'block', fontSize: '1.25rem' }}>৳{item.amount}</strong><span className="text-secondary text-sm">{item.label}</span></button>)}
       </div>
       <label style={{ display: 'block', marginTop: 16, maxWidth: 280 }}>Custom Amount (৳)<input type="number" min={availability?.minimumAmount} max={availability?.maximumAmount} step="1" value={customAmount} onChange={event => setCustomAmount(event.target.value)} placeholder={`৳${availability?.minimumAmount || 10}–৳${availability?.maximumAmount || 5000}`} /></label>
       {customAmount && !validAmount && <p className="text-sm" style={{ color: 'var(--danger)' }}>Choose an amount from ৳{availability.minimumAmount} to ৳{availability.maximumAmount}.</p>}
@@ -62,4 +62,4 @@ export default function SupportPage() {
   </section>;
 }
 
-function ProviderButton({ label, selected, onClick }) { return <button type="button" className="card" onClick={onClick} style={{ minWidth: 150, padding: 16, cursor: 'pointer', border: selected ? '2px solid var(--primary)' : '1px solid var(--border)', background: 'white' }}><strong>{label}</strong><span style={{ display: 'block', fontSize: '.8rem', marginTop: 4 }}>Open official site</span></button>; }
+function ProviderButton({ label, selected, onClick }) { return <button type="button" className="card" onClick={onClick} style={{ minWidth: 150, padding: 16, cursor: 'pointer', border: selected ? '2px solid var(--primary)' : '1px solid var(--border)', background: 'var(--surface-card)' }}><strong>{label}</strong><span style={{ display: 'block', fontSize: '.8rem', marginTop: 4 }}>Open official site</span></button>; }
