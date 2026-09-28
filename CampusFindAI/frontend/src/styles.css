@@ -33,6 +33,7 @@
   --surface-card:     var(--color-surface);
   --surface-card-alt: #F6F8F4;
   --card-bg:          var(--surface-card);
+  --surface-chrome:    rgba(248, 247, 242, 0.92);
   /* Level 3: Inset control */
   --surface-inset:    #F2F5F0;
 
@@ -180,6 +181,7 @@
   --surface-raised: #17231c;
   --surface-card: #17231c;
   --surface-card-alt: #1c2a20;
+  --surface-chrome: rgba(16, 25, 20, .92);
   --surface-inset: #122017;
   --primary: #58b878;
   --primary-hover: #73cd90;
