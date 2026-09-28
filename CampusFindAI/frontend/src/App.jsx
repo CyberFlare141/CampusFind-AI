@@ -49,6 +49,11 @@ const ReputationHistoryPage = lazy(() => import('./pages/ReputationHistoryPage')
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage'));
 const VisualSearchPage = lazy(() => import('./pages/Search/VisualSearchPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const SupportResultPage = lazy(() => import('./pages/SupportResultPage'));
+const ManualSupportPaymentPage = lazy(() => import('./pages/ManualSupportPaymentPage'));
+const SupportAwaitingConfirmationPage = lazy(() => import('./pages/SupportAwaitingConfirmationPage'));
+const AdminSupportPaymentsPage = lazy(() => import('./pages/AdminSupportPaymentsPage'));
 
 export default function App() {
   return (
@@ -137,6 +142,12 @@ export default function App() {
               <Route path="/visual-search" element={<VisualSearchPage />} />
               <Route path="/assistant" element={<CampusFindAssistantPage />} />
               <Route path="/security-officer-request" element={<SecurityOfficerRequestPage />} />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/support/manual" element={<ManualSupportPaymentPage />} />
+              <Route path="/support/awaiting-confirmation" element={<SupportAwaitingConfirmationPage />} />
+              <Route path="/support/success" element={<SupportResultPage expected="Succeeded" />} />
+              <Route path="/support/cancelled" element={<SupportResultPage expected="Cancelled" />} />
+              <Route path="/support/failed" element={<SupportResultPage expected="Failed" />} />
             </Route>
 
             {/* Security Office (role-protected) */}
@@ -157,6 +168,7 @@ export default function App() {
             <Route element={<ProtectedRoute requireAdministrator><Layout /></ProtectedRoute>}>
               <Route path="/admin/security-officer-requests" element={<AdminSecurityOfficerRequestsPage />} />
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/support-payments" element={<AdminSupportPaymentsPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

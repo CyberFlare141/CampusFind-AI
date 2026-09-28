@@ -4,6 +4,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>CampusFindAI.Api</RootNamespace>
+		<UserSecretsId>campusfind-ai-development-7f6ea606-a990-48f9-84be-11f59097d09d</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>

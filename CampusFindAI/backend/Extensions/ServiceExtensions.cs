@@ -67,6 +67,16 @@ public static class ServiceExtensions
         services.AddScoped<ISemanticSearchService, SemanticSearchService>();
         services.AddScoped<IChatbotService, ChatbotService>();
         services.AddScoped<IClaimChatService, ClaimChatService>();
+        services.AddOptions<PaymentsOptions>()
+            .Bind(configuration.GetSection(PaymentsOptions.SectionName))
+            .Validate(x => x.Currency == "BDT", "Support payments currently support BDT only.")
+            .Validate(x => x.MinimumAmount >= 1m && x.MaximumAmount >= x.MinimumAmount, "Support payment amount limits are invalid.")
+            .ValidateOnStart();
+        services.AddScoped<IPaymentProvider, MockPaymentProvider>();
+        services.AddScoped<IPaymentProvider, ManualSupportPaymentProvider>();
+        services.AddScoped<IPaymentProvider, BkashPaymentProvider>();
+        services.AddScoped<IPaymentProvider, NagadPaymentProvider>();
+        services.AddScoped<ISupportPaymentService, SupportPaymentService>();
 
         return services;
     }
@@ -107,6 +117,12 @@ public static class ServiceExtensions
                         QueueLimit = 0
                     });
             });
+            static RateLimitPartition<string> UserWindow(HttpContext context, int permits) => RateLimitPartition.GetFixedWindowLimiter(
+                context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, QueueProcessingOrder = QueueProcessingOrder.OldestFirst });
+            options.AddPolicy("SupportPaymentCreate", context => UserWindow(context, 5));
+            options.AddPolicy("SupportPaymentRead", context => UserWindow(context, 60));
+            options.AddPolicy("SupportPaymentSimulation", context => UserWindow(context, 10));
         });
 
         return services;

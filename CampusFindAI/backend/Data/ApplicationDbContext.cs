@@ -32,6 +32,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ClaimVerification> ClaimVerifications => Set<ClaimVerification>();
     public DbSet<SecurityOfficerRequest> SecurityOfficerRequests => Set<SecurityOfficerRequest>();
     public DbSet<VisualEmbedding> VisualEmbeddings => Set<VisualEmbedding>();
+    public DbSet<SupportPayment> SupportPayments => Set<SupportPayment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -230,5 +231,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<VisualEmbedding>().HasIndex(x => new { x.ImageId, x.Model }).IsUnique();
         builder.Entity<VisualEmbedding>().Property(x => x.Model).HasMaxLength(100);
         builder.Entity<VisualEmbedding>().HasOne(x => x.Image).WithMany().HasForeignKey(x => x.ImageId).OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<SupportPayment>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SupportPayment>().Property(x => x.Provider).HasConversion<string>().HasMaxLength(20);
+        builder.Entity<SupportPayment>().Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Entity<SupportPayment>().Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Entity<SupportPayment>().Property(x => x.Currency).HasMaxLength(3);
+        builder.Entity<SupportPayment>().Property(x => x.MerchantInvoiceNumber).HasMaxLength(64);
+        builder.Entity<SupportPayment>().Property(x => x.ProviderPaymentId).HasMaxLength(128);
+        builder.Entity<SupportPayment>().Property(x => x.ProviderTransactionId).HasMaxLength(128);
+        builder.Entity<SupportPayment>().Property(x => x.FailureReasonCode).HasMaxLength(80);
+        builder.Entity<SupportPayment>().HasIndex(x => x.MerchantInvoiceNumber).IsUnique();
+        builder.Entity<SupportPayment>().HasIndex(x => new { x.UserId, x.CreatedAt });
+        builder.Entity<SupportPayment>().HasIndex(x => new { x.Status, x.CreatedAt });
+        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderPaymentId).IsUnique().HasFilter("[ProviderPaymentId] IS NOT NULL");
+        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderTransactionId).IsUnique().HasFilter("[ProviderTransactionId] IS NOT NULL");
     }
 }
