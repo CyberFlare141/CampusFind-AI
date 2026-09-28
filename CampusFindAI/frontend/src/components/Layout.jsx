@@ -142,7 +142,6 @@ const OFFICER_LINKS = [
 const BOTTOM_NAV_LINKS = [
   { to: '/',            label: 'Home',    icon: 'home',   end: true },
   { to: '/search',      label: 'Search',  icon: 'search' },
-  { to: '/visual-search', label: 'Visual Search', icon: 'search' },
   { to: '/lost-items',  label: 'Lost',    icon: 'lost' },
   { to: '/found-items', label: 'Found',   icon: 'found' },
   { to: '/my-claims',   label: 'Claims',  icon: 'claims' },
@@ -213,16 +212,32 @@ export default function Layout() {
   useEffect(() => {
     let cancelled = false;
 
+    function applyAvatar(nextAvatarUrl) {
+      if (!nextAvatarUrl) {
+        setAvatarUrl(null);
+        return;
+      }
+
+      const preview = new Image();
+      preview.onload = () => {
+        if (!cancelled) setAvatarUrl(nextAvatarUrl);
+      };
+      preview.onerror = () => {
+        if (!cancelled) setAvatarUrl(null);
+      };
+      preview.src = publicAssetUrl(nextAvatarUrl);
+    }
+
     getProfile()
       .then(profile => {
-        if (!cancelled) setAvatarUrl(profile?.avatarUrl || null);
+        if (!cancelled) applyAvatar(profile?.avatarUrl);
       })
       .catch(() => {
         if (!cancelled) setAvatarUrl(null);
       });
 
     function handleProfileUpdated(event) {
-      setAvatarUrl(event.detail?.avatarUrl || null);
+      applyAvatar(event.detail?.avatarUrl);
     }
 
     window.addEventListener('profile-updated', handleProfileUpdated);
@@ -631,7 +646,7 @@ export default function Layout() {
           >
             <Outlet />
           </PageMotion>
-          <footer style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
+          <footer className="app-footer" style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
             Enjoying CampusFind? <Link to="/support" style={{ fontWeight: 700 }}>Buy us a coffee ☕</Link>
           </footer>
         </main>
@@ -736,8 +751,8 @@ export default function Layout() {
               end={link.end}
               className={mobileNavClass}
             >
-              <Icon name={link.icon} />
-              <span>{link.label}</span>
+              <span className="mobile-nav-icon"><Icon name={link.icon} /></span>
+              <span className="mobile-nav-label">{link.label}</span>
               {renderNavIndicator(link)}
             </NavLink>
           ))}
