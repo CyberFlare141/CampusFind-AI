@@ -47,7 +47,11 @@ public class AdminAnalyticsController(ApplicationDbContext db) : ControllerBase
         var start = ParseStart(from); var end = ParseEndExclusive(to);
         var query = db.Claims.AsNoTracking().Where(x => (!start.HasValue || x.CreatedAt >= start) && (!end.HasValue || x.CreatedAt < end));
         var status = await query.GroupBy(x => x.Status).Select(g => new { status = g.Key, count = g.Count() }).ToListAsync(ct);
-        var resolution = await query.Where(x => x.ReviewedAt != null).Select(x => EF.Functions.DateDiffMinute(x.CreatedAt, x.ReviewedAt!.Value)).ToListAsync(ct);
+        // Provider-agnostic replacement for SQL Server's EF.Functions.DateDiffMinute, which PostgreSQL does not
+        // expose: read the two timestamps and subtract them in memory (this endpoint is admin-only and reviews are
+        // a small set).
+        var reviewWindow = await query.Where(x => x.ReviewedAt != null).Select(x => new { x.CreatedAt, ReviewedAt = x.ReviewedAt!.Value }).ToListAsync(ct);
+        var resolution = reviewWindow.Select(x => (x.ReviewedAt - x.CreatedAt).TotalMinutes).ToList();
         var resolved = status.Where(x => x.status is "Approved" or "Returned" or "Rejected").Sum(x => x.count);
         return Ok(new { status, reviewedClaims = resolution.Count, averageResolutionHours = resolution.Count == 0 ? 0 : Math.Round(resolution.Average() / 60d, 1), recoveryRate = resolved == 0 ? 0 : Math.Round(status.Where(x => x.status == "Returned").Sum(x => x.count) * 100d / resolved, 1) });
     }

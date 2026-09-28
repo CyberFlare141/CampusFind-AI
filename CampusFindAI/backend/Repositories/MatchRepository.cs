@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class MatchRepository(ISqlConnectionFactory connectionFactory) : IMatchRepository
+public class MatchRepository(IDbConnectionFactory connectionFactory) : IMatchRepository
 {
     public async Task<Match?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

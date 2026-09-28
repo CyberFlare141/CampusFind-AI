@@ -14,11 +14,10 @@ public static class ServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("DefaultConnection is missing.");
+        var connectionString = PostgreSqlConnection.Resolve(configuration);
 
-        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-        services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
+        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
 
         // Domain verification & Email service
         services.Configure<UniversityEmailOptions>(configuration.GetSection(UniversityEmailOptions.SectionName));

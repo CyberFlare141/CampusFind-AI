@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class FoundItemRepository(ISqlConnectionFactory connectionFactory)
+public class FoundItemRepository(IDbConnectionFactory connectionFactory)
     : IFoundItemRepository
 {
     public async Task AddAsync(

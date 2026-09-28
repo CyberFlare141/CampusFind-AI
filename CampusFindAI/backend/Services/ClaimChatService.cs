@@ -21,7 +21,8 @@ public sealed class ClaimChatService(ApplicationDbContext db, INotificationServi
         var context = await AuthorizeAsync(claimId, userId, true, ct);
         take = Math.Clamp(take <= 0 ? DefaultPageSize : take, 1, DefaultPageSize);
         var query = db.ClaimChatMessages.AsNoTracking().Where(message => message.ConversationId == context.Conversation.Id);
-        if (before.HasValue) query = query.Where(message => message.SentAt < before.Value);
+        var beforeUtc = UtcTimestamp.Normalize(before);
+        if (beforeUtc.HasValue) query = query.Where(message => message.SentAt < beforeUtc.Value);
         var newestFirst = await query.OrderByDescending(message => message.SentAt).Take(take).ToListAsync(ct);
         var messages = newestFirst.OrderBy(message => message.SentAt).Select(message => ToMessageDto(message, userId, context.Claim)).ToList();
         return new()

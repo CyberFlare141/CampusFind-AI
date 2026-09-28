@@ -1,0 +1,9 @@
+# Keep build output, runtime uploads and local settings out of the image.
+bin/
+obj/
+artifacts/
+wwwroot/uploads/
+Dockerfile
+*.user
+appsettings.Local.json
+appsettings.*.Local.json

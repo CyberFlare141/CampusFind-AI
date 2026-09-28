@@ -1,11 +1,33 @@
 using CampusFindAI.Api.Extensions;
 using CampusFindAI.Api.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi;
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
 using CampusFindAI.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Render (like most container hosts) injects the port the service must listen on. Only applied when present so
+// local development keeps using launchSettings.json / ASPNETCORE_URLS.
+var hostPort = Environment.GetEnvironmentVariable("PORT");
+if (int.TryParse(hostPort, out var renderPort) && renderPort > 0)
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
+
+// A hosting platform terminates TLS and forwards the original scheme/client address. Trusting those headers is what
+// lets HTTPS redirection and per-IP rate limiting see the real request. Enabled by default on Render (PORT set) and
+// overridable with ForwardedHeaders__Enabled=false.
+if (builder.Configuration.GetValue("ForwardedHeaders:Enabled", hostPort is not null))
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
 
 ValidateProductionConfiguration(builder.Configuration, builder.Environment);
 
@@ -46,6 +68,9 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    // Behind Render's TLS-terminating proxy the forwarded headers must be processed first, otherwise the request
+    // looks like plain HTTP and this redirect would loop.
+    app.UseForwardedHeaders();
     app.UseHttpsRedirection();
 }
 

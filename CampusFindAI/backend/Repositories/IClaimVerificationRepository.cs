@@ -11,5 +11,4 @@ public interface IClaimVerificationRepository
         => Task.FromResult((IReadOnlyList<ClaimVerification>)[]);
     Task AddAsync(ClaimVerification verification, CancellationToken cancellationToken = default);
     Task UpdateAsync(ClaimVerification verification, CancellationToken cancellationToken = default);
-    Task EnsureTableCreatedAsync(CancellationToken cancellationToken = default);
 }

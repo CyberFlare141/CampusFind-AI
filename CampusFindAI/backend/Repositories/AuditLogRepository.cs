@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class AuditLogRepository(ISqlConnectionFactory connectionFactory) : IAuditLogRepository
+public class AuditLogRepository(IDbConnectionFactory connectionFactory) : IAuditLogRepository
 {
     public async Task AddAsync(
         AuditLog log,
@@ -35,11 +35,12 @@ public class AuditLogRepository(ISqlConnectionFactory connectionFactory) : IAudi
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT TOP (@Take) Id, UserId, Action, Details, CreatedAt
+            SELECT Id, UserId, Action, Details, CreatedAt
             FROM AuditLogs
             WHERE UserId = @UserId
               AND (@Action IS NULL OR Action = @Action)
-            ORDER BY CreatedAt DESC;
+            ORDER BY CreatedAt DESC
+            LIMIT @Take;
             """;
 
         var logs = new List<AuditLog>();
@@ -67,10 +68,11 @@ public class AuditLogRepository(ISqlConnectionFactory connectionFactory) : IAudi
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT TOP (1) Id, UserId, Action, Details, CreatedAt
+            SELECT Id, UserId, Action, Details, CreatedAt
             FROM AuditLogs
             WHERE Id = @Id
-              AND UserId = @UserId;
+            AND UserId = @UserId
+            LIMIT 1;
             """;
 
         await using var connection = connectionFactory.CreateConnection();

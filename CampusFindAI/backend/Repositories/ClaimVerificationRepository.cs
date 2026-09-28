@@ -1,80 +1,14 @@
 using System.Data;
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class ClaimVerificationRepository(ISqlConnectionFactory connectionFactory) : IClaimVerificationRepository
+public class ClaimVerificationRepository(IDbConnectionFactory connectionFactory) : IClaimVerificationRepository
 {
-    private static bool _tableEnsured;
-    private static readonly SemaphoreSlim _lock = new(1, 1);
-
-    public async Task EnsureTableCreatedAsync(CancellationToken cancellationToken = default)
-    {
-        if (_tableEnsured) return;
-
-        await _lock.WaitAsync(cancellationToken);
-        try
-        {
-            if (_tableEnsured) return;
-
-            const string ddl = """
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ClaimVerifications')
-                BEGIN
-                    CREATE TABLE ClaimVerifications (
-                        Id UNIQUEIDENTIFIER PRIMARY KEY,
-                        ClaimId UNIQUEIDENTIFIER NOT NULL,
-                        MatchId UNIQUEIDENTIFIER NULL,
-                        LostItemId UNIQUEIDENTIFIER NULL,
-                        SecureQuestionsPayload NVARCHAR(MAX) NOT NULL,
-                        PublicQuestionsJson NVARCHAR(MAX) NOT NULL,
-                        SubmittedAnswersJson NVARCHAR(MAX) NULL,
-                        EvaluationResultJson NVARCHAR(MAX) NULL,
-                        ConfidenceScore DECIMAL(5,2) NULL,
-                        MatchedCount INT NULL,
-                        TotalQuestions INT NOT NULL DEFAULT 3,
-                        Passed BIT NULL,
-                        Status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
-                        AttemptCount INT NOT NULL DEFAULT 0,
-                        MaxAttempts INT NOT NULL DEFAULT 2,
-                        CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-                        SubmittedAt DATETIME2 NULL,
-                        PassedAt DATETIME2 NULL,
-                        SecurityReviewedByUserId NVARCHAR(450) NULL,
-                        SecurityReviewedAt DATETIME2 NULL,
-                        SecurityReviewNote NVARCHAR(1000) NULL,
-                        CONSTRAINT FK_ClaimVerifications_Claims FOREIGN KEY (ClaimId) REFERENCES Claims(Id) ON DELETE CASCADE
-                    );
-                    CREATE UNIQUE INDEX IX_ClaimVerifications_ClaimId ON ClaimVerifications(ClaimId);
-                    CREATE UNIQUE INDEX IX_ClaimVerifications_MatchId ON ClaimVerifications(MatchId) WHERE MatchId IS NOT NULL;
-                END
-                IF COL_LENGTH('ClaimVerifications', 'MatchId') IS NULL ALTER TABLE ClaimVerifications ADD MatchId UNIQUEIDENTIFIER NULL;
-                IF COL_LENGTH('ClaimVerifications', 'LostItemId') IS NULL ALTER TABLE ClaimVerifications ADD LostItemId UNIQUEIDENTIFIER NULL;
-                IF COL_LENGTH('ClaimVerifications', 'PassedAt') IS NULL ALTER TABLE ClaimVerifications ADD PassedAt DATETIME2 NULL;
-                IF COL_LENGTH('ClaimVerifications', 'SecurityReviewedByUserId') IS NULL ALTER TABLE ClaimVerifications ADD SecurityReviewedByUserId NVARCHAR(450) NULL;
-                IF COL_LENGTH('ClaimVerifications', 'SecurityReviewedAt') IS NULL ALTER TABLE ClaimVerifications ADD SecurityReviewedAt DATETIME2 NULL;
-                IF COL_LENGTH('ClaimVerifications', 'SecurityReviewNote') IS NULL ALTER TABLE ClaimVerifications ADD SecurityReviewNote NVARCHAR(1000) NULL;
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ClaimVerifications_MatchId' AND object_id = OBJECT_ID('ClaimVerifications')) CREATE UNIQUE INDEX IX_ClaimVerifications_MatchId ON ClaimVerifications(MatchId) WHERE MatchId IS NOT NULL;
-                """;
-
-            await using var connection = connectionFactory.CreateConnection();
-            await connection.OpenAsync(cancellationToken);
-            await using var command = new SqlCommand(ddl, connection);
-            await command.ExecuteNonQueryAsync(cancellationToken);
-
-            _tableEnsured = true;
-        }
-        finally
-        {
-            _lock.Release();
-        }
-    }
-
     public async Task<ClaimVerification?> GetByClaimIdAsync(Guid claimId, CancellationToken cancellationToken = default)
     {
-        await EnsureTableCreatedAsync(cancellationToken);
-
         const string sql = """
             SELECT
                 Id, ClaimId, MatchId, LostItemId, SecureQuestionsPayload, PublicQuestionsJson,
@@ -101,7 +35,6 @@ public class ClaimVerificationRepository(ISqlConnectionFactory connectionFactory
 
     public async Task<ClaimVerification?> GetByMatchIdAsync(Guid matchId, CancellationToken cancellationToken = default)
     {
-        await EnsureTableCreatedAsync(cancellationToken);
         const string sql = """
             SELECT Id, ClaimId, MatchId, LostItemId, SecureQuestionsPayload, PublicQuestionsJson,
                    SubmittedAnswersJson, EvaluationResultJson, ConfidenceScore, MatchedCount,
@@ -118,15 +51,12 @@ public class ClaimVerificationRepository(ISqlConnectionFactory connectionFactory
 
     public async Task<IReadOnlyList<ClaimVerification>> GetPendingSecurityReviewAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureTableCreatedAsync(cancellationToken);
         const string sql = "SELECT Id, ClaimId, MatchId, LostItemId, SecureQuestionsPayload, PublicQuestionsJson, SubmittedAnswersJson, EvaluationResultJson, ConfidenceScore, MatchedCount, TotalQuestions, Passed, Status, AttemptCount, MaxAttempts, CreatedAt, SubmittedAt, PassedAt, SecurityReviewedByUserId, SecurityReviewedAt, SecurityReviewNote FROM ClaimVerifications WHERE Status = 'PendingSecurityReview' ORDER BY SubmittedAt;";
         var result = new List<ClaimVerification>(); await using var connection = connectionFactory.CreateConnection(); await connection.OpenAsync(cancellationToken); await using var command = new SqlCommand(sql, connection); await using var reader = await command.ExecuteReaderAsync(cancellationToken); while (await reader.ReadAsync(cancellationToken)) result.Add(Map(reader)); return result;
     }
 
     public async Task AddAsync(ClaimVerification verification, CancellationToken cancellationToken = default)
     {
-        await EnsureTableCreatedAsync(cancellationToken);
-
         const string sql = """
             INSERT INTO ClaimVerifications (
                 Id, ClaimId, MatchId, LostItemId, SecureQuestionsPayload, PublicQuestionsJson,
@@ -173,8 +103,6 @@ public class ClaimVerificationRepository(ISqlConnectionFactory connectionFactory
 
     public async Task UpdateAsync(ClaimVerification verification, CancellationToken cancellationToken = default)
     {
-        await EnsureTableCreatedAsync(cancellationToken);
-
         const string sql = """
             UPDATE ClaimVerifications
             SET SecureQuestionsPayload = @SecureQuestionsPayload,

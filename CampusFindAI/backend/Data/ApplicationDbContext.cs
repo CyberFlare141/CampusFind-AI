@@ -1,6 +1,7 @@
 using CampusFindAI.Api.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace CampusFindAI.Api.Data;
 
@@ -65,7 +66,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Reputation>().Property(x => x.Level).HasMaxLength(30).HasDefaultValue("New");
-        builder.Entity<Reputation>().Property(x => x.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Entity<Reputation>().Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         builder.Entity<ReputationHistory>()
             .HasOne(x => x.User)
@@ -77,7 +78,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<ReputationHistory>()
             .HasIndex(x => new { x.UserId, x.RelatedEntityType, x.RelatedEntityId, x.Reason })
             .IsUnique()
-            .HasFilter("[RelatedEntityType] IS NOT NULL AND [RelatedEntityId] IS NOT NULL");
+            .HasFilter("\"relatedentitytype\" IS NOT NULL AND \"relatedentityid\" IS NOT NULL");
 
         builder.Entity<ReputationHistory>().Property(x => x.Reason).HasMaxLength(200);
         builder.Entity<ReputationHistory>().Property(x => x.RelatedEntityType).HasMaxLength(50);
@@ -95,11 +96,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<FoundItem>().Property(x => x.Status).HasMaxLength(30).HasDefaultValue("Available");
-        builder.Entity<FoundItem>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Entity<FoundItem>().Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         builder.Entity<LostItem>().Property(x => x.LocationDetails).HasMaxLength(200);
         builder.Entity<FoundItem>().Property(x => x.LocationDetails).HasMaxLength(200);
         builder.Entity<FoundItem>().Property(x => x.PrivateVerificationDetails).HasMaxLength(1000);
-        builder.Entity<FoundItem>().Property(x => x.FounderVerificationAnswersJson).HasColumnType("nvarchar(max)");
+        builder.Entity<FoundItem>().Property(x => x.FounderVerificationAnswersJson).HasColumnType("text");
         builder.Entity<Floor>().HasIndex(x => new { x.BuildingId, x.FloorNumber }).IsUnique();
         builder.Entity<Floor>().HasOne(x => x.Building).WithMany(x => x.Floors).HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<Location>().HasOne(x => x.Floor).WithMany(x => x.Locations).HasForeignKey(x => x.FloorId).OnDelete(DeleteBehavior.Restrict);
@@ -127,7 +128,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        builder.Entity<Notification>().Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Entity<Notification>().Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         
         builder.Entity<Match>()
             .Property(m => m.ConfidenceScore)
@@ -218,7 +219,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .Property(x => x.ConfidenceScore)
             .HasPrecision(5, 2);
         builder.Entity<ClaimVerification>().Property(x => x.SecurityReviewNote).HasMaxLength(1000);
-        builder.Entity<ClaimVerification>().HasIndex(x => x.MatchId).IsUnique().HasFilter("[MatchId] IS NOT NULL");
+        builder.Entity<ClaimVerification>().HasIndex(x => x.MatchId).IsUnique().HasFilter("\"matchid\" IS NOT NULL");
 
         builder.Entity<SecurityOfficerRequest>().HasIndex(x => new { x.UserId, x.Status });
         builder.Entity<SecurityOfficerRequest>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
@@ -244,7 +245,46 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<SupportPayment>().HasIndex(x => x.MerchantInvoiceNumber).IsUnique();
         builder.Entity<SupportPayment>().HasIndex(x => new { x.UserId, x.CreatedAt });
         builder.Entity<SupportPayment>().HasIndex(x => new { x.Status, x.CreatedAt });
-        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderPaymentId).IsUnique().HasFilter("[ProviderPaymentId] IS NOT NULL");
-        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderTransactionId).IsUnique().HasFilter("[ProviderTransactionId] IS NOT NULL");
+        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderPaymentId).IsUnique().HasFilter("\"providerpaymentid\" IS NOT NULL");
+        builder.Entity<SupportPayment>().HasIndex(x => x.ProviderTransactionId).IsUnique().HasFilter("\"providertransactionid\" IS NOT NULL");
+
+        ApplyPostgresIdentifierCasing(builder);
     }
+
+    /// <summary>
+    /// PostgreSQL folds unquoted identifiers to lower case. The repositories query this schema with unquoted SQL
+    /// (for example <c>SELECT ... FROM FoundItems</c>) and read values back by column name, so the model maps every
+    /// table and column to its lower-case form. EF-generated SQL, the generated migration and hand-written SQL then
+    /// all address the same objects, and the schema follows normal PostgreSQL naming.
+    /// </summary>
+    private static void ApplyPostgresIdentifierCasing(ModelBuilder builder)
+    {
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (tableName is null) continue;
+
+            var loweredTableName = tableName.ToLowerInvariant();
+            if (!string.Equals(tableName, loweredTableName, StringComparison.Ordinal))
+            {
+                entityType.SetTableName(loweredTableName);
+            }
+
+            var storeObject = StoreObjectIdentifier.Create(entityType, StoreObjectType.Table);
+            if (storeObject is null) continue;
+
+            foreach (var property in entityType.GetProperties())
+            {
+                var columnName = property.GetColumnName(storeObject.Value);
+                if (columnName is null) continue;
+
+                var loweredColumnName = columnName.ToLowerInvariant();
+                if (!string.Equals(columnName, loweredColumnName, StringComparison.Ordinal))
+                {
+                    property.SetColumnName(loweredColumnName);
+                }
+            }
+        }
+    }
+
 }

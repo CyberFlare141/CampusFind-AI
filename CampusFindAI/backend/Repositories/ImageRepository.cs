@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public sealed class ImageRepository(ISqlConnectionFactory connectionFactory) : IImageRepository
+public sealed class ImageRepository(IDbConnectionFactory connectionFactory) : IImageRepository
 {
     public async Task AddRangeAsync(IReadOnlyCollection<Image> images, CancellationToken cancellationToken = default)
     {

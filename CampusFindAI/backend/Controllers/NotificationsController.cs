@@ -21,7 +21,8 @@ public class NotificationsController(ApplicationDbContext dbContext, IHubContext
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
         take = Math.Clamp(take, 1, 50);
         var query = dbContext.Notifications.AsNoTracking().Where(item => item.UserId == userId);
-        if (before.HasValue) query = query.Where(item => item.CreatedAt < before.Value);
+        var beforeUtc = UtcTimestamp.Normalize(before);
+        if (beforeUtc.HasValue) query = query.Where(item => item.CreatedAt < beforeUtc.Value);
         var notifications = await query.OrderByDescending(item => item.CreatedAt).Take(take).Select(item => new NotificationDto { Id = item.Id, Message = item.Message, Link = item.Link, Category = item.Category, IsRead = item.IsRead, CreatedAt = item.CreatedAt }).ToListAsync(cancellationToken);
         return Ok(new NotificationPageDto { Items = notifications, NextBefore = notifications.Count == take ? notifications[^1].CreatedAt : null });
     }

@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Middleware;
 
@@ -27,7 +27,7 @@ public class GlobalExceptionHandlerMiddleware(
         {
             await WriteErrorAsync(context, HttpStatusCode.BadRequest, ex.Message);
         }
-        catch (SqlException ex)
+        catch (NpgsqlException ex)
         {
             logger.LogError(ex, "Database operation failed.");
             await WriteErrorAsync(

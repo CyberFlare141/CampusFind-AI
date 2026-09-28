@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepository
+public class UserRepository(IDbConnectionFactory connectionFactory) : IUserRepository
 {
     public async Task<IReadOnlyList<ApplicationUser>> GetByRoleAsync(UserRole role, CancellationToken cancellationToken = default)
     {
@@ -20,7 +20,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT TOP (1)
+            SELECT
                 Id,
                 Role,
                 IsRestricted,
@@ -39,7 +39,8 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
                 LockoutEnabled,
                 AccessFailedCount
             FROM AspNetUsers
-            WHERE NormalizedEmail = @NormalizedEmail;
+            WHERE NormalizedEmail = @NormalizedEmail
+            LIMIT 1;
             """;
 
         await using var connection = connectionFactory.CreateConnection();
@@ -59,7 +60,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT TOP (1)
+            SELECT
                 Id,
                 Role,
                 IsRestricted,
@@ -78,7 +79,8 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
                 LockoutEnabled,
                 AccessFailedCount
             FROM AspNetUsers
-            WHERE Id = @Id;
+            WHERE Id = @Id
+            LIMIT 1;
             """;
 
         await using var connection = connectionFactory.CreateConnection();
@@ -198,7 +200,7 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
 
     public async Task UpdateRoleAsync(string userId, UserRole role, CancellationToken cancellationToken = default)
     {
-        const string sql = "UPDATE AspNetUsers SET Role = @Role, IsRestricted = 0 WHERE Id = @Id;";
+        const string sql = "UPDATE AspNetUsers SET Role = @Role, IsRestricted = FALSE WHERE Id = @Id;";
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
@@ -239,16 +241,16 @@ public class UserRepository(ISqlConnectionFactory connectionFactory) : IUserRepo
         string roleName,
         CancellationToken cancellationToken = default)
     {
+        // PostgreSQL has no IF/THEN block outside of a function body, so the guard becomes
+        // "INSERT ... SELECT ... WHERE NOT EXISTS", which keeps this call idempotent.
         const string sql = """
-            IF NOT EXISTS (
+            INSERT INTO AspNetRoles (Id, Name, NormalizedName, ConcurrencyStamp)
+            SELECT @Id, @Name, @NormalizedName, @ConcurrencyStamp
+            WHERE NOT EXISTS (
                 SELECT 1
                 FROM AspNetRoles
                 WHERE NormalizedName = @NormalizedName
-            )
-            BEGIN
-                INSERT INTO AspNetRoles (Id, Name, NormalizedName, ConcurrencyStamp)
-                VALUES (@Id, @Name, @NormalizedName, @ConcurrencyStamp);
-            END
+            );
             """;
 
         await using var connection = connectionFactory.CreateConnection();

@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRepository
+public class ClaimRepository(IDbConnectionFactory connectionFactory) : IClaimRepository
 {
     public async Task AddAsync(
         Claim claim,
@@ -180,19 +180,10 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
 
     public async Task<bool> TryApproveAsync(Claim claim, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            DECLARE @lockResult int;
-            BEGIN TRANSACTION;
-            EXEC @lockResult = sp_getapplock
-                @Resource = CONCAT('CampusFindAI:claim-approval:', CONVERT(nvarchar(36), @FoundItemId)),
-                @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000;
-            IF @lockResult < 0
-            BEGIN
-                ROLLBACK TRANSACTION;
-                SELECT CAST(0 AS bit);
-                RETURN;
-            END;
-
+        // PostgreSQL advisory locks replace SQL Server's sp_getapplock. The lock is held for the lifetime of the
+        // transaction, so concurrent approvals of the same found item serialize here; RETURNING 1 reports whether the
+        // guarded UPDATE actually changed the row.
+        const string updateSql = """
             UPDATE Claims
             SET Status = 'Approved', ReviewedByUserId = @ReviewedByUserId, ReviewedAt = @ReviewedAt,
                 DecisionNotes = @DecisionNotes, HandoverQrToken = @HandoverQrToken,
@@ -202,22 +193,34 @@ public class ClaimRepository(ISqlConnectionFactory connectionFactory) : IClaimRe
                   SELECT 1 FROM Claims other
                   WHERE other.FoundItemId = @FoundItemId AND other.Id <> @Id
                     AND other.Status IN ('Approved', 'Returned')
-              );
-            DECLARE @changed bit = IIF(@@ROWCOUNT = 1, 1, 0);
-            COMMIT TRANSACTION;
-            SELECT @changed;
+              )
+            RETURNING 1;
             """;
+
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@Id", claim.Id);
-        command.Parameters.AddWithValue("@FoundItemId", claim.FoundItemId);
-        command.Parameters.AddWithValue("@ReviewedByUserId", claim.ReviewedByUserId!);
-        command.Parameters.AddWithValue("@ReviewedAt", claim.ReviewedAt!.Value);
-        command.Parameters.AddWithValue("@DecisionNotes", (object?)claim.DecisionNotes ?? DBNull.Value);
-        command.Parameters.AddWithValue("@HandoverQrToken", claim.HandoverQrToken!);
-        command.Parameters.AddWithValue("@HandoverQrCreatedAt", claim.HandoverQrCreatedAt!.Value);
-        return Convert.ToBoolean(await command.ExecuteScalarAsync(cancellationToken));
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var lockCommand = new SqlCommand("SELECT pg_advisory_xact_lock(hashtext(@LockKey));", connection, transaction))
+        {
+            lockCommand.Parameters.AddWithValue("@LockKey", $"CampusFindAI:claim-approval:{claim.FoundItemId}");
+            await lockCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var command = new SqlCommand(updateSql, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@Id", claim.Id);
+            command.Parameters.AddWithValue("@FoundItemId", claim.FoundItemId);
+            command.Parameters.AddWithValue("@ReviewedByUserId", claim.ReviewedByUserId!);
+            command.Parameters.AddWithValue("@ReviewedAt", claim.ReviewedAt!.Value);
+            command.Parameters.AddWithValue("@DecisionNotes", (object?)claim.DecisionNotes ?? DBNull.Value);
+            command.Parameters.AddWithValue("@HandoverQrToken", claim.HandoverQrToken!);
+            command.Parameters.AddWithValue("@HandoverQrCreatedAt", claim.HandoverQrCreatedAt!.Value);
+
+            var changed = await command.ExecuteScalarAsync(cancellationToken) is not null;
+            await transaction.CommitAsync(cancellationToken);
+            return changed;
+        }
     }
 
     public async Task<bool> TryCompleteHandoverAsync(Claim claim, DateTime utcNow, CancellationToken cancellationToken = default)

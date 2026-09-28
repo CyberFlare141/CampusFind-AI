@@ -1,3 +1,4 @@
+using CampusFindAI.Api.Data;
 using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
@@ -8,8 +9,9 @@ public class LostItemService(ILostItemRepository repository, IImageRepository im
 {
     public async Task<LostItemDto> CreateAsync(string userId, CreateLostItemDto request, CancellationToken ct = default)
     {
-        Validate(request.Title, request.LostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
-        var item = new LostItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), LostAt = request.LostAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Open", CreatedAt = DateTime.UtcNow };
+        var lostAt = UtcTimestamp.Normalize(request.LostAt);
+        Validate(request.Title, lostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
+        var item = new LostItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), LostAt = lostAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Open", CreatedAt = DateTime.UtcNow };
         await repository.AddAsync(item, ct); var images = await imageStorage.SaveAsync(item.Id, null, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForLostItemAsync(item.Id, ct); return MapToDto(item, images);
     }
     public async Task<IReadOnlyList<LostItemDto>> GetAllAsync(CancellationToken ct = default) => await MapManyAsync((await repository.GetAllAsync(ct)).Where(x => x.Status == "Open").ToList(), ct);
@@ -17,8 +19,8 @@ public class LostItemService(ILostItemRepository repository, IImageRepository im
     public async Task<LostItemDto?> GetByIdAsync(Guid id, CancellationToken ct = default) { var item = await repository.GetByIdAsync(id, ct); return item is null ? null : await MapWithReferenceAsync(item, await imageRepository.GetByLostItemIdsAsync([id], ct), ct); }
     public async Task<LostItemDto> UpdateAsync(string userId, Guid id, UpdateLostItemDto request, CancellationToken ct = default)
     {
-        var item = await GetOwnedAsync(userId, id, ct); if (item.Status != "Open") throw Conflict("Only an open lost-item report can be edited."); Validate(request.Title, request.LostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
-        item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.LostAt = request.LostAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim();
+        var item = await GetOwnedAsync(userId, id, ct); if (item.Status != "Open") throw Conflict("Only an open lost-item report can be edited."); var lostAt = UtcTimestamp.Normalize(request.LostAt); Validate(request.Title, lostAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images);
+        item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.LostAt = lostAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim();
         await repository.UpdateAsync(item, ct); var images = await imageStorage.SaveAsync(item.Id, null, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForLostItemAsync(item.Id, ct); await AuditAsync(userId, "LostReportEdited", id, ct); return (await GetByIdAsync(id, ct))!;
     }
     public Task<LostItemDto> ResolveAsync(string userId, Guid id, CancellationToken ct = default) => ChangeStatusAsync(userId, id, "Open", "Resolved", "LostReportResolved", ct);

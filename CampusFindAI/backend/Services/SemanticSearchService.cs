@@ -221,9 +221,9 @@ public class SemanticSearchService(
 
             DateTime? dateFrom = null, dateTo = null;
             if (!string.IsNullOrWhiteSpace(parsed.DateFrom) &&
-                DateTime.TryParse(parsed.DateFrom, out var df)) dateFrom = df;
+                DateTime.TryParse(parsed.DateFrom, out var df)) dateFrom = UtcTimestamp.Normalize(df);
             if (!string.IsNullOrWhiteSpace(parsed.DateTo) &&
-                DateTime.TryParse(parsed.DateTo, out var dt)) dateTo = dt;
+                DateTime.TryParse(parsed.DateTo, out var dt)) dateTo = UtcTimestamp.Normalize(dt);
 
             logger.LogInformation(
                 "[SemanticSearch:{Id}] AI → intent={Intent} item={Item} loc={Loc} conf={C:F2}",
@@ -435,8 +435,8 @@ public class SemanticSearchService(
         // ④ Date range match (weight 12)
         if (intent is not null && (intent.DateFrom.HasValue || intent.DateTo.HasValue) && itemDate.HasValue)
         {
-            var from = intent.DateFrom ?? DateTime.MinValue;
-            var to   = (intent.DateTo ?? DateTime.MaxValue).AddDays(1);
+            var from = UtcTimestamp.Normalize(intent.DateFrom ?? DateTime.MinValue);
+            var to   = UtcTimestamp.Normalize((intent.DateTo ?? DateTime.MaxValue).AddDays(1));
             if (itemDate >= from && itemDate <= to) score += 12;
         }
 

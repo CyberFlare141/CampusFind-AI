@@ -1,3 +1,4 @@
+using CampusFindAI.Api.Data;
 using CampusFindAI.Api.DTOs;
 using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
@@ -8,11 +9,12 @@ public class FoundItemService(IFoundItemRepository repository, IImageRepository 
 {
     public async Task<FoundItemDto> CreateAsync(string userId, CreateFoundItemDto request, CancellationToken ct = default)
     {
-        Validate(request.Title, request.FoundAt, request.LocationDetails);
+        var foundAt = UtcTimestamp.Normalize(request.FoundAt);
+        Validate(request.Title, foundAt, request.LocationDetails);
         var founderAnswers = OwnershipVerificationQuestions.SerializeFounderAnswers(request.FounderVerificationAnswers);
         await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct);
         imageStorage.Validate(request.Images);
-        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), FounderVerificationAnswersJson = founderAnswers, FoundAt = request.FoundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow };
+        var item = new FoundItem { Id = Guid.NewGuid(), UserId = userId, Title = request.Title.Trim(), Description = request.Description?.Trim(), FounderVerificationAnswersJson = founderAnswers, FoundAt = foundAt, CategoryId = request.CategoryId, LocationId = request.LocationId, LocationDetails = request.LocationDetails?.Trim(), Status = "Available", CreatedAt = DateTime.UtcNow };
         await repository.AddAsync(item, ct);
         var images = await imageStorage.SaveAsync(null, item.Id, request.Images, ct);
         await imageRepository.AddRangeAsync(images, ct);
@@ -33,7 +35,7 @@ public class FoundItemService(IFoundItemRepository repository, IImageRepository 
         await AuditAsync(userId, "FounderVerificationSaved", id, ct);
         return MapFounderVerification(item);
     }
-    public async Task<FoundItemDto> UpdateAsync(string userId, Guid id, UpdateFoundItemDto request, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); EnsureAvailable(item); await EnsureNoActiveClaimAsync(id, ct); Validate(request.Title, request.FoundAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images); item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.FoundAt = request.FoundAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim(); await repository.UpdateAsync(item, ct); var images = await imageStorage.SaveAsync(null, item.Id, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForFoundItemAsync(id, ct); await AuditAsync(userId, "FoundReportEdited", id, ct); return (await GetByIdAsync(id, ct))!; }
+    public async Task<FoundItemDto> UpdateAsync(string userId, Guid id, UpdateFoundItemDto request, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); EnsureAvailable(item); await EnsureNoActiveClaimAsync(id, ct); var foundAt = UtcTimestamp.Normalize(request.FoundAt); Validate(request.Title, foundAt, request.LocationDetails); await referenceDataService.EnsureValidAsync(request.CategoryId, request.BuildingId, request.FloorId, request.LocationId, ct); imageStorage.Validate(request.Images); item.Title = request.Title.Trim(); item.Description = request.Description?.Trim(); item.FoundAt = foundAt; item.CategoryId = request.CategoryId; item.LocationId = request.LocationId; item.LocationDetails = request.LocationDetails?.Trim(); await repository.UpdateAsync(item, ct); var images = await imageStorage.SaveAsync(null, item.Id, request.Images, ct); await imageRepository.AddRangeAsync(images, ct); await matchService.RefreshForFoundItemAsync(id, ct); await AuditAsync(userId, "FoundReportEdited", id, ct); return (await GetByIdAsync(id, ct))!; }
     public async Task<FoundItemDto> ArchiveAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); EnsureAvailable(item); await EnsureNoActiveClaimAsync(id, ct); await repository.UpdateStatusAsync(id, "Archived", ct); await AuditAsync(userId, "FoundReportArchived", id, ct); return (await GetByIdAsync(id, ct))!; }
     public async Task<FoundItemDto> ReopenAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status != "Archived") throw Conflict("Only archived found-item reports can be reopened."); await EnsureNoActiveClaimAsync(id, ct); await repository.UpdateStatusAsync(id, "Available", ct); await matchService.RefreshForFoundItemAsync(id, ct); await AuditAsync(userId, "FoundReportReopened", id, ct); return (await GetByIdAsync(id, ct))!; }
     public async Task DeleteAsync(string userId, Guid id, CancellationToken ct = default) { var item = await GetOwnedAsync(userId, id, ct); if (item.Status is not ("Available" or "Archived")) throw Conflict("This found-item report is controlled by the claim and handover workflow and cannot be deleted."); await EnsureNoActiveClaimAsync(id, ct); if ((await matchRepository.GetByFoundItemIdAsync(id, ct)).Count > 0) throw Conflict("This report has match history and cannot be deleted. Archive it instead."); await repository.DeleteAsync(id, ct); await AuditAsync(userId, "FoundReportDeleted", id, ct); }

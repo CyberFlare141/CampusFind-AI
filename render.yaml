@@ -1,0 +1,61 @@
+# Render Blueprint for the CampusFind AI backend + PostgreSQL database.
+#
+# Deploy it either by pointing a Render Blueprint at this repository (New > Blueprint) or by copying the
+# values into the Dashboard. Values marked `sync: false` are secrets/URLs that Render prompts for on creation -
+# nothing secret is stored in this file.
+#
+# The frontend is deployed separately; set Cors__AllowedOrigins__0 (and __1, __2 ...) to its public URL.
+
+services:
+  - type: web
+    name: campusfindai-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./CampusFindAI/backend
+    dockerfilePath: ./CampusFindAI/backend/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ForwardedHeaders__Enabled
+        value: "true"
+      # Render injects PORT; the app binds to it automatically.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: campusfindai-db
+          property: connectionString
+      - key: Jwt__Key
+        generateValue: true
+      # Production startup requires a real SMTP provider (see backend/README notes).
+      - key: Email__Provider
+        value: Smtp
+      - key: Email__FromName
+        value: CampusFind AI
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FrontendBaseUrl
+        sync: false
+      - key: Email__Smtp__Host
+        sync: false
+      - key: Email__Smtp__Port
+        value: "587"
+      - key: Email__Smtp__Username
+        sync: false
+      - key: Email__Smtp__Password
+        sync: false
+      - key: Email__Smtp__EnableSsl
+        value: "true"
+      - key: Google__ClientId
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+      - key: Gemini__ApiKey
+        sync: false
+
+databases:
+  - name: campusfindai-db
+    plan: free
+    region: singapore
+    databaseName: campusfindai
+    user: campusfindai

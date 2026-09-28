@@ -1,10 +1,10 @@
 using CampusFindAI.Api.Data;
 using CampusFindAI.Api.Models;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace CampusFindAI.Api.Repositories;
 
-public class LostItemRepository(ISqlConnectionFactory connectionFactory)
+public class LostItemRepository(IDbConnectionFactory connectionFactory)
     : ILostItemRepository
 {
     public async Task AddAsync(
