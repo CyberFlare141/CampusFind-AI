@@ -88,6 +88,9 @@ static void ValidateProductionConfiguration(IConfiguration configuration, IHostE
     if (!Uri.TryCreate(frontendBaseUrl, UriKind.Absolute, out var frontendUri) || frontendUri.Scheme != Uri.UriSchemeHttps)
         errors.Add("Email:FrontendBaseUrl must be an HTTPS URL in production.");
 
+    if (configuration.GetValue<bool>("Payments:UseMockProvider"))
+        errors.Add("Payments:UseMockProvider is Development-only and must be false in production.");
+
     if (errors.Count > 0)
         throw new InvalidOperationException("Production configuration is incomplete: " + string.Join(" ", errors));
 }

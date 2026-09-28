@@ -1,0 +1,13 @@
+import { useEffect, useState } from 'react';
+import { Alert, EmptyState, PageLoading } from '../components/Ui';
+import { formatBangladeshDate } from '../api/client';
+import { getAdminSupportPayments } from '../api/supportPayments';
+
+export default function AdminSupportPaymentsPage() {
+  const [summary, setSummary] = useState(null); const [error, setError] = useState('');
+  useEffect(() => { getAdminSupportPayments().then(setSummary).catch(err => setError(err.message)); }, []);
+  if (!summary && !error) return <PageLoading label="Loading support payments…" />;
+  if (error) return <section className="page-container"><Alert type="error">{error}</Alert></section>;
+  return <section className="page-container admin-analytics-page"><header className="page-header"><div><span className="eyebrow">Administration</span><h1>Support Payments</h1><p>Voluntary CampusFind contributions. Payment status is provider-verified and cannot be manually changed here.</p></div></header><div className="analytics-kpis"><Kpi label="Successful support" value={`৳${summary.totalSuccessfulAmount}`} /><Kpi label="Successful payments" value={summary.successfulPayments} /><Kpi label="Pending" value={summary.pendingPayments} /><Kpi label="Failed / cancelled" value={summary.failedOrCancelledPayments} /></div><section className="analytics-section"><h2>Provider breakdown</h2>{summary.byProvider.length ? <div className="analytics-secondary-kpis">{summary.byProvider.map(item => <Kpi key={item.provider} label={item.provider} value={`৳${item.successfulAmount} · ${item.successfulPayments} successful`} />)}</div> : <EmptyState title="No successful support payments" message="Provider totals will appear after verified payments." />}</section><section className="analytics-section"><h2>Recent payment records</h2>{summary.recentPayments.length ? <div className="card" style={{ overflowX: 'auto' }}><table className="data-table"><thead><tr><th>Date</th><th>Provider</th><th>Amount</th><th>Status</th><th>Transaction/reference</th></tr></thead><tbody>{summary.recentPayments.map(item => <tr key={item.id}><td>{formatBangladeshDate(item.createdAt, { year: 'numeric', month: 'short', day: 'numeric' })}</td><td>{item.provider}</td><td>৳{item.amount}</td><td>{item.status}</td><td>{item.providerTransactionId || item.merchantInvoiceNumber}</td></tr>)}</tbody></table></div> : <EmptyState title="No support payments" message="Records will appear here when users create voluntary support payments." />}</section></section>;
+}
+function Kpi({ label, value }) { return <article className="card analytics-kpi"><span>{label}</span><strong>{value}</strong></article>; }

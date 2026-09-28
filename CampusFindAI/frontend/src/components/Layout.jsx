@@ -85,6 +85,11 @@ const Icon = ({ name }) => {
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
     ),
+    coffee: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 8h13v7a5 5 0 01-5 5H9a5 5 0 01-5-5V8z"/><path d="M17 10h1a3 3 0 010 6h-1"/><path d="M8 3c-1 1 1 2 0 4M12 3c-1 1 1 2 0 4"/>
+      </svg>
+    ),
     plus: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -123,6 +128,7 @@ const STUDENT_LINKS = [
   { to: '/found-items', label: 'Found Items',  icon: 'found' },
   { to: '/my-claims',   label: 'My Claims',    icon: 'claims' },
   { to: '/my-matches',  label: 'My AI Matches', icon: 'matches' },
+  { to: '/support',     label: 'Support CampusFind', icon: 'coffee' },
 ];
 
 const OFFICER_LINKS = [
@@ -564,6 +570,7 @@ export default function Layout() {
             )}
 
             {user?.role === 'Administrator' && <NavLink to="/admin/analytics" className={navClass}><span className="nav-icon"><Icon name="history" /></span><span className="nav-label">Analytics</span></NavLink>}
+            {user?.role === 'Administrator' && <NavLink to="/admin/support-payments" className={navClass}><span className="nav-icon"><Icon name="coffee" /></span><span className="nav-label">Support Payments</span></NavLink>}
             {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass}>
               <span className="nav-icon"><Icon name="shield" /></span>
               <span className="nav-label">Officer Requests</span>
@@ -624,6 +631,9 @@ export default function Layout() {
           >
             <Outlet />
           </PageMotion>
+          <footer style={{ padding: '14px 28px 28px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.9rem' }}>
+            Enjoying CampusFind? <Link to="/support" style={{ fontWeight: 700 }}>Buy us a coffee ☕</Link>
+          </footer>
         </main>
       </div>
 
@@ -678,6 +688,7 @@ export default function Layout() {
             </>
           )}
           {user?.role === 'Administrator' && <NavLink to="/admin/analytics" className={navClass} onClick={() => setDrawerOpen(false)}><span className="nav-icon"><Icon name="history" /></span><span className="nav-label">Analytics</span></NavLink>}
+          {user?.role === 'Administrator' && <NavLink to="/admin/support-payments" className={navClass} onClick={() => setDrawerOpen(false)}><span className="nav-icon"><Icon name="coffee" /></span><span className="nav-label">Support Payments</span></NavLink>}
           {user?.role === 'Administrator' && <NavLink to="/admin/security-officer-requests" className={navClass} onClick={() => setDrawerOpen(false)}>
             <span className="nav-icon"><Icon name="shield" /></span><span className="nav-label">Officer Requests</span>
             {hasUnreadFor('/admin/security-officer-requests') && <span className="nav-unread-dot" aria-label="Unread update" />}

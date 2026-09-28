@@ -36,8 +36,8 @@ public sealed class ChatbotService(
         response.ConversationId = conversation.Id;
         response.CreatedAt = DateTime.UtcNow;
 
-        // Verification answers and their details belong only in the dedicated secure workflow.
-        if (!LooksLikeVerificationAnswer(message))
+        // Verification answers and payment credentials never enter history or an external AI prompt.
+        if (!LooksLikeVerificationAnswer(message) && !LooksLikePaymentCredential(message))
         {
             db.ChatHistories.Add(new ChatHistory { Id = Guid.NewGuid(), ConversationId = conversation.Id, UserId = userId, Role = "user", Message = message });
         }
@@ -99,6 +99,8 @@ public sealed class ChatbotService(
         string T(string english, string bangla) => bn ? bangla : english;
         switch (capability)
         {
+            case "payment_credentials": return new ChatResponseDto { Text = "For your safety, never share a bKash or Nagad PIN, OTP, or wallet password here. Enter payment credentials only on the provider's official checkout page." };
+            case "support": return new ChatResponseDto { Type = "support", Text = "Supporting CampusFind is completely optional. If you would like to help, use Buy Us a Coffee; it never affects reports, claims, searches, or handovers.", Actions = [new() { Label = "Open Buy Us a Coffee", Route = "/support" }] };
             case "claims":
                 var claims = await db.Claims.AsNoTracking().Where(x => x.ClaimantUserId == userId).OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new ChatSummaryCardDto { Id = x.Id, Title = x.FoundItem!.Title, Status = x.Status, CreatedAt = x.CreatedAt, Route = "/my-claims", Detail = x.Verification == null ? null : x.Verification.Status }).ToListAsync(ct);
                 return new ChatResponseDto { Type = "claims", Text = claims.Count == 0 ? T("You do not have any claims yet.", "আপনার এখনো কোনো claim নেই।") : T($"Here are your {claims.Count} most recent claims.", $"আপনার সাম্প্রতিক {claims.Count}টি claim এখানে আছে।"), Cards = claims, Actions = [new() { Label = T("Open My Claims", "My Claims খুলুন"), Route = "/my-claims" }] };
@@ -199,6 +201,8 @@ public sealed class ChatbotService(
     private static string Classify(string m)
     {
         var s = m.ToLowerInvariant();
+        if (LooksLikePaymentCredential(s)) return "payment_credentials";
+        if (s.Contains("support campusfind") || s.Contains("buy us a coffee") || s.Contains("donat") || s.Contains("bkash") || s.Contains("nagad")) return "support";
         if (Regex.IsMatch(s, "python|c\\+\\+|java code|assignment|capital of|bfs|sort")) return "out_of_scope";
         if (s.Contains("notification") || s.Contains("নোটিফ")) return "notifications";
         if (s.Contains("claim") || s.Contains("ক্লেইম")) return "claims";
@@ -212,6 +216,7 @@ public sealed class ChatbotService(
         return "general";
     }
     private static bool LooksLikeVerificationAnswer(string message) => Regex.IsMatch(message, "(?:verification|ownership|answer|উত্তর|যাচাই).{0,100}(?:verification|ownership|answer|details|উত্তর|বিস্তারিত)", RegexOptions.IgnoreCase);
+    private static bool LooksLikePaymentCredential(string message) => Regex.IsMatch(message, "(?:\\b(?:pin|otp|password)\\b|পিন|ওটিপি|পাসওয়ার্ড).{0,40}(?:\\d{4,8}|[a-z0-9]{6,})|(?:\\b\\d{4,8}\\b).{0,25}(?:otp|pin)", RegexOptions.IgnoreCase);
     private static bool WithinRateLimit(string userId) { var q = RequestWindows.GetOrAdd(userId, _ => new Queue<DateTime>()); lock (q) { var cutoff = DateTime.UtcNow.AddMinutes(-1); while (q.Count > 0 && q.Peek() < cutoff) q.Dequeue(); if (q.Count >= MaxRequestsPerMinute) return false; q.Enqueue(DateTime.UtcNow); return true; } }
     private static string TitleFor(string message) => message.Length <= 60 ? message : message[..57] + "…";
     private static ChatConversationDto ToDto(ChatConversation x) => new() { Id = x.Id, Title = x.Title, CreatedAt = x.CreatedAt, UpdatedAt = x.UpdatedAt };
