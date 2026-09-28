@@ -19,6 +19,19 @@ public interface IFoundItemRepository
         string userId,
         CancellationToken cancellationToken = default);
 
+    Task UpdateStatusAsync(
+        Guid id,
+        string status,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(FoundItem item, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support report updates."));
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support report deletion."));
+
+    Task UpdateFounderVerificationAnswersAsync(Guid id, string founderVerificationAnswersJson, CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("This repository does not support private verification detail updates."));
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 }

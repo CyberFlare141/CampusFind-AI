@@ -4,11 +4,19 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>CampusFindAI.Api</RootNamespace>
+		<UserSecretsId>campusfind-ai-development-7f6ea606-a990-48f9-84be-11f59097d09d</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Keep generated and ad-hoc build output from being treated as application source. -->
+		<Compile Remove="obj\**\*.cs" />
+		<Compile Remove="artifacts\**\*.cs" />
+		<EmbeddedResource Remove="artifacts\**\*" />
+		<None Remove="artifacts\**\*" />
+		<PackageReference Include="Google.Apis.Auth" Version="1.76.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.6" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.11" />
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
@@ -18,5 +26,6 @@
 
 		<PackageReference Include="Microsoft.OpenApi" Version="[2.7.5, )" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
 	</ItemGroup>
 </Project>

@@ -1,0 +1,34 @@
+/* =========================================================
+   CampusFind AI — global.css  (delegating stylesheet)
+   =========================================================
+   Design tokens, fonts, and base styles all live in
+   src/styles.css  (imported via main.jsx / App.jsx).
+
+   This file's ONLY job is:
+     1. Noto Sans Bengali for Bangla content
+     2. Any micro-fixes that can't live in styles.css
+
+   DO NOT put brand palette values here.
+   DO NOT override styles.css tokens here.
+   ========================================================= */
+
+/* ── Bangla typeface ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+
+/* ── Bangla content helper ─────────────────────────────────── */
+.lang-bn,
+[lang="bn"],
+[lang="bn-BD"] {
+  font-family: 'Noto Sans Bengali', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+/* ── Print reset ───────────────────────────────────────────── */
+@media print {
+  .sidebar, .topbar, .mobile-nav, .mobile-fab-group, .mobile-topbar {
+    display: none !important;
+  }
+  .app-content { padding: 0 !important; }
+  body { background: white !important; }
+}

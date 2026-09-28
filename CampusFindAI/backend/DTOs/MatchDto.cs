@@ -11,6 +11,19 @@ public class MatchDto
     public Guid FoundItemId { get; set; }
     public string FoundItemTitle { get; set; } = string.Empty;
     public string FoundItemUserId { get; set; } = string.Empty;
+    public string? LostCategoryName { get; set; }
+    public string? LostLocationName { get; set; }
+    public string? FoundCategoryName { get; set; }
+    public string? FoundLocationName { get; set; }
+    public string? FoundImageUrl { get; set; }
 
     public decimal ConfidenceScore { get; set; }
+
+    // This is deliberately only match metadata. Private finder verification details are never mapped here.
+
+    /// <summary>Human-readable rationale for this potential match.</summary>
+    public string Explanation { get; set; } = string.Empty;
+
+    /// <summary>The report attributes that contributed to the confidence score.</summary>
+    public IReadOnlyList<string> MatchedAttributes { get; set; } = [];
 }

@@ -9,9 +9,15 @@ namespace CampusFindAI.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
-public class ClaimsController(IClaimService service) : ControllerBase
+public class ClaimsController(
+    IClaimService service,
+    IOwnershipVerificationService verificationService,
+    IInstitutionalAccessService accessService) : ControllerBase
 {
-    /// <summary>A student files a claim of ownership against a found item.</summary>
+    /// <summary>
+    /// Claims are deliberately not created from the public found-item catalogue. A claim is created
+    /// only by the match-bound ownership-verification start endpoint.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<ClaimDto>> Create(
         CreateClaimDto request,
@@ -23,10 +29,9 @@ public class ClaimsController(IClaimService service) : ControllerBase
         {
             return Unauthorized();
         }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
 
-        var claim = await service.CreateAsync(userId, request, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id = claim.Id }, claim);
+        return BadRequest(new { message = "Claims must be started from a valid My AI Matches ownership-verification flow." });
     }
 
     /// <summary>The current user's own submitted claims.</summary>
@@ -57,6 +62,29 @@ public class ClaimsController(IClaimService service) : ControllerBase
         return Ok(claims);
     }
 
+    /// <summary>Claims decided (approved/rejected/returned) by this specific security officer.</summary>
+    [HttpGet("my-decisions")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<IReadOnlyList<ClaimDto>>> GetMyDecisions(
+        CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+
+        var claims = await service.GetOfficerDecisionHistoryAsync(officerId, cancellationToken);
+        return Ok(claims);
+    }
+
+    /// <summary>Approved / Returned claims for read-only ownership reference.</summary>
+    [HttpGet("approved")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<IReadOnlyList<ClaimDto>>> GetApproved(
+        CancellationToken cancellationToken)
+    {
+        var claims = await service.GetApprovedClaimsAsync(cancellationToken);
+        return Ok(claims);
+    }
+
     /// <summary>Full claim history (any status), for officers/administrators.</summary>
     [HttpGet]
     [Authorize(Roles = "SecurityOfficer,Administrator")]
@@ -80,7 +108,22 @@ public class ClaimsController(IClaimService service) : ControllerBase
             return NotFound();
         }
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var canReviewClaims = User.IsInRole("SecurityOfficer") || User.IsInRole("Administrator");
+        if (string.IsNullOrEmpty(userId) || (!canReviewClaims && claim.ClaimantUserId != userId))
+        {
+            return Forbid();
+        }
+
         return Ok(claim);
+    }
+
+    [HttpGet("{id:guid}/review")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<ClaimReviewDto>> GetReview(Guid id, CancellationToken cancellationToken)
+    {
+        var claim = await service.GetReviewAsync(id, cancellationToken);
+        return claim is null ? NotFound() : Ok(claim);
     }
 
     /// <summary>Security officer's claim-verification decision (approve/reject).</summary>
@@ -98,8 +141,132 @@ public class ClaimsController(IClaimService service) : ControllerBase
             return Unauthorized();
         }
 
+        var existing = await service.GetByIdAsync(id, cancellationToken);
+        if (existing?.VerificationMatchId is not null)
+            return BadRequest(new { message = "Match-bound claims must be approved or rejected through the ownership-verification review. QR handover is available only after the separate face-to-face handover stage." });
+
         var claim = await service.DecideAsync(id, officerId, request, cancellationToken);
 
         return Ok(claim);
+    }
+
+    /// <summary>Records the final in-person handover after an approved claim.</summary>
+    [HttpPost("{id:guid}/handover")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<CompleteHandoverResponseDto>> CompleteHandover(
+        Guid id,
+        CompleteHandoverDto request,
+        CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+
+        var result = await service.CompleteHandoverAsync(id, officerId, request, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/handover-qr")]
+    public async Task<ActionResult<HandoverQrDto>> GetHandoverQr(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+        try { return Ok(await service.GetHandoverQrAsync(id, userId, cancellationToken)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/handover/confirm-qr")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<CompleteHandoverResponseDto>> ConfirmHandoverQr(Guid id, HandoverQrConfirmationDto request, CancellationToken cancellationToken)
+    {
+        var officerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(officerId)) return Unauthorized();
+        try { return Ok(await service.ConfirmHandoverQrAsync(id, officerId, request, cancellationToken)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    /// <summary>Student starts / retrieves AI ownership verification questions for their claim.</summary>
+    [HttpPost("{id:guid}/verification")]
+    public async Task<ActionResult<ClaimVerificationResponseDto>> GetOrGenerateVerification(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
+
+        try
+        {
+            var response = await verificationService.GetOrGenerateVerificationAsync(id, userId, cancellationToken);
+            return Ok(response);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Claim not found." });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>Student submits answers to ownership verification questions.</summary>
+    [HttpPost("{id:guid}/verification/submit")]
+    public async Task<ActionResult<SubmitVerificationResponseDto>> SubmitVerification(
+        Guid id,
+        SubmitVerificationRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+        if (!await accessService.CanPerformInstitutionalActionsAsync(userId, cancellationToken)) return Forbid();
+
+        try
+        {
+            var response = await verificationService.SubmitVerificationAsync(id, userId, request, cancellationToken);
+            return Ok(response);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Claim not found." });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>Security Officer / Admin views verification score, match status, and answers breakdown.</summary>
+    [HttpGet("{id:guid}/verification/officer-review")]
+    [Authorize(Roles = "SecurityOfficer,Administrator")]
+    public async Task<ActionResult<OfficerVerificationReviewDto>> GetOfficerVerificationReview(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var review = await verificationService.GetOfficerReviewAsync(id, cancellationToken);
+            return Ok(review);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Claim not found." });
+        }
     }
 }

@@ -12,6 +12,10 @@ public interface IClaimRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<Claim?> GetReviewByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Claim>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
@@ -22,6 +26,27 @@ public interface IClaimRepository
     Task<IReadOnlyList<Claim>> GetByClaimantIdAsync(
         string claimantUserId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Claim>> GetByFoundItemIdAsync(
+        Guid foundItemId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Claim>> GetByOfficerIdAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Claim>>([]);
+
+    Task<IReadOnlyList<Claim>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Claim>>([]);
+
+    /// <summary>Atomically approves a pending claim only when no other claim for the item has been approved or returned.</summary>
+    Task<bool> TryApproveAsync(Claim claim, CancellationToken cancellationToken = default)
+        => Task.FromResult(false);
+
+    /// <summary>Atomically consumes a valid handover token exactly once.</summary>
+    Task<bool> TryCompleteHandoverAsync(Claim claim, DateTime utcNow, CancellationToken cancellationToken = default)
+        => Task.FromResult(false);
 
     void Update(Claim claim);
 

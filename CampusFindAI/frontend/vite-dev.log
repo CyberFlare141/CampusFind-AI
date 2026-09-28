@@ -1,0 +1,30 @@
+
+> campusfind-ai-web@0.1.0 dev
+> vite --host 127.0.0.1
+
+
+  VITE v8.2.2  ready in 176 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+  ➜  press h + enter to show help
+3:45:04 PM [vite] (client) [console.warn] [2026-09-28T09:45:04.654Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+3:45:04 PM [vite] (client) [console.error] [2026-09-28T09:45:04.654Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:04 PM [vite] (client) [console.error] [2026-09-28T09:45:04.654Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:04 PM [vite] (client) [console.warn] [2026-09-28T09:45:04.655Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+3:45:04 PM [vite] (client) [console.error] [2026-09-28T09:45:04.655Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:04 PM [vite] (client) [console.error] [2026-09-28T09:45:04.655Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:38 PM [vite] (client) [console.warn] [2026-09-28T09:45:38.041Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+3:45:38 PM [vite] (client) [console.error] [2026-09-28T09:45:38.041Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:38 PM [vite] (client) [console.error] [2026-09-28T09:45:38.041Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:38 PM [vite] (client) [console.warn] [2026-09-28T09:45:38.041Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+3:45:38 PM [vite] (client) [console.error] [2026-09-28T09:45:38.041Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:45:38 PM [vite] (client) [console.error] [2026-09-28T09:45:38.041Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+3:57:27 PM [vite] (client) hmr update /src/pages/SupportPage.jsx, /src/pages/SupportProcessingPage.jsx, /src/pages/SupportResultPage.jsx
+3:57:27 PM [vite] (client) hmr update /src/pages/SupportPage.jsx
+3:57:27 PM [vite] (client) hmr update /src/App.jsx
+4:05:18 PM [vite] (client) [console.warn] [2026-09-28T10:05:18.252Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+4:05:18 PM [vite] (client) [console.error] [2026-09-28T10:05:18.253Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+4:05:18 PM [vite] (client) [console.error] [2026-09-28T10:05:18.253Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+4:05:18 PM [vite] (client) [console.warn] [2026-09-28T10:05:18.253Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+4:05:18 PM [vite] (client) [console.error] [2026-09-28T10:05:18.253Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+4:05:18 PM [vite] (client) [console.error] [2026-09-28T10:05:18.253Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch

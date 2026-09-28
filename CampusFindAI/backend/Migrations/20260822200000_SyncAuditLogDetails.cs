@@ -12,11 +12,12 @@ public partial class SyncAuditLogDetails : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AddColumn<string>(
-            name: "Details",
-            table: "AuditLogs",
-            type: "nvarchar(max)",
-            nullable: true);
+        migrationBuilder.Sql(@"
+            IF COL_LENGTH('AuditLogs', 'Details') IS NULL
+            BEGIN
+                ALTER TABLE [AuditLogs] ADD [Details] nvarchar(max) NULL;
+            END;
+        ");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)

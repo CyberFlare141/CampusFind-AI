@@ -16,11 +16,22 @@ public interface IClaimService
     Task<IReadOnlyList<ClaimDto>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ClaimDto>> GetOfficerDecisionHistoryAsync(
+        string officerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ClaimDto>> GetApprovedClaimsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ClaimDto>> GetMyClaimsAsync(
         string userId,
         CancellationToken cancellationToken = default);
 
     Task<ClaimDto?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<ClaimReviewDto?> GetReviewAsync(
         Guid id,
         CancellationToken cancellationToken = default);
 
@@ -30,4 +41,14 @@ public interface IClaimService
         string officerUserId,
         ClaimDecisionDto request,
         CancellationToken cancellationToken = default);
+
+    Task<CompleteHandoverResponseDto> CompleteHandoverAsync(
+        Guid claimId,
+        string officerUserId,
+        CompleteHandoverDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<HandoverQrDto> GetHandoverQrAsync(Guid claimId, string claimantUserId, CancellationToken cancellationToken = default);
+
+    Task<CompleteHandoverResponseDto> ConfirmHandoverQrAsync(Guid claimId, string officerUserId, HandoverQrConfirmationDto request, CancellationToken cancellationToken = default);
 }

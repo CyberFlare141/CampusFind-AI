@@ -1,26 +1,37 @@
 using CampusFindAI.Api.DTOs;
-using CampusFindAI.Api.Models;
 using CampusFindAI.Api.Repositories;
-using Microsoft.AspNetCore.Identity;
 
 namespace CampusFindAI.Api.Services;
 
 public class SecurityDashboardService(
     IClaimRepository claimRepository,
-    IMatchRepository matchRepository,
+    IMatchService matchService,
     IAuditLogRepository auditLogRepository,
-    UserManager<ApplicationUser> userManager) : ISecurityDashboardService
+    IUserRepository userRepository,
+    ILostItemRepository lostItemRepository,
+    IFoundItemRepository foundItemRepository) : ISecurityDashboardService
 {
     public async Task<SecurityOverviewDto> GetOverviewAsync(
         CancellationToken cancellationToken = default)
     {
-        var pendingClaims = await claimRepository.GetByStatusAsync("Pending", cancellationToken);
-        var matches = await matchRepository.GetAllAsync(cancellationToken);
+        var pendingTask    = claimRepository.GetByStatusAsync("Pending", cancellationToken);
+        var matchesTask    = matchService.GetSuggestedMatchesAsync(cancellationToken);
+        var allClaimsTask  = claimRepository.GetAllAsync(cancellationToken);
+        var lostTask       = lostItemRepository.GetAllAsync(cancellationToken);
+        var foundTask      = foundItemRepository.GetAllAsync(cancellationToken);
+
+        await Task.WhenAll(pendingTask, matchesTask, allClaimsTask, lostTask, foundTask);
+
+        var decisionsMade = allClaimsTask.Result.Count(c =>
+            c.Status is "Approved" or "Rejected" or "Returned");
 
         return new SecurityOverviewDto
         {
-            PendingClaimsCount = pendingClaims.Count,
-            SuggestedMatchesCount = matches.Count
+            PendingClaimsCount    = pendingTask.Result.Count,
+            SuggestedMatchesCount = matchesTask.Result.Count,
+            LostItemsCount        = lostTask.Result.Count,
+            FoundItemsCount       = foundTask.Result.Count,
+            DecisionsMadeCount    = decisionsMade,
         };
     }
 
@@ -28,12 +39,9 @@ public class SecurityDashboardService(
         string userId,
         CancellationToken cancellationToken = default)
     {
-        var user = await userManager.FindByIdAsync(userId)
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
 
-        // The two most recent "Login" entries: index 0 is the session that's
-        // asking for confirmation right now, index 1 (if present) is the
-        // officer's previous login.
         var recentLogins = await auditLogRepository.GetByUserAndActionAsync(
             userId,
             "Login",

@@ -1,8 +1,8 @@
 # CampusFind AI
 
-CampusFind AI is an AI-assisted university lost-and-found platform that connects lost and found reports, supports role-based workflows, and will later provide smart matching, semantic search, verification, notifications, and analytics. This first repository pass intentionally keeps the domain and UI minimal while providing one real end-to-end authentication vertical slice that the team can copy as the project grows.
+CampusFind AI is an AI-assisted university lost-and-found platform. It supports role-based lost/found reporting, semantic search, matching, ownership verification, claims, QR handover, notifications, Security Officer review, administrator officer-request review, and the CampusFind Assistant.
 
-The project aligns with the CSE 3200 Software Development-V focus on ASP.NET/.NET web development, MS SQL Server, Entity Framework Code First, modern engineering tools, system architecture, code quality, deployment/versioning, and professional software documentation.
+The active frontend is the JSX application: `frontend/index.html` loads `src/main.jsx`, which loads `src/App.jsx`. Older TSX files are not the Vite entry point.
 
 ## Repository layout
 
@@ -196,17 +196,20 @@ To reduce merge conflicts for a 3–4 person team:
 
 This matches the course specification's emphasis on Git-based team workflow, documentation standards, structured peer code review, scalable architecture, code quality, and deployment/versioning.
 
-## Deliberately not implemented yet
+## Current security and configuration notes
 
-- AI smart matching
-- Semantic search
-- AI ownership-verification questions
-- QR secure claim workflow
-- Real-time notifications
-- Admin analytics
-- Reputation/badges behavior
-- Chat/AI assistant behavior
-- Production deployment/CI/CD
-- Full domain validation and authorization rules
+- Public registration always creates a `Student`; privileged roles are granted through the authorized Security Officer request flow.
+- JWTs expire after two hours. A password change rotates the user security stamp, invalidating existing tokens; five failed logins trigger a 15-minute lockout.
+- Found-item private verification details and submitted answers are only available to authorized Security Officer review endpoints, not ordinary report, search, or chat responses.
+- Handover QR tokens are claim-bound, expire after 15 minutes, and are consumed once.
+- Keep `Jwt:Key` and `Gemini:ApiKey` out of source control. Use user secrets or environment variables (`Jwt__Key` and `Gemini__ApiKey`) for deployed environments. Gemini-powered features provide their documented fallback behavior when no key is configured.
 
-These belong in later feature branches. The current pass is a clean architectural skeleton plus the authentication reference slice.
+## Support Payments
+
+**Buy Us a Coffee ☕** at `/support` is an optional way for authenticated users to support CampusFind. It never unlocks, prioritizes, or restricts any CampusFind workflow, including reports, search, claims, ownership verification, handover, or Security Officer services.
+
+The project contains provider-independent bKash and Nagad boundaries and a Development-only mock checkout. The mock mode is enabled in `appsettings.Development.json` and clearly labels every action as **TEST PAYMENT — NO REAL MONEY**. It supports simulated success, failure, and cancellation, allowing the full history, receipt, notification, audit, and admin summary flow to be tested locally. It is rejected at production startup.
+
+Production bKash/Nagad API calls are intentionally not implemented because official merchant API documentation and credentials are not in this repository. Do not enable either provider until their official merchant integration details are available. Supply those credentials through a secret manager or environment variables, never committed configuration. The required details include each provider's official base URLs, merchant/app identifiers, checkout creation and verification requirements, callback/IPN signature scheme and keys, callback URLs, and any required certificates or public keys. PINs, OTPs, wallet passwords, access tokens, and full provider payloads must never be stored or logged.
+
+To test locally: run the backend with `ASPNETCORE_ENVIRONMENT=Development`, run the frontend, sign in, open `/support`, choose an amount and bKash or Nagad, then use the local simulator. A simulated success is the only Development path that marks a payment verified; browser URLs and frontend state can never do so. Before production, replace each provider stub with the provider's official merchant checkout, callback-signature validation, and server-side query/verification implementation, then set `Payments:UseMockProvider=false`.

@@ -10,49 +10,63 @@ namespace CampusFindAI.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ClaimantNotes",
-                table: "Claims",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Claims', 'ClaimantNotes') IS NULL
+                BEGIN
+                    ALTER TABLE [Claims] ADD [ClaimantNotes] nvarchar(max) NULL;
+                END;
+            ");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedAt",
-                table: "Claims",
-                type: "datetime2",
-                nullable: false,
-                defaultValueSql: "GETUTCDATE()");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Claims', 'CreatedAt') IS NULL
+                BEGIN
+                    ALTER TABLE [Claims] ADD [CreatedAt] datetime2 NOT NULL CONSTRAINT DF_Claims_CreatedAt DEFAULT GETUTCDATE();
+                END;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "DecisionNotes",
-                table: "Claims",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Claims', 'DecisionNotes') IS NULL
+                BEGIN
+                    ALTER TABLE [Claims] ADD [DecisionNotes] nvarchar(max) NULL;
+                END;
+            ");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReviewedAt",
-                table: "Claims",
-                type: "datetime2",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Claims', 'ReviewedAt') IS NULL
+                BEGIN
+                    ALTER TABLE [Claims] ADD [ReviewedAt] datetime2 NULL;
+                END;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ReviewedByUserId",
-                table: "Claims",
-                type: "nvarchar(450)",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Claims', 'ReviewedByUserId') IS NULL
+                BEGIN
+                    ALTER TABLE [Claims] ADD [ReviewedByUserId] nvarchar(450) NULL;
+                END;
+            ");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Claims_ReviewedByUserId",
-                table: "Claims",
-                column: "ReviewedByUserId");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM sys.indexes
+                    WHERE name = 'IX_Claims_ReviewedByUserId' AND object_id = OBJECT_ID('Claims'))
+                BEGIN
+                    CREATE INDEX [IX_Claims_ReviewedByUserId] ON [Claims] ([ReviewedByUserId]);
+                END;
+            ");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Claims_AspNetUsers_ReviewedByUserId",
-                table: "Claims",
-                column: "ReviewedByUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM sys.foreign_keys
+                    WHERE name = 'FK_Claims_AspNetUsers_ReviewedByUserId'
+                )
+                BEGIN
+                    ALTER TABLE [Claims] WITH CHECK
+                    ADD CONSTRAINT [FK_Claims_AspNetUsers_ReviewedByUserId]
+                    FOREIGN KEY ([ReviewedByUserId]) REFERENCES [AspNetUsers] ([Id]);
+                END;
+            ");
         }
 
         /// <inheritdoc />

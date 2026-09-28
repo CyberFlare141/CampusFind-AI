@@ -68,6 +68,11 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsRestricted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -192,7 +197,7 @@ namespace CampusFindAI.Api.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("CampusFindAI.Api.Models.ChatHistory", b =>
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatConversation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -201,9 +206,46 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAt");
+
+                    b.ToTable("ChatConversations");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -212,6 +254,8 @@ namespace CampusFindAI.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("ConversationId", "CreatedAt");
 
                     b.ToTable("ChatHistories");
                 });
@@ -238,6 +282,25 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<Guid>("FoundItemId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("HandedOverAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HandedOverByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HandoverNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("HandoverQrCreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HandoverQrToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("HandoverQrUsedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ReviewedAt")
                         .HasColumnType("datetime2");
 
@@ -257,6 +320,158 @@ namespace CampusFindAI.Api.Migrations
                     b.HasIndex("ReviewedByUserId");
 
                     b.ToTable("Claims");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimChatConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClaimId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FounderUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsReadOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OwnerUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique();
+
+                    b.ToTable("ClaimChatConversations");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SenderUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderUserId");
+
+                    b.HasIndex("ConversationId", "SentAt");
+
+                    b.ToTable("ClaimChatMessages");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ClaimId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ConfidenceScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvaluationResultJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("LostItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("MatchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("MatchedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("Passed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("PassedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PublicQuestionsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SecureQuestionsPayload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SecurityReviewNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("SecurityReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SecurityReviewedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubmittedAnswersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique();
+
+                    b.HasIndex("MatchId")
+                        .IsUnique()
+                        .HasFilter("[MatchId] IS NOT NULL");
+
+                    b.ToTable("ClaimVerifications");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.Feedback", b =>
@@ -282,6 +497,33 @@ namespace CampusFindAI.Api.Migrations
                     b.ToTable("Feedback");
                 });
 
+            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BuildingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("FloorNumber")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId", "FloorNumber")
+                        .IsUnique();
+
+                    b.ToTable("Floors");
+                });
+
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -291,14 +533,37 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("FoundAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FounderVerificationAnswersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LocationDetails")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PrivateVerificationDetails")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Available");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -353,6 +618,9 @@ namespace CampusFindAI.Api.Migrations
                     b.Property<Guid?>("BuildingId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("FloorId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -360,6 +628,8 @@ namespace CampusFindAI.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BuildingId");
+
+                    b.HasIndex("FloorId");
 
                     b.ToTable("Locations");
                 });
@@ -378,6 +648,10 @@ namespace CampusFindAI.Api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LocationDetails")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uniqueidentifier");
@@ -428,7 +702,8 @@ namespace CampusFindAI.Api.Migrations
 
                     b.HasIndex("FoundItemId");
 
-                    b.HasIndex("LostItemId");
+                    b.HasIndex("LostItemId", "FoundItemId")
+                        .IsUnique();
 
                     b.ToTable("Matches");
                 });
@@ -439,8 +714,19 @@ namespace CampusFindAI.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Category")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Link")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -463,8 +749,20 @@ namespace CampusFindAI.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("New");
+
                     b.Property<int>("Points")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -476,6 +774,48 @@ namespace CampusFindAI.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Reputations");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ReputationHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PointChange")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("RelatedEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("ReputationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReputationId");
+
+                    b.HasIndex("UserId", "RelatedEntityType", "RelatedEntityId", "Reason")
+                        .IsUnique()
+                        .HasFilter("[RelatedEntityType] IS NOT NULL AND [RelatedEntityId] IS NOT NULL");
+
+                    b.ToTable("ReputationHistories");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.Role", b =>
@@ -493,17 +833,94 @@ namespace CampusFindAI.Api.Migrations
                     b.ToTable("Roles", (string)null);
                 });
 
+            modelBuilder.Entity("CampusFindAI.Api.Models.SecurityOfficerRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdditionalInformation")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("AdminNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewedByUserId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("SecurityOfficerRequests");
+                });
+
             modelBuilder.Entity("CampusFindAI.Api.Models.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Bio")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("FullName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Semester")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("StudentId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("University")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -515,6 +932,113 @@ namespace CampusFindAI.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("UserProfiles");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.VisualEmbedding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ImageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("VectorJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImageId", "Model")
+                        .IsUnique();
+
+                    b.ToTable("VisualEmbeddings");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.SupportPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("FailureReasonCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MerchantInvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ProviderPaymentId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ProviderTransactionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MerchantInvoiceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ProviderPaymentId")
+                        .IsUnique()
+                        .HasFilter("[ProviderPaymentId] IS NOT NULL");
+
+                    b.HasIndex("ProviderTransactionId")
+                        .IsUnique()
+                        .HasFilter("[ProviderTransactionId] IS NOT NULL");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("SupportPayments");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -671,13 +1195,32 @@ namespace CampusFindAI.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CampusFindAI.Api.Models.ChatHistory", b =>
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatConversation", b =>
                 {
                     b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatHistory", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.ChatConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
 
                     b.Navigation("User");
                 });
@@ -708,6 +1251,47 @@ namespace CampusFindAI.Api.Migrations
                     b.Navigation("ReviewedByUser");
                 });
 
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimChatConversation", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.Claim", "Claim")
+                        .WithMany()
+                        .HasForeignKey("ClaimId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimChatMessage", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.ClaimChatConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "SenderUser")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("SenderUser");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimVerification", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.Claim", "Claim")
+                        .WithOne("Verification")
+                        .HasForeignKey("CampusFindAI.Api.Models.ClaimVerification", "ClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
+                });
+
             modelBuilder.Entity("CampusFindAI.Api.Models.Feedback", b =>
                 {
                     b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
@@ -717,6 +1301,17 @@ namespace CampusFindAI.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.Building", "Building")
+                        .WithMany("Floors")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Building");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>
@@ -763,7 +1358,14 @@ namespace CampusFindAI.Api.Migrations
                         .WithMany("Locations")
                         .HasForeignKey("BuildingId");
 
+                    b.HasOne("CampusFindAI.Api.Models.Floor", "Floor")
+                        .WithMany("Locations")
+                        .HasForeignKey("FloorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Building");
+
+                    b.Navigation("Floor");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.LostItem", b =>
@@ -830,12 +1432,69 @@ namespace CampusFindAI.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CampusFindAI.Api.Models.ReputationHistory", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.Reputation", "Reputation")
+                        .WithMany("History")
+                        .HasForeignKey("ReputationId");
+
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reputation");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.SecurityOfficerRequest", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "ReviewedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReviewedByUser");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CampusFindAI.Api.Models.UserProfile", b =>
                 {
                     b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
                         .WithOne("UserProfile")
                         .HasForeignKey("CampusFindAI.Api.Models.UserProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.VisualEmbedding", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.Image", "Image")
+                        .WithMany()
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Image");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.SupportPayment", b =>
+                {
+                    b.HasOne("CampusFindAI.Api.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -901,6 +1560,8 @@ namespace CampusFindAI.Api.Migrations
 
             modelBuilder.Entity("CampusFindAI.Api.Models.Building", b =>
                 {
+                    b.Navigation("Floors");
+
                     b.Navigation("Locations");
                 });
 
@@ -909,6 +1570,26 @@ namespace CampusFindAI.Api.Migrations
                     b.Navigation("FoundItems");
 
                     b.Navigation("LostItems");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ChatConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.Claim", b =>
+                {
+                    b.Navigation("Verification");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.ClaimChatConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.Floor", b =>
+                {
+                    b.Navigation("Locations");
                 });
 
             modelBuilder.Entity("CampusFindAI.Api.Models.FoundItem", b =>
@@ -926,6 +1607,11 @@ namespace CampusFindAI.Api.Migrations
             modelBuilder.Entity("CampusFindAI.Api.Models.LostItem", b =>
                 {
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("CampusFindAI.Api.Models.Reputation", b =>
+                {
+                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }
